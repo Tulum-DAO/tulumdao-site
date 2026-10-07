@@ -69,6 +69,8 @@ type Node = {
   live: boolean;
   drift: number;
 };
+// a and b are LIVE references to the two orbs' positions, so a line's ends stay on the orb centres
+// however the orbs float
 type Thread = { a: Vector3; b: Vector3; color: Color; life: number; max: number; message: boolean };
 
 export function mount(canvas: HTMLCanvasElement) {
@@ -201,7 +203,7 @@ export function mount(canvas: HTMLCanvasElement) {
   scene.add(threadLines);
   const thread = (a: Vector3, b: Vector3, color: Color, max: number, message = false) => {
     if (threads.length >= MAXT) threads.shift();
-    threads.push({ a: a.clone(), b: b.clone(), color, life: 0, max, message });
+    threads.push({ a, b, color, life: 0, max, message });
   };
 
   // ---- labels: plain HTML over the canvas, placed from 3D each frame (crisp text, no font atlas)
@@ -318,7 +320,20 @@ export function mount(canvas: HTMLCanvasElement) {
     const label = !mobile || i % 2 === 0 ? addLabel(TALKER_NAMES[i % TALKER_NAMES.length], () => n.pos, () => n.alpha, 'talker', { runtime: rt }) : null;
     talkers.push({ node: n, busy: Math.random() < 0.2, flipAt: Math.random() * 6, ring, label, rt: RUNTIMES[rt].name });
   }
-  type Packet = { node: Node; from: Talker; to: Talker; t: number; dur: number; waiting: number; reply: boolean };
+  // fly: rides the line from one orb centre to the other. wait: the receiver is busy, so it circles
+  // beside it. land: the receiver is free again, so it flies into the receiver's centre. done: it
+  // has been delivered and fades out inside the receiver.
+  type Packet = {
+    node: Node;
+    from: Talker;
+    to: Talker;
+    state: 'fly' | 'wait' | 'land' | 'done';
+    t: number;
+    dur: number;
+    waited: number;
+    landFrom: Vector3;
+    reply: boolean;
+  };
   const packets: Packet[] = [];
   const send = (from: Talker, to: Talker, reply: boolean) => {
     if (packets.length >= 26) return;
@@ -326,7 +341,7 @@ export function mount(canvas: HTMLCanvasElement) {
     if (!n) return;
     const dur = 0.9 + from.node.pos.distanceTo(to.node.pos) * 0.12;
     thread(from.node.pos, to.node.pos, MAYA, dur + 0.4, true);
-    packets.push({ node: n, from, to, t: 0, dur, waiting: -1, reply });
+    packets.push({ node: n, from, to, state: 'fly', t: 0, dur, waited: 0, landFrom: new Vector3(), reply });
   };
   // approvals: dim seats around the card that rises
   const askers: Node[] = [];
@@ -543,29 +558,52 @@ export function mount(canvas: HTMLCanvasElement) {
     }
     for (let i = packets.length - 1; i >= 0; i--) {
       const pk = packets[i];
-      if (pk.waiting >= 0) {
-        // parked beside a busy seat until its turn ends
-        pk.waiting += dt;
-        const ang = pk.waiting * 2.2;
-        pk.node.pos.set(pk.to.node.pos.x + Math.cos(ang) * 0.45, pk.to.node.pos.y + 0.1, pk.to.node.pos.z + Math.sin(ang) * 0.45);
-        if (pk.to.busy) continue;
-      } else {
+      const center = pk.to.node.pos;
+      if (pk.state === 'fly') {
         pk.t += dt / pk.dur;
         const u = Math.min(1, pk.t);
-        const k = u * u * (3 - 2 * u);
-        pk.node.pos.copy(pk.from.node.pos).lerp(pk.to.node.pos, k);
-        pk.node.pos.y += Math.sin(Math.PI * u) * 0.5;
+        // straight along the line, so the packet always sits on its thread
+        pk.node.pos.copy(pk.from.node.pos).lerp(center, u * u * (3 - 2 * u));
         if (u < 1) continue;
         if (pk.to.busy) {
-          pk.waiting = 0;
-          continue;
+          pk.state = 'wait';
+          pk.waited = 0;
+        } else {
+          pk.state = 'done';
         }
       }
-      // delivered: the receiver flares, and often answers
-      pk.node.target = 0;
-      pk.to.node.alpha = 1.6;
-      packets.splice(i, 1);
-      if (!pk.reply && Math.random() < 0.55) send(pk.to, pk.from, true);
+      if (pk.state === 'wait') {
+        // parked beside a busy seat; it circles until the seat's turn ends
+        pk.waited += dt;
+        const ang = pk.waited * 2.2;
+        const r = 0.45 * Math.min(1, pk.waited * 4); // eases out from the centre into its orbit
+        pk.node.pos.set(center.x + Math.cos(ang) * r, center.y + 0.1 * Math.min(1, pk.waited * 4), center.z + Math.sin(ang) * r);
+        if (pk.to.busy) continue;
+        pk.state = 'land';
+        pk.t = 0;
+        pk.landFrom.copy(pk.node.pos).sub(center); // offset from the centre, so landing tracks a floating orb
+      }
+      if (pk.state === 'land') {
+        // the seat is free: the message flies into its centre
+        pk.t += dt / 0.4;
+        const u = Math.min(1, pk.t);
+        const k = u * u * (3 - 2 * u);
+        pk.node.pos.copy(center).addScaledVector(pk.landFrom, 1 - k);
+        if (u < 1) continue;
+        pk.state = 'done';
+      }
+      if (pk.state === 'done') {
+        if (pk.node.target !== 0) {
+          // delivered: the receiver flares, and often answers
+          pk.node.target = 0;
+          pk.to.node.alpha = 1.6;
+          if (!pk.reply && Math.random() < 0.55) send(pk.to, pk.from, true);
+        }
+        // fade out inside the receiver, following it as it floats. Let go above the pool's 0.02
+        // reclaim threshold, so this packet never holds a node the pool has handed to a new one.
+        pk.node.pos.copy(center);
+        if (pk.node.alpha < 0.05) packets.splice(i, 1);
+      }
     }
 
     // memory: work, restart (light out, facts stay), then the next generation recalls every fact
@@ -631,8 +669,8 @@ export function mount(canvas: HTMLCanvasElement) {
     }
     for (const th of threads) {
       const u = th.life / th.max;
-      const grow = Math.min(1, u * 3);
-      const end = th.a.clone().lerp(th.b, grow);
+      // full length from the first frame: both ends sit on the two orbs' live centres
+      const end = th.b;
       const near = smooth(15, 9, camera.position.distanceTo(end));
       const a = Math.sin(Math.PI * u) * (th.message ? 0.6 : 0.8) * near;
       tpos.set([th.a.x, th.a.y, th.a.z, end.x, end.y, end.z], t * 6);
