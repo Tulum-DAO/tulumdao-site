@@ -13,19 +13,20 @@
   src: url('/fonts/plex-mono.woff2') format('woff2');
 }
 
-/* The page is a cenote: limestone at the surface, Maya blue in the light, then down into the
+/* Palette from the Tulum DAO brand kit (orchestraos docs/design/brand/BRAND.md).
+   The page is a cenote: limestone at the surface, Maya blue in the light, then down into the
    deep water. Ochre is kept for the things a human does (copy, approve). */
 :root {
-  --limestone: #e3e6dc;
-  --limestone-2: #d3d9cd;
-  --maya: #6fb7c6;
-  --cenote: #0e5a67;
-  --deep: #06262e;
-  --abyss: #031a20;
-  --ochre: #c99a3b;
-  --ochre-hi: #e0b555;
-  --ink: #0c2328;
-  --ink-2: #33494d;
+  --limestone: #e9e3d3;
+  --limestone-2: #dcd5c2;
+  --maya: #5fb8b3;
+  --cenote: #0b4f52;
+  --deep: #0a2a2b;
+  --abyss: #12201f;
+  --ochre: #b9771f;
+  --ochre-hi: #e2a94f;
+  --ink: #12201f;
+  --ink-2: #3a4a47;
   --foam: #eef3ef;
   --foam-2: #b9d0d0;
 
@@ -39,9 +40,9 @@
   --doc-bg: var(--limestone);
   --doc-ink: var(--ink);
   --doc-ink-2: var(--ink-2);
-  --doc-rule: #b9c3b6;
-  --doc-code-bg: #f3f5ef;
-  --doc-link: #0b5563;
+  --doc-rule: #cfc6af;
+  --doc-code-bg: #f3efe4;
+  --doc-link: #0b4f52;
   color-scheme: light;
 }
 

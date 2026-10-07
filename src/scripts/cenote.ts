@@ -39,7 +39,7 @@ const CAM_TOP = 3;
 const CAM_BOTTOM = -45;
 
 const LIGHT = new Color('#f4fbf6');
-const MAYA = new Color('#9fe0ea');
+const MAYA = new Color('#a6e3dc');
 
 type Node = {
   pos: Vector3;
@@ -56,22 +56,24 @@ export function mount(canvas: HTMLCanvasElement) {
   const mobile = Math.min(innerWidth, innerHeight) < 700;
   let renderer: WebGLRenderer;
   try {
-    renderer = new WebGLRenderer({ canvas, alpha: true, antialias: !mobile, powerPreference: 'low-power' });
+    // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
+    // into a dark ring (the glow writes alpha with dim colour). We clear to the water colour instead.
+    renderer = new WebGLRenderer({ canvas, alpha: false, antialias: !mobile, powerPreference: 'low-power' });
   } catch {
     return; // no WebGL: the page is already complete without us
   }
   renderer.setPixelRatio(Math.min(devicePixelRatio, mobile ? 1.25 : 1.75));
-  renderer.setClearColor(0x000000, 0);
+  renderer.setClearColor(0xe9e3d3, 1);
 
   const scene = new Scene();
-  const fog = new Fog(0xe3e6dc, 2, 26);
+  const fog = new Fog(0xe9e3d3, 2, 26);
   scene.fog = fog;
 
   const camera = new PerspectiveCamera(55, 1, 0.1, 140);
   camera.position.set(0, CAM_TOP, 2.2);
   camera.rotation.x = -Math.PI / 2 + 0.32;
 
-  scene.add(new HemisphereLight(0xffffff, 0x0e5a67, 1.15));
+  scene.add(new HemisphereLight(0xffffff, 0x0b4f52, 1.15));
   const sun = new DirectionalLight(0xfff6e0, 1.5);
   sun.position.set(2, 10, 3);
   scene.add(sun);
@@ -81,9 +83,9 @@ export function mount(canvas: HTMLCanvasElement) {
   shaft.translate(0, -38, 0);
   const sp = shaft.attributes.position as BufferAttribute;
   const shaftColors = new Float32Array(sp.count * 3);
-  const top = new Color('#e9ebe2');
-  const mid = new Color('#5ea7b3');
-  const low = new Color('#0b4954');
+  const top = new Color('#efe9da');
+  const mid = new Color('#5fb8b3');
+  const low = new Color('#0b4f52');
   const c = new Color();
   for (let i = 0; i < sp.count; i++) {
     const x = sp.getX(i);
@@ -132,7 +134,7 @@ export function mount(canvas: HTMLCanvasElement) {
       uniform float scale; varying vec3 vColor; varying float vAlpha;
       void main() {
         vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        gl_PointSize = size * scale / -mv.z;
+        gl_PointSize = min(size * scale / -mv.z, 56.0); // a light that drifts close stays a light, not a sun
         vColor = color; vAlpha = alpha * clamp(1.0 - (-mv.z - 4.0) / 30.0, 0.0, 1.0);
         gl_Position = projectionMatrix * mv;
       }`,
@@ -326,6 +328,7 @@ export function mount(canvas: HTMLCanvasElement) {
     camera.position.x += (px * 1.4 - camera.position.x) * dt * 2;
     camera.position.z += (2.2 + py * 1.2 - camera.position.z) * dt * 2;
     fog.color.copy(water);
+    renderer.setClearColor(water, 1);
     fog.far = lerp(26, 17, depth);
     if (backdrop) backdrop.style.backgroundColor = `#${water.getHexString()}`;
 
@@ -451,16 +454,16 @@ function cardFace() {
     g.roundRect(x, y, w, h, r);
     g.fill();
   };
-  g.fillStyle = '#e0b555';
+  g.fillStyle = '#d0902f';
   round(0, 0, 480, 300, 34);
-  g.fillStyle = 'rgba(12,35,40,.85)';
+  g.fillStyle = 'rgba(18,32,31,.85)';
   round(36, 40, 300, 22, 11);
-  g.fillStyle = 'rgba(12,35,40,.45)';
+  g.fillStyle = 'rgba(18,32,31,.45)';
   round(36, 82, 380, 16, 8);
   round(36, 110, 330, 16, 8);
-  g.fillStyle = '#0c2328';
+  g.fillStyle = '#12201f';
   round(36, 196, 190, 64, 32);
-  g.strokeStyle = '#0c2328';
+  g.strokeStyle = '#12201f';
   g.lineWidth = 5;
   g.beginPath();
   g.roundRect(250, 198, 190, 60, 30);
