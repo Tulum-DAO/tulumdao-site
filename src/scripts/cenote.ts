@@ -92,6 +92,8 @@ export function mount(canvas: HTMLCanvasElement) {
   // on wide screens each layer sits a little away from its text panel (seats and memory panels are
   // on the left, messaging's on the right); on phones the panels span the width, so no shift
   const shift = innerWidth > 900 ? 1 : 0;
+  // narrow screens: clusters a little smaller so a layer fits the width of a portrait screen
+  const K = innerWidth > 900 ? 1 : 0.72;
   const LX = { seats: 1.5 * shift, messages: -1.1 * shift, memory: 0.9 * shift };
   let renderer: WebGLRenderer;
   try {
@@ -316,7 +318,7 @@ export function mount(canvas: HTMLCanvasElement) {
     // seat 0 is the general manager, at the centre; the others sit in two close rows around it
     const k = i - 1;
     const a = (k / (SEATS - 1)) * Math.PI * 2;
-    const r = i === 0 ? 0 : 1.6 + (k % 2) * 1.05;
+    const r = i === 0 ? 0 : (1.6 + (k % 2) * 1.05) * K;
     const y = i === 0 ? Y.seats : Y.seats + Math.sin(i * 2.1) * 0.8;
     const n = spawn(new Vector3(LX.seats + Math.cos(a) * r, y, Math.sin(a) * r), LIGHT, i === 0 ? 30 : 24);
     if (!n) continue;
@@ -338,7 +340,7 @@ export function mount(canvas: HTMLCanvasElement) {
   const TALK = mobile ? 12 : 22;
   for (let i = 0; i < TALK; i++) {
     const a = (i / TALK) * Math.PI * 2 + Math.random() * 0.4;
-    const r = 0.6 + Math.sqrt(Math.random()) * 2.7;
+    const r = (0.6 + Math.sqrt(Math.random()) * 2.7) * K;
     const n = spawn(new Vector3(LX.messages + Math.cos(a) * r, Y.messages + (Math.random() - 0.5) * 2.2, Math.sin(a) * r), MAYA, 20);
     if (!n) continue;
     const ring = new Line(circle, new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false }));
@@ -402,7 +404,7 @@ export function mount(canvas: HTMLCanvasElement) {
   const facts: Node[] = [];
   for (let i = 0; i < FACTS; i++) {
     const a = (i / FACTS) * Math.PI * 2 + (i % 2) * 0.2;
-    const r = i % 2 ? 2.0 + Math.random() * 0.35 : 1.1 + Math.random() * 0.3;
+    const r = (i % 2 ? 2.0 + Math.random() * 0.35 : 1.1 + Math.random() * 0.3) * K;
     const f = spawn(new Vector3(LX.memory + Math.cos(a) * r, Y.memory + (Math.random() - 0.5) * 0.6, Math.sin(a) * r - 0.4), SAND, 15);
     if (f) {
       f.drift = 0; // facts hold still: they are the part that persists
@@ -465,7 +467,9 @@ export function mount(canvas: HTMLCanvasElement) {
   let floorT = 0; // 0 until "Two ways to run it" comes up, 1 once it reaches mid-screen
   let apPanelTop = Infinity; // the approvals panel's top edge on screen, in px (narrow layout)
   const apPanel = document.querySelector<HTMLElement>('[data-layer="approvals"] .panel');
+  let lastScrollAt = 0;
   const readScroll = () => {
+    lastScrollAt = performance.now();
     const mid = innerHeight / 2;
     let i = 0;
     let f = 0;
@@ -513,6 +517,12 @@ export function mount(canvas: HTMLCanvasElement) {
     camera.aspect = w / h;
     camera.fov = w < h ? 70 : 55;
     camera.updateProjectionMatrix();
+    if (w <= 900) {
+      // lens shift: on narrow screens each layer's card sits low, so draw the scene's centre at
+      // about 30% from the top, above the card, without tilting the camera
+      camera.projectionMatrix.elements[9] = -0.42;
+      camera.projectionMatrixInverse.copy(camera.projectionMatrix).invert();
+    }
     nmat.uniforms.scale.value = h * renderer.getPixelRatio() * 0.024;
     readScroll();
   };
@@ -536,7 +546,9 @@ export function mount(canvas: HTMLCanvasElement) {
   const tick = (now: number) => {
     raf = requestAnimationFrame(tick);
     const dtRaw = now - last;
-    if (dtRaw < minFrame) return;
+    // phones run at ~30fps to save battery, but never while the page is scrolling: a skipped frame
+    // there leaves the scene (and the approval card) a frame behind the page, which judders
+    if (dtRaw < minFrame && now - lastScrollAt > 250) return;
     last = now;
     frames++;
     if (frames > 10 && frames <= 70) slowSum += dtRaw;
@@ -764,12 +776,19 @@ export function mount(canvas: HTMLCanvasElement) {
       // phones: centred just ABOVE the approvals panel, following it up the screen. It rises in as
       // the panel arrives and fades before it would leave the top of the screen.
       const vh = innerHeight;
+      if (apPanel) apPanelTop = apPanel.getBoundingClientRect().top; // every frame, so it never lags the scroll
       const cardPx = vh * 0.2; // the card is about a fifth of the screen tall at this distance
       const yPx = apPanelTop - cardPx / 2 - 18;
       e = smooth(vh * 1.05, vh * 0.6, apPanelTop);
       rise.set(0, 1 - (2 * yPx) / vh, 0.5);
       cardAlpha = 0.95 * e * smooth(cardPx * 0.4, cardPx * 0.9, yPx);
     }
+    // Aim along the ray through that screen point. Two things matter here: the camera has moved
+    // this frame (scroll inertia, pointer lean) and its matrix is only refreshed at render, so update
+    // it first; and unproject a FAR point (ndc z 0.99), because ndc z 0.5 lands ~0.2 units in front
+    // of the lens, where the camera's own movement swamps the direction. Both made the card jitter.
+    rise.z = 0.99;
+    camera.updateMatrixWorld();
     rise.unproject(camera).sub(camera.position).normalize().multiplyScalar(wide ? 5.2 : 5.6).add(camera.position);
     cardFrom.set(Math.sin(clock * 0.6) * 0.15, Y.approvals - 2, 0);
     card.position.copy(cardFrom).lerp(rise, easeOut(e));
@@ -807,7 +826,8 @@ export function mount(canvas: HTMLCanvasElement) {
       }
       shown.push(l);
     }
-    shown.sort((p, q) => p.d - q.d);
+    // the general manager's name always wins; the rest are placed nearest-first
+    shown.sort((p, q) => Number(q.el.classList.contains('gm')) - Number(p.el.classList.contains('gm')) || p.d - q.d);
     const placed: Label[] = [];
     for (const l of shown) {
       const hit = placed.some((o) => l.x < o.x + o.w && o.x < l.x + l.w && l.y < o.y + o.h && o.y < l.y + l.h);
