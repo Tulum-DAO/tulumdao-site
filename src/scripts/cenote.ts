@@ -2,10 +2,11 @@
 //
 // Looking down a limestone shaft. Each depth is one layer of the harness, and the page's scroll
 // position is the camera's depth:
-//   -10  seats and generations: a light dims and its successor lights up beside it after a handoff
-//   -24  messages: pulses travel between seats along threads
+//   -18  seats and generations: each seat is a light with tree rings, one ring per past generation;
+//        a handoff grows a new ring that flashes ochre (the readback) and then settles
+//   -28  messages: pulses travel between seats along threads
 //   -38  memory: sediment that falls and stays
-//   -52  approvals: one ochre card rises toward the surface, toward you
+//   -49  approvals: one ochre card rises toward the surface, toward you
 import {
   AdditiveBlending,
   BackSide,
@@ -17,6 +18,7 @@ import {
   DirectionalLight,
   Fog,
   HemisphereLight,
+  Line,
   LineBasicMaterial,
   LineSegments,
   Mesh,
@@ -34,12 +36,15 @@ import {
   DoubleSide,
 } from 'three';
 
-const Y = { seats: -10, messages: -24, memory: -38, approvals: -52 };
+// Each layer sits ~7 units below where the camera is when that layer's panel is mid-screen
+// (camera y = CAM_TOP + (CAM_BOTTOM - CAM_TOP) * depth; panels at depth .3 / .5 / .7 / .88).
+const Y = { seats: -18.5, messages: -28.5, memory: -38, approvals: -49 };
 const CAM_TOP = 3;
 const CAM_BOTTOM = -45;
 
 const LIGHT = new Color('#f4fbf6');
 const MAYA = new Color('#a6e3dc');
+const OCHRE = new Color('#e2a94f');
 
 type Node = {
   pos: Vector3;
@@ -177,14 +182,47 @@ export function mount(canvas: HTMLCanvasElement) {
     threads.push({ a: a.clone(), b: b.clone(), color, life: 0, max, message });
   };
 
-  // seats and generations: a ring of seats, one generation each
+  // seats and generations. A seat is a light; every generation it has been through is a ring around
+  // it, newest innermost, fading as it ages outward, like the rings of a tree.
   const SEATS = mobile ? 8 : 11;
-  const seats: Node[] = [];
+  const MAX_RINGS = 6;
+  const circle = new BufferGeometry();
+  {
+    const SEG = 64;
+    const pts = new Float32Array((SEG + 1) * 3);
+    for (let i = 0; i <= SEG; i++) {
+      const t = (i / SEG) * Math.PI * 2;
+      pts.set([Math.cos(t), 0, Math.sin(t)], i * 3);
+    }
+    circle.setAttribute('position', new BufferAttribute(pts, 3));
+  }
+  type Ring = { line: Line; mat: LineBasicMaterial; born: number; r: number };
+  type Lineage = { node: Node; rings: Ring[]; handoffAt: number };
+  const ringRadius = (i: number) => 0.42 + i * 0.17;
+  const addRing = (l: Lineage, born: number, r: number) => {
+    // normal blending: additive would turn the ochre readback flash pale against the teal water
+    const mat = new LineBasicMaterial({ color: MAYA.clone(), transparent: true, opacity: 0, depthWrite: false });
+    const line = new Line(circle, mat);
+    line.scale.setScalar(r);
+    scene.add(line);
+    l.rings.unshift({ line, mat, born, r });
+    if (l.rings.length > MAX_RINGS) {
+      const gone = l.rings.pop()!;
+      scene.remove(gone.line);
+      gone.mat.dispose();
+    }
+  };
+  const seats: Lineage[] = [];
   for (let i = 0; i < SEATS; i++) {
     const a = (i / SEATS) * Math.PI * 2;
-    const r = 3.2 + (i % 3) * 0.6;
-    const n = spawn(new Vector3(Math.cos(a) * r, Y.seats + Math.sin(i * 2.1) * 0.8, Math.sin(a) * r), LIGHT, 26);
-    if (n) seats.push(n);
+    const r = 3.2 + (i % 3) * 0.7;
+    const n = spawn(new Vector3(Math.cos(a) * r, Y.seats + Math.sin(i * 2.1) * 0.8, Math.sin(a) * r), LIGHT, 24);
+    if (!n) continue;
+    const l: Lineage = { node: n, rings: [], handoffAt: -100 };
+    // a history: every seat has already been through a few generations
+    const past = 1 + Math.floor(Math.random() * 4);
+    for (let g = past - 1; g >= 0; g--) addRing(l, -100, ringRadius(g));
+    seats.push(l);
   }
   // messages: a looser field of seats talking
   const talkers: Node[] = [];
@@ -332,20 +370,30 @@ export function mount(canvas: HTMLCanvasElement) {
     fog.far = lerp(26, 17, depth);
     if (backdrop) backdrop.style.backgroundColor = `#${water.getHexString()}`;
 
-    // a handoff: a seat's light dims and its successor lights up beside it
-    if (clock > nextHandoff) {
-      nextHandoff = clock + 1.6 + Math.random() * 1.6;
-      const k = Math.floor(Math.random() * seats.length);
-      const old = seats[k];
-      const off = new Vector3((Math.random() - 0.5) * 1.4, (Math.random() - 0.5) * 0.6, (Math.random() - 0.5) * 1.4);
-      const p = old.pos.clone().add(off);
-      p.setLength(clamp(p.length(), 2.4, 5.2)).setY(Y.seats + (Math.random() - 0.5) * 1.6);
-      const succ = spawn(p, LIGHT, 26);
-      if (succ) {
-        thread(old.pos, succ.pos, MAYA, 2.2);
-        old.target = 0;
-        seats[k] = succ;
-      }
+    // a handoff: the seat's light dips as the generation retires, a new ring grows out of the core
+    // and flashes ochre while the successor proves it read the handoff, then settles into the rings
+    if (clock > nextHandoff && seats.length) {
+      nextHandoff = clock + 1.8 + Math.random() * 1.8;
+      const l = seats[Math.floor(Math.random() * seats.length)];
+      l.node.alpha = 0.15;
+      l.handoffAt = clock;
+      addRing(l, clock, 0.05);
+    }
+    for (const l of seats) {
+      // the core glows ochre while the successor answers the readback, then turns back to light
+      const since = clock - l.handoffAt;
+      l.node.color.copy(LIGHT).lerp(OCHRE, since < 2 ? smooth(0, 0.3, since) * (1 - smooth(1.2, 2, since)) : 0);
+      l.rings.forEach((ring, i) => {
+        const age = clock - ring.born;
+        ring.r += (ringRadius(i) - ring.r) * Math.min(1, dt * 3);
+        ring.line.scale.setScalar(ring.r);
+        ring.line.position.copy(l.node.pos);
+        const fresh = age < 2.4;
+        // ochre while the readback is checked (first ~1.2s), then the ring cools to water-blue
+        ring.mat.color.copy(MAYA).lerp(OCHRE, fresh ? 1 - smooth(1.0, 1.8, age) : 0);
+        const settled = 0.75 * Math.pow(0.62, i);
+        ring.mat.opacity = fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled;
+      });
     }
     // messages hop between seats
     if (clock > nextMessage) {

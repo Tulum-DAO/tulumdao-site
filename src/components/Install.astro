@@ -19,7 +19,7 @@ const text = lines.join('\n');
     <div class="cmd">
       <pre aria-label="Install command"><code>{lines.map((l) => <span class="line">{l}</span>)}</code></pre>
       <div class="cmd-bar">
-        <button class="copy" type="button" data-copy={text} hidden>
+        <button class="copy" type="button" data-copy={text} tabindex="-1" aria-hidden="true">
           <span class="copy-label">Copy</span>
         </button>
       </div>
@@ -32,7 +32,9 @@ const text = lines.join('\n');
 
 <script>
   for (const btn of document.querySelectorAll<HTMLButtonElement>('button.copy')) {
-    btn.hidden = false;
+    btn.classList.add('ready');
+    btn.removeAttribute('tabindex');
+    btn.removeAttribute('aria-hidden');
     const label = btn.querySelector('.copy-label')!;
     btn.addEventListener('click', async () => {
       try {
@@ -127,7 +129,9 @@ const text = lines.join('\n');
     padding: 0 12px 12px;
     min-height: 12px;
   }
+  /* space is reserved before JS (no layout shift); it only becomes visible once it works */
   .copy {
+    visibility: hidden;
     min-height: 44px;
     padding: 0 18px;
     border: 0;
@@ -136,6 +140,9 @@ const text = lines.join('\n');
     color: var(--ink);
     font: 700 0.95rem var(--font);
     cursor: pointer;
+  }
+  .copy.ready {
+    visibility: visible;
   }
   .copy:hover {
     background: #eebd6c;
