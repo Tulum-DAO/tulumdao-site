@@ -144,8 +144,24 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   // paint, only when the browser is idle, and never when the visitor asked for reduced motion.
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const canvas = document.getElementById('cenote') as HTMLCanvasElement;
+  // A software rasteriser (no GPU: SwiftShader, llvmpipe) would draw every frame on the main
+  // thread and make the page janky, so it gets the static page and never downloads Three.js.
+  const hardwareGL = () => {
+    try {
+      const gl = document.createElement('canvas').getContext('webgl2') ?? document.createElement('canvas').getContext('webgl');
+      if (!gl) return false;
+      const info = gl.getExtension('WEBGL_debug_renderer_info');
+      const name = String(gl.getParameter(info ? info.UNMASKED_RENDERER_WEBGL : gl.RENDERER));
+      gl.getExtension('WEBGL_lose_context')?.loseContext();
+      return !/swiftshader|llvmpipe|softpipe|software|basic render/i.test(name);
+    } catch {
+      return false;
+    }
+  };
   const start = () => {
-    if (reduce.matches) return;
+    // ?cenote forces the scene on a software renderer (for screenshots); reduced motion still wins
+    const force = new URLSearchParams(location.search).has('cenote');
+    if (reduce.matches || !(force || hardwareGL())) return;
     import('../scripts/cenote').then((m) => m.mount(canvas)).catch(() => {});
   };
   const idle = (fn: () => void) =>
@@ -161,6 +177,10 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     inset: 0;
     width: 100%;
     height: 100%;
+  }
+  /* The backdrop keeps pointer events (it is under everything anyway) so contrast checkers,
+     which find backgrounds with elementsFromPoint, see the water colour behind the text. */
+  #cenote {
     pointer-events: none;
   }
   #backdrop {

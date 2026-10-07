@@ -298,12 +298,22 @@ export function mount(canvas: HTMLCanvasElement) {
   let raf = 0;
   const minFrame = mobile ? 1000 / 31 : 0;
   let painted = false;
+  let stopped = false;
+  // frame-rate guard: if a weak GPU can't hold ~20fps, give the visitor the static page back
+  let frames = 0;
+  let slowSum = 0;
 
   const tick = (now: number) => {
     raf = requestAnimationFrame(tick);
     const dtRaw = now - last;
     if (dtRaw < minFrame) return;
     last = now;
+    frames++;
+    if (frames > 10 && frames <= 70) slowSum += dtRaw;
+    if (frames === 70 && slowSum / 60 > 50 && !location.search.includes('cenote')) {
+      stop();
+      return;
+    }
     const dt = Math.min(dtRaw / 1000, 0.05);
     clock += dt;
 
@@ -411,12 +421,13 @@ export function mount(canvas: HTMLCanvasElement) {
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const stop = () => {
+    stopped = true;
     cancelAnimationFrame(raf);
     document.documentElement.classList.remove('cenote-live');
   };
   document.addEventListener('visibilitychange', () => {
     cancelAnimationFrame(raf);
-    if (!document.hidden && !reduce.matches) {
+    if (!document.hidden && !stopped) {
       last = performance.now();
       raf = requestAnimationFrame(tick);
     }
