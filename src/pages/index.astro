@@ -126,6 +126,17 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     </ul>
   </section>
 
+  <section class="about" data-bg="#12201f" data-depth="1">
+    <h2>Tulum DAO</h2>
+    <p>
+      Tulum DAO is a community of people who each run their own fleet of AI agents. Nobody's fleet belongs
+      to the community; what we share is what we learn running them: how to hand work between agents
+      without losing the thread, how to check that 'done' is really done, and how to keep the human
+      decisions in human hands. We publish OrchestraOS, an open-source harness for running a fleet of
+      coding agents as a team, and The Self-Tended Fleet, an open maturity model for operators.
+    </p>
+  </section>
+
   <section class="build" data-bg="#12201f" data-depth="1">
     <h2>How to contribute</h2>
     <p>
@@ -214,7 +225,7 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   }
   /* With the scene, the water shows through; the floor sections stay solid (light text needs a
      known background, and the scene is near-black down there anyway). */
-  :global(.cenote-live) section:not(.paths, .build) {
+  :global(.cenote-live) section:not(.paths, .build, .about) {
     background: transparent;
   }
 
@@ -350,7 +361,8 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   }
 
   .paths,
-  .build {
+  .build,
+  .about {
     --bg: var(--abyss);
     color: var(--foam);
   }
@@ -410,6 +422,23 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   .more a {
     color: var(--foam);
     text-underline-offset: 4px;
+  }
+  .about {
+    padding-top: 64px;
+  }
+  .about h2 {
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-weight: 740;
+    margin: 0 0 20px;
+  }
+  .about p {
+    max-width: 62ch;
+    margin: 0;
+    font-size: clamp(1.08rem, 1.5vw, 1.25rem);
+    line-height: 1.55;
+    color: var(--foam);
   }
   .build {
     padding-top: 64px;
