@@ -125,7 +125,7 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 <p>How to organise and manage your own fleet of AI agents. An <b>autonomy maturity model</b> for operators: five phases, six habits, seven footings and ten practices for building a fleet that runs without you watching.</p>
 <a class="btn primary" href="#s1">Start reading</a>
 <a class="btn ghost" href="Tulum-DAO-The-Self-Tended-Fleet-DRAFT.pdf" download>Download PDF</a>
-<div class="meta" style="margin-top:28px">DRAFT 0.6 · OCTOBER 2026 · CC BY 4.0</div>
+<div class="meta" style="margin-top:28px">DRAFT 0.7 · OCTOBER 2026 · CC BY 4.0</div>
 </div></header>
 <nav class="toc"><details><summary>Contents</summary><ol><li><a href="#s1">Summary</a></li><li><a href="#s2">Ten-minute self-check</a></li><li><a href="#s3">Why speed is not the bottleneck</a></li><li><a href="#s4">The Self-Tended Fleet</a></li><li><a href="#s5">How the model is built</a></li><li><a href="#s6">Strand one: the seven Footings</a></li><li><a href="#s7">Strand two: the ten Practices</a></li><li><a href="#s8">Strand three: Stewardship</a></li><li><a href="#s9">The five Phases</a></li><li><a href="#s10">Scoring: three rules instead of points</a></li><li><a href="#s11">The Tend cycle</a></li><li><a href="#s12">Rolling it out: Seed, Grove, Commons</a></li><li><a href="#s13">A working reference: OrchestraOS</a></li><li><a href="#s14">What this model cannot do</a></li><li><a href="#s15">Start this week</a></li><li><a href="#s16">Run your fleet with other operators</a></li><li><a href="#s17">Appendix: the full checklist</a></li><li><a href="#s18">Appendix: the Fleet audit prompt</a></li><li><a href="#s19">Evidence Ledger</a></li><li><a href="#s20">Inspired by, and further reading</a></li><li><a href="#s21">License</a></li></ol></details></nav>
 <main><section id="s1" class="sec "><div class="kicker"><span class="num">01</span><span class="bar"></span></div><h1>Summary</h1><p>Most people who start running AI coding agents get a faster typist. Few get a team that keeps working while they sleep, hands work cleanly from one agent to the next, proves what it did, and asks a human only the questions a human should answer. The difference is not the model. It is everything around the model.</p>
@@ -145,7 +145,7 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 </ol>
 <p>The headline number for any operator is the <strong>floor share</strong>: of the projects your fleet is actively working on, what fraction are in Phase 3 or higher?</p>
 <p>If you only have ten minutes, start with the self-check on the next page.</p></section>
-<section id="s2" class="sec "><div class="kicker"><span class="num">02</span><span class="bar"></span></div><h1>Ten-minute self-check</h1><p>Answer each question yes or no, about the fleet you run today. Be strict: "sort of" is no.</p>
+<section id="s2" class="sec "><div class="kicker"><span class="num">02</span><span class="bar"></span></div><h1>Ten-minute self-check</h1><p>Most people start here: they get real work done in ChatGPT, Claude or Google Antigravity, but only while they sit at the computer. Close the laptop and the work stops. Vendor remote controls, such as Claude Code's and Codex's, help, but in our experience they often break, and they keep you inside one provider. These questions ask how far you are from a system you own that keeps working while you are away. Answer yes or no about the system you work with today, whatever it is. Be strict: "sort of" is no.</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -157,58 +157,58 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 <tbody>
 <tr>
 <td>1</td>
-<td>Does one command check format, lint and types, and do your agents run it?</td>
+<td>Does one command check the AI's work (format, lint, types), and does the AI run it before saying "done"?</td>
 <td>1</td>
 </tr>
 <tr>
 <td>2</td>
-<td>Is there a written instruction file your agents read at the start of every session, and is it current?</td>
+<td>Does every session start from written instructions you keep current, instead of you explaining the work again?</td>
 <td>2</td>
 </tr>
 <tr>
 <td>3</td>
-<td>Does each long-lived agent have a name, a written role and a memory of its own outside the chat window?</td>
+<td>Does each assistant you rely on have a written job and its own memory, in files you can read, outside the chat?</td>
 <td>2</td>
 </tr>
 <tr>
 <td>4</td>
-<td>Is there a written list of actions your agents may not take without asking you (publish, send, spend, delete)?</td>
+<td>Is there a written list of what your AI may not do without asking (publish, send, spend, delete)?</td>
 <td>2</td>
 </tr>
 <tr>
 <td>5</td>
-<td>Can you tell, for any change, which agent made it and when?</td>
+<td>For any change to your work, can you tell which AI session made it, and when?</td>
 <td>3</td>
 </tr>
 <tr>
 <td>6</td>
-<td>When an agent says "done", is that checked against the real, running thing and not just the code?</td>
+<td>When your AI says "done", is that checked on the real, running thing (the live page, the app), not its word?</td>
 <td>3</td>
 </tr>
 <tr>
 <td>7</td>
-<td>Do your agents' questions reach you as a clear choice, with context, somewhere you will actually see them, and does your answer restart the work?</td>
+<td>When your AI needs a decision, does the question reach you as a clear choice wherever you are, not only in the open tab, and does your answer restart the work?</td>
 <td>3</td>
 </tr>
 <tr>
 <td>8</td>
-<td>If an agent's session ended right now, would a fresh one pick up the work without you re-explaining it?</td>
+<td>If the chat or session ended right now, would a fresh one pick up the work without you explaining it again?</td>
 <td>4</td>
 </tr>
 <tr>
 <td>9</td>
-<td>If your main model provider went down for a day, would your fleet keep working?</td>
+<td>If your main AI provider went down for a day, would the work carry on with another, using instructions and memory you own, not ones kept inside one vendor's app?</td>
 <td>4</td>
 </tr>
 <tr>
 <td>10</td>
-<td>Do some agents hold standing goals (keep this healthy, keep this current) and run them for days without you?</td>
+<td>Does anything work toward a goal for days while you are away, without you starting it each time?</td>
 <td>5</td>
 </tr>
 </tbody>
 </table></div>
-<p><strong>Reading your answers.</strong> Your Phase is the highest Phase for which you answered yes to <em>every</em> question at that Phase and below. A single no in Phase 2 keeps you in Phase 1, however many later questions you answered yes. That is the weakest-footing rule, and the rest of this paper explains why it is the right way to score a fleet. Most operators who are honest land in Phase 1 or 2. The goal is Phase 3.</p>
-<p><strong>Rather have your agent do it?</strong> Copy the <em>Fleet audit prompt</em> (in the appendix, after the checklist) into whichever AI agent you use most. It interviews you and, if it can see your files, checks the answers for itself. It does not change anything. It ends with your Phase, your weakest footing and your three fastest fixes.</p></section>
+<p><strong>Reading your answers.</strong> Your Phase is the highest Phase for which you answered yes to <em>every</em> question at that Phase and below. A single no in Phase 2 keeps you in Phase 1, however many later questions you answered yes; a no to question 1 means not yet Phase 1. That is the weakest-footing rule, explained in the rest of this paper. Working in a chat window, expect mostly noes: that is the normal place to start, not a failing grade. The goal is Phase 3, where work carries on safely without you watching.</p>
+<p><strong>Rather have your agent do it?</strong> Paste the <em>Fleet audit prompt</em> (in the appendix) into the AI you use most. It interviews you, changes nothing, and ends with your Phase, your weakest footing and your three fastest fixes.</p></section>
 <section id="s3" class="sec "><div class="kicker"><span class="num">03</span><span class="bar"></span></div><h1>Why speed is not the bottleneck</h1><p>When you add an AI agent, the first thing that changes is how fast code appears. It is tempting to measure that and stop. But code that appears faster still has to be understood, checked, approved, released and lived with. If a feature spends one afternoon being written and four days waiting for a decision, a review and a deploy window, then writing it ten times faster saves part of one afternoon. The elapsed time barely moves.</p>
 <p>For operators running several agents at once, our experience points to three places where time actually goes:</p>
 <ul>
@@ -549,7 +549,7 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 </tr>
 </tbody>
 </table></div></section>
-<section id="s18" class="sec "><div class="kicker"><span class="num">18</span><span class="bar"></span></div><h1>Appendix: the Fleet audit prompt</h1><p>Paste this into the AI agent you use most: Claude Code, Codex, Gemini, ChatGPT, Cursor or any other. It works two ways:</p>
+<section id="s18" class="sec "><div class="kicker"><span class="num">18</span><span class="bar"></span></div><h1>Appendix: the Fleet audit prompt</h1><p>Paste this into the AI agent you use most: Claude Code, Codex, Gemini, Google Antigravity, ChatGPT, Cursor or any other. It works two ways:</p>
 <ul>
 <li><strong>In a chat window</strong>, the agent interviews you.</li>
 <li><strong>In an agent that can see your files</strong>, it looks for evidence first (instruction files, hooks, configuration, git history) and only asks about what it cannot see. It asks before running even a read-only command, and it never builds, installs, changes or sends anything.</li>
