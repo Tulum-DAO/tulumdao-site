@@ -467,6 +467,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let floorT = 0; // 0 until "Two ways to run it" comes up, 1 once it reaches mid-screen
   let apPanelTop = Infinity; // the approvals panel's top edge on screen, in px (narrow layout)
   const apPanel = document.querySelector<HTMLElement>('[data-layer="approvals"] .panel');
+  const memPanel = document.querySelector<HTMLElement>('[data-layer="memory"] .panel');
   let lastScrollAt = 0;
   const readScroll = () => {
     lastScrollAt = performance.now();
@@ -778,10 +779,16 @@ export function mount(canvas: HTMLCanvasElement) {
       const vh = innerHeight;
       if (apPanel) apPanelTop = apPanel.getBoundingClientRect().top; // every frame, so it never lags the scroll
       const cardPx = vh * 0.2; // the card is about a fifth of the screen tall at this distance
-      const yPx = apPanelTop - cardPx / 2 - 18;
+      // It lives in the gap between the memory card above and its own panel below: it waits in the
+      // top middle of the screen, sits just under the memory card while that is still on screen,
+      // rides up with its panel once the panel meets it, and fades if the gap can't hold it.
+      const prevBottom = memPanel ? memPanel.getBoundingClientRect().bottom : -Infinity;
+      const lo = prevBottom + cardPx / 2 + 14;
+      const hi = apPanelTop - cardPx / 2 - 18;
+      const yPx = Math.max(Math.min(vh * 0.24, hi), lo);
       e = smooth(vh * 1.05, vh * 0.6, apPanelTop);
       rise.set(0, 1 - (2 * yPx) / vh, 0.5);
-      cardAlpha = 0.95 * e * smooth(cardPx * 0.4, cardPx * 0.9, yPx);
+      cardAlpha = 0.95 * e * smooth(cardPx * 0.4, cardPx * 0.9, yPx) * smooth(-6, 30, hi - lo);
     }
     // Aim along the ray through that screen point. Two things matter here: the camera has moved
     // this frame (scroll inertia, pointer lean) and its matrix is only refreshed at render, so update
