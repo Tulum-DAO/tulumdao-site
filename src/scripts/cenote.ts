@@ -51,6 +51,20 @@ const MAYA = new Color('#a6e3dc');
 const OCHRE = new Color('#e2a94f');
 const SAND = new Color('#f3e6c4');
 
+// mail types, named after OrchestraOS message types; each has its own colour, none of them the
+// agents' white or water-blue. The page's legend (src/pages/index.astro) uses the same colours.
+export const MAIL = {
+  task: new Color('#ff8a6b'),
+  reply: new Color('#a8e06a'),
+  task_complete: new Color('#b39dff'),
+  escalate: new Color('#ff5fa8'),
+} as const;
+type MailKind = keyof typeof MAIL;
+const pickKind = (): MailKind => {
+  const r = Math.random();
+  return r < 0.6 ? 'task' : r < 0.85 ? 'task_complete' : 'escalate';
+};
+
 // example names only; nothing here names a real seat
 const SEAT_NAMES = ['gm', 'pm-web', 'dev-api', 'dev-ui', 'reviewer', 'docs', 'qa', 'release', 'research', 'infra', 'design'];
 const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'pm-mobile', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics'];
@@ -165,7 +179,8 @@ export function mount(canvas: HTMLCanvasElement) {
         float d = length(gl_PointCoord - 0.5);
         float halo = smoothstep(0.5, 0.0, d);
         float core = smoothstep(0.14, 0.0, d);
-        gl_FragColor = vec4(vColor * halo * halo + core, (halo * 0.8 + core) * vAlpha);
+        // the core is tinted with the light's own colour, so mail keeps its colour at small sizes
+        gl_FragColor = vec4(vColor * halo * halo + mix(vec3(1.0), vColor, 0.55) * core, (halo * 0.8 + core) * vAlpha);
       }`,
   });
   // geometries rewritten every frame: their bounding spheres are computed once (from the first,
@@ -189,15 +204,19 @@ export function mount(canvas: HTMLCanvasElement) {
 
   // ---- threads: handoffs and messages
   const MAXT = 96;
+  const MAXP = 26; // packets in flight; each draws its own leading line
+  const SEGS = MAXT + MAXP;
   const threads: Thread[] = [];
-  const tpos = new Float32Array(MAXT * 6);
-  const tcol = new Float32Array(MAXT * 8);
+  const tpos = new Float32Array(SEGS * 6);
+  const tcol = new Float32Array(SEGS * 8);
   const tgeo = new BufferGeometry();
   tgeo.setAttribute('position', new BufferAttribute(tpos, 3));
   tgeo.setAttribute('color', new BufferAttribute(tcol, 4));
   // fog: false — fog on an additive line ADDS the fog colour, so distant threads turned white
   // over the hero. Each thread fades by its own distance from the camera instead.
-  const tmat = new LineBasicMaterial({ vertexColors: true, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false });
+  // normal blending: additive would shift each mail colour's hue against the teal water
+  // (violet + teal reads sky-blue), and the legend would no longer match
+  const tmat = new LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false });
   const threadLines = new LineSegments(tgeo, tmat);
   threadLines.frustumCulled = false;
   scene.add(threadLines);
@@ -328,20 +347,34 @@ export function mount(canvas: HTMLCanvasElement) {
     from: Talker;
     to: Talker;
     state: 'fly' | 'wait' | 'land' | 'done';
+    kind: MailKind;
     t: number;
     dur: number;
     waited: number;
     landFrom: Vector3;
+    ang: number; // where on the orbit it is circling
     reply: boolean;
+  };
+  const ORBIT = 0.45;
+  const dest = new Vector3();
+  // where a message should stop: the receiver's centre if it is free, otherwise the near edge of
+  // its orbit (on the side the message comes from), so it never enters a busy orb
+  const destFor = (pk: { from: Talker; to: Talker }, out: Vector3) => {
+    const c = pk.to.node.pos;
+    if (!pk.to.busy) return out.copy(c);
+    const dx = pk.from.node.pos.x - c.x;
+    const dz = pk.from.node.pos.z - c.z;
+    const len = Math.hypot(dx, dz) || 1;
+    return out.set(c.x + (dx / len) * ORBIT, c.y + 0.1, c.z + (dz / len) * ORBIT);
   };
   const packets: Packet[] = [];
   const send = (from: Talker, to: Talker, reply: boolean) => {
-    if (packets.length >= 26) return;
-    const n = spawn(from.node.pos, LIGHT, 18);
+    if (packets.length >= MAXP) return;
+    const kind: MailKind = reply ? 'reply' : pickKind();
+    const n = spawn(from.node.pos, MAIL[kind], 22);
     if (!n) return;
     const dur = 0.9 + from.node.pos.distanceTo(to.node.pos) * 0.12;
-    thread(from.node.pos, to.node.pos, MAYA, dur + 0.4, true);
-    packets.push({ node: n, from, to, state: 'fly', t: 0, dur, waited: 0, landFrom: new Vector3(), reply });
+    packets.push({ node: n, from, to, state: 'fly', kind, t: 0, dur, waited: 0, landFrom: new Vector3(), ang: 0, reply });
   };
   // approvals: dim seats around the card that rises
   const askers: Node[] = [];
@@ -562,22 +595,25 @@ export function mount(canvas: HTMLCanvasElement) {
       if (pk.state === 'fly') {
         pk.t += dt / pk.dur;
         const u = Math.min(1, pk.t);
-        // straight along the line, so the packet always sits on its thread
-        pk.node.pos.copy(pk.from.node.pos).lerp(center, u * u * (3 - 2 * u));
+        // straight along the line, so the packet always sits on its thread; toward the centre of a
+        // free receiver, or the outside edge of a busy one
+        pk.node.pos.copy(pk.from.node.pos).lerp(destFor(pk, dest), u * u * (3 - 2 * u));
         if (u < 1) continue;
+        // arrived: the line it drew stays a moment, then fades
+        thread(pk.from.node.pos, center, MAIL[pk.kind], 0.9, true);
         if (pk.to.busy) {
           pk.state = 'wait';
           pk.waited = 0;
+          pk.ang = Math.atan2(pk.node.pos.z - center.z, pk.node.pos.x - center.x); // circle on from where it stopped
         } else {
           pk.state = 'done';
         }
       }
       if (pk.state === 'wait') {
-        // parked beside a busy seat; it circles until the seat's turn ends
+        // parked OUTSIDE a busy seat; it circles there until the seat's turn ends
         pk.waited += dt;
-        const ang = pk.waited * 2.2;
-        const r = 0.45 * Math.min(1, pk.waited * 4); // eases out from the centre into its orbit
-        pk.node.pos.set(center.x + Math.cos(ang) * r, center.y + 0.1 * Math.min(1, pk.waited * 4), center.z + Math.sin(ang) * r);
+        pk.ang += dt * 2.2;
+        pk.node.pos.set(center.x + Math.cos(pk.ang) * ORBIT, center.y + 0.1, center.z + Math.sin(pk.ang) * ORBIT);
         if (pk.to.busy) continue;
         pk.state = 'land';
         pk.t = 0;
@@ -667,14 +703,25 @@ export function mount(canvas: HTMLCanvasElement) {
         continue;
       }
     }
+    // a delivered message's line: both ends on the two orbs' live centres, fading out
     for (const th of threads) {
       const u = th.life / th.max;
-      // full length from the first frame: both ends sit on the two orbs' live centres
-      const end = th.b;
-      const near = smooth(15, 9, camera.position.distanceTo(end));
-      const a = Math.sin(Math.PI * u) * (th.message ? 0.6 : 0.8) * near;
-      tpos.set([th.a.x, th.a.y, th.a.z, end.x, end.y, end.z], t * 6);
-      tcol.set([th.color.r, th.color.g, th.color.b, a * 0.4, th.color.r, th.color.g, th.color.b, a], t * 8);
+      const near = smooth(15, 9, camera.position.distanceTo(th.b));
+      const a = (1 - u) * 0.6 * near;
+      tpos.set([th.a.x, th.a.y, th.a.z, th.b.x, th.b.y, th.b.z], t * 6);
+      tcol.set([th.color.r, th.color.g, th.color.b, a * 0.2, th.color.r, th.color.g, th.color.b, a], t * 8);
+      t++;
+    }
+    // a message in flight leads its own line: brightest at the mail orb, fading back toward the
+    // sender (never fully, so the line still visibly starts at the sender's centre)
+    for (const pk of packets) {
+      if (pk.state !== 'fly' || t >= SEGS) continue;
+      const a0 = pk.from.node.pos;
+      const h = pk.node.pos;
+      const c = MAIL[pk.kind];
+      const near = smooth(15, 9, camera.position.distanceTo(h)) * Math.min(1, pk.node.alpha * 1.5);
+      tpos.set([a0.x, a0.y, a0.z, h.x, h.y, h.z], t * 6);
+      tcol.set([c.r, c.g, c.b, 0.1 * near, c.r, c.g, c.b, 0.95 * near], t * 8);
       t++;
     }
     tgeo.setDrawRange(0, t * 2);
