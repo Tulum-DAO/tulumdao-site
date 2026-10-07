@@ -13,7 +13,6 @@ export interface Signup {
   unsubscribed_at?: string;
   confirm_sent_at?: string;
   confirm_sends?: number;
-  ip_hash?: string;
 }
 
 export const SITE = process.env.WAITLIST_SITE_URL || "https://tulumdao.com";
@@ -48,6 +47,10 @@ export function safeEqual(a: string, b: string): boolean {
   return d === 0;
 }
 
+// Keyed (HMAC) hash for IPs: without WAITLIST_HMAC_SECRET it cannot be brute-forced back to
+// an address, which a plain sha256 over 2^32 IPv4 values can be in minutes.
+export const keyedHash = async (s: string) => (await hmac("k:" + s)).slice(0, 32);
+
 export const idFor = async (email: string) => (await sha256("wl:" + email)).slice(0, 32);
 export const tokenFor = (id: string, purpose: "confirm" | "unsub") => hmac(purpose + ":" + id);
 export async function checkToken(id: string, purpose: "confirm" | "unsub", t: string): Promise<boolean> {
@@ -70,15 +73,16 @@ export function clientIp(req: Request, ctx: { ip?: string }): string {
   return ctx.ip || req.headers.get("x-nf-client-connection-ip") || "unknown";
 }
 
-// Fixed-window limit per IP hash. Blobs has no atomic increment, so a burst can overshoot
-// by a few; that is fine for a signup form.
-export async function rateLimited(ipHash: string, max = 20, windowSec = 3600): Promise<boolean> {
+// Fixed-window limit per keyed IP hash. One entry per IP, overwritten when the window
+// rolls, because Blobs has no TTL. No atomic increment, so a burst can overshoot by a few;
+// that is fine for a signup form.
+export async function rateLimited(ipKey: string, max = 20, windowSec = 3600): Promise<boolean> {
   const win = Math.floor(Date.now() / 1000 / windowSec);
-  const key = `${ipHash}:${win}`;
   const s = limits();
-  const n = ((await s.get(key, { type: "json" })) as number | null) ?? 0;
+  const cur = (await s.get(ipKey, { type: "json" })) as { win: number; n: number } | null;
+  const n = cur && cur.win === win ? cur.n : 0;
   if (n >= max) return true;
-  await s.setJSON(key, n + 1);
+  await s.setJSON(ipKey, { win, n: n + 1 });
   return false;
 }
 
@@ -128,6 +132,16 @@ export async function sendConfirm(email: string, id: string): Promise<{ ok: bool
     }),
   });
   return { ok: r.ok, status: r.status };
+}
+
+// A one-button page for links that act. Mail scanners (Safe Links, Proofpoint, Mimecast)
+// fetch every GET in a message, so a GET only renders this; the button's POST acts.
+export function buttonPage(title: string, h1: string, p: string, action: string, button: string): Response {
+  const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex"><title>${title} · Tulum DAO</title>
+<style>body{font-family:system-ui,sans-serif;max-width:480px;margin:15vh auto;padding:0 16px;color:#1a1a1a;background:#faf8f4}button{font:inherit;background:#1a1a1a;color:#fff;border:0;border-radius:6px;padding:12px 20px;cursor:pointer}@media(prefers-color-scheme:dark){body{background:#111;color:#eee}button{background:#eee;color:#111}}</style></head>
+<body><h1>${h1}</h1><p>${p}</p>
+<form method="post" action="${action}"><button type="submit">${button}</button></form></body></html>`;
+  return new Response(html, { headers: { "Content-Type": "text/html; charset=utf-8", "Cache-Control": "no-store", "X-Robots-Tag": "noindex" } });
 }
 
 export function wantsJson(req: Request): boolean {

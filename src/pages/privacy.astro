@@ -3,20 +3,21 @@ import Base from '../layouts/Base.astro';
 ---
 
 <Base title="Privacy · Tulum DAO" description="What Tulum DAO collects when you join the waitlist, and how to leave.">
-  <main id="main" class="prose">
+  <div class="prose">
     <h1>Privacy</h1>
     <p>Last updated 7 October 2026.</p>
 
     <h2>What we collect</h2>
     <p>
       When you join the waitlist we store your email address, which page you joined from, when you
-      joined, and whether you confirmed or unsubscribed. To limit abuse we also keep a one-way hash of
-      your IP address. We can't turn that hash back into your IP.
+      joined, and whether you confirmed or unsubscribed. To limit abuse we also keep a keyed hash of your IP address. It's used only
+      for rate limiting and can't be turned back into your IP without a secret key that never
+      leaves our server. It isn't stored with your email address.
     </p>
 
     <h2>What we use it for</h2>
     <p>
-      We use it to email you about Tulum DAO: launch news, invitations and updates. We don't sell or
+      We use it to email you about Tulum DAO: launch news and updates. We don't sell or
       rent it, and we don't share it with anyone except the services that run the list.
     </p>
 
@@ -36,5 +37,5 @@ import Base from '../layouts/Base.astro';
 
     <h2>Cookies</h2>
     <p>The waitlist sets no cookies and uses no tracking.</p>
-  </main>
+  </div>
 </Base>
