@@ -12,6 +12,7 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
 >
   <div id="backdrop" aria-hidden="true"></div>
   <canvas id="cenote" aria-hidden="true"></canvas>
+  <div id="cenote-labels" aria-hidden="true"></div>
 
   <section class="hero" data-bg="#e9e3d3" data-depth="0">
     <div class="hero-copy">
@@ -195,6 +196,63 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     z-index: 1;
     opacity: 0;
     transition: opacity 1.2s ease;
+  }
+  /* seat names drawn over the scene (example names), placed from 3D by src/scripts/cenote.ts */
+  #cenote-labels {
+    position: fixed;
+    inset: 0;
+    z-index: 1;
+    pointer-events: none;
+    overflow: hidden;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  :global(.cenote-live) #cenote-labels {
+    opacity: 1;
+  }
+  #cenote-labels :global(.cl) {
+    position: absolute;
+    left: 0;
+    top: 0;
+    opacity: 0;
+    font: 650 12.5px/1.15 var(--font);
+    letter-spacing: 0.01em;
+    color: var(--foam);
+    text-shadow: 0 1px 3px rgba(4, 20, 20, 0.8), 0 0 10px rgba(4, 20, 20, 0.5);
+    white-space: nowrap;
+    will-change: transform, opacity;
+  }
+  #cenote-labels :global(.cl small) {
+    display: block;
+    font-weight: 450;
+    font-size: 11px;
+    color: var(--foam-2);
+  }
+  #cenote-labels :global(.cl small) {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 1px;
+  }
+  #cenote-labels :global(.cl .rt) {
+    display: inline-flex;
+    filter: drop-shadow(0 1px 2px rgba(4, 20, 20, 0.7));
+  }
+  #cenote-labels :global(.cl .role) {
+    font-weight: 450;
+    color: var(--foam-2);
+    margin-left: 6px;
+  }
+  #cenote-labels :global(.cl.gm) {
+    font-size: 14px;
+  }
+  #cenote-labels :global(.cl.fact) {
+    font-weight: 500;
+    font-size: 11.5px;
+    color: #f3e6c4;
+  }
+  #cenote-labels :global(.cl.mem) {
+    font-size: 14px;
   }
   :global(.cenote-live) #backdrop {
     display: block;
