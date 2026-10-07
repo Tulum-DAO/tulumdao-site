@@ -278,6 +278,8 @@ export function mount(canvas: HTMLCanvasElement) {
     }
   };
   const proj = new Vector3();
+  const rise = new Vector3();
+  const cardFrom = new Vector3();
 
   // seats and generations. A seat is a light; every generation it has been through is a ring around
   // it, newest innermost, fading as it ages outward, like the rings of a tree.
@@ -461,6 +463,8 @@ export function mount(canvas: HTMLCanvasElement) {
   let depthTarget = 0;
   let approvalsT = 0;
   let floorT = 0; // 0 until "Two ways to run it" comes up, 1 once it reaches mid-screen
+  let apPanelTop = Infinity; // the approvals panel's top edge on screen, in px (narrow layout)
+  const apPanel = document.querySelector<HTMLElement>('[data-layer="approvals"] .panel');
   const readScroll = () => {
     const mid = innerHeight / 2;
     let i = 0;
@@ -485,6 +489,7 @@ export function mount(canvas: HTMLCanvasElement) {
       const r = ap.getBoundingClientRect();
       approvalsT = clamp(1 - (r.top + r.height * 0.35) / innerHeight, 0, 1);
     }
+    if (apPanel) apPanelTop = apPanel.getBoundingClientRect().top;
     const floor = sections.find((s) => s.classList.contains('paths'));
     if (floor) floorT = smooth(0.95, 0.5, floor.getBoundingClientRect().top / innerHeight);
   };
@@ -744,13 +749,31 @@ export function mount(canvas: HTMLCanvasElement) {
     }
     sgeo.attributes.position.needsUpdate = true;
 
-    // the card rises toward you as the approvals section comes up the page
-    const e = easeOut(approvalsT);
-    card.position.y = lerp(Y.approvals - 2, camera.position.y - 4.2, e);
-    card.position.x = Math.sin(clock * 0.6) * 0.15 * (1 - e) - (innerWidth > 900 ? 1.1 * e : 0);
+    // the card rises toward you as the approvals section comes up the page. It aims at a point on
+    // the SCREEN, projected into the scene: left of the panel on wide screens, and in the top part of
+    // a phone screen, above its panel (which sits low there)
+    const wide = innerWidth > 900;
+    let e: number;
+    let cardAlpha: number;
+    if (wide) {
+      // left of the panel; fades in as the approvals section rises, out as the floor comes up
+      e = easeOut(approvalsT);
+      rise.set(-0.32, 0.05, 0.5);
+      cardAlpha = 0.95 * smooth(0, 0.35, approvalsT) * (1 - floorT);
+    } else {
+      // phones: centred just ABOVE the approvals panel, following it up the screen. It rises in as
+      // the panel arrives and fades before it would leave the top of the screen.
+      const vh = innerHeight;
+      const cardPx = vh * 0.2; // the card is about a fifth of the screen tall at this distance
+      const yPx = apPanelTop - cardPx / 2 - 18;
+      e = smooth(vh * 1.05, vh * 0.6, apPanelTop);
+      rise.set(0, 1 - (2 * yPx) / vh, 0.5);
+      cardAlpha = 0.95 * e * smooth(cardPx * 0.4, cardPx * 0.9, yPx);
+    }
+    rise.unproject(camera).sub(camera.position).normalize().multiplyScalar(wide ? 5.2 : 5.6).add(camera.position);
+    cardFrom.set(Math.sin(clock * 0.6) * 0.15, Y.approvals - 2, 0);
+    card.position.copy(cardFrom).lerp(rise, easeOut(e));
     card.rotation.z = Math.sin(clock * 0.5) * 0.08 * (1 - e);
-    // it fades in as the approvals section rises, and fades out as the floor section comes up
-    const cardAlpha = 0.95 * smooth(0, 0.35, approvalsT) * (1 - floorT);
     card.visible = cardAlpha > 0.01;
     (card.material as MeshBasicMaterial).opacity = cardAlpha;
 

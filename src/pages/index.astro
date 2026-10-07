@@ -50,12 +50,16 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     <section class="layer" data-bg="#2f8580" data-depth="0.3" data-layer="seats">
       <div class="panel">
         <h2>Seats and generations</h2>
-        <p>
+        <p class="short">
+          Each agent is a seat. Before its context runs out, it hands off to a successor that proves it read
+          the handoff. <a href="/docs/rotation/">How rotation works</a>
+        </p>
+        <p class="long">
           An agent is a seat with a lineage. Each generation is one CLI session: Claude Code, Gemini or
           Codex. When a generation nears its context ceiling it writes a handoff, a successor boots, proves
           it understood by answering questions anchored in its predecessor's own state, and is promoted.
         </p>
-        <p class="aside">
+        <p class="aside long">
           Rotation is on by default for Claude seats. Gemini and Codex are experimental and stay unarmed
           until you opt in. <a href="/docs/rotation/">How rotation works</a>
         </p>
@@ -65,7 +69,8 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     <section class="layer" data-bg="#0b4f52" data-depth="0.5" data-layer="messages">
       <div class="panel">
         <h2>Smart inter-agent messaging that doesn't interrupt work</h2>
-        <p>
+        <p class="short">Agents hand each other work. Mail for a busy agent waits until its turn ends.</p>
+        <p class="long">
           Agents hand each other work through a durable message store with inboxes, acknowledgements and
           threads. Mail for a busy seat is parked and delivered when its turn ends, so no agent is cut off
           mid-task and nothing is lost.
@@ -82,7 +87,8 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     <section class="layer" data-bg="#093a3c" data-depth="0.7" data-layer="memory">
       <div class="panel">
         <h2>Memory that survives a restart</h2>
-        <p>
+        <p class="short">Facts and each seat's memory outlive every restart and rotation.</p>
+        <p class="long">
           A shared facts store with freshness, memory directories for each seat that outlive rotation, and a
           recall hook that feeds Arturo, the assistant.
         </p>
@@ -92,12 +98,15 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     <section class="layer" data-bg="#0a2a2b" data-depth="0.88" data-layer="approvals">
       <div class="panel">
         <h2>Every real decision comes up to you</h2>
-        <p>
+        <p class="short">
+          Anything an agent needs from you is a card on your phone, watch or dashboard. Your answer resumes it.
+        </p>
+        <p class="long">
           Anything an agent needs from you is a card: approve or deny, a menu, a questionnaire, or a
           "waiting on you" block. Cards show on the web dashboard and on the iOS and watch app, and your
           answer resumes the agent that asked.
         </p>
-        <p class="aside">
+        <p class="aside long">
           The runtime catalog checks which CLIs you have installed and logged in to, so the harness runs on a
           subscription you already pay for.
         </p>
@@ -110,7 +119,8 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     <div class="path-grid">
       <a class="path" href="/docs/install/">
         <h3>The minimum path</h3>
-        <p>
+        <p class="short">One machine, one CLI. Under thirty minutes on a clean Ubuntu VPS.</p>
+        <p class="long">
           One machine, one CLI, no voice, no chat bridges. Gateway up, one seat spawned, one card answered
           from the web dashboard. The target is under thirty minutes on a clean Ubuntu VPS.
         </p>
@@ -118,7 +128,8 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
       </a>
       <a class="path" href="/docs/reference-install/">
         <h3>The reference install</h3>
-        <p>
+        <p class="short">The operator's own setup: VPS plus Mac, push, Telegram and voice. Do this second.</p>
+        <p class="long">
           The operator's own setup: a VPS plus a Mac over Tailscale, tmux seats, the rotation beat, push
           notifications, Telegram and voice. Do this second.
         </p>
@@ -403,6 +414,32 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     margin: 0 0 12px;
     color: var(--foam);
   }
+  /* phones get one short line per panel; the full text stays on wider screens */
+  .panel .short {
+    display: none;
+  }
+  @media (max-width: 600px) {
+    .panel .long {
+      display: none;
+    }
+    .panel .short {
+      display: block;
+      margin: 0;
+    }
+    .panel h2 {
+      font-size: 1.55rem;
+      margin-bottom: 10px;
+    }
+    .panel {
+      padding: 20px 20px 22px;
+    }
+    /* the approval card rises in the top of the screen; its panel sits below it */
+    .descent .layer[data-layer='approvals'] {
+      align-items: flex-end;
+      min-height: 100vh;
+      padding-bottom: 8vh;
+    }
+  }
   .panel .aside {
     color: var(--foam-2);
     font-size: 0.97rem;
@@ -485,6 +522,20 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   .path p {
     margin: 0 0 18px;
     color: var(--foam-2);
+  }
+  .path .short {
+    display: none;
+  }
+  @media (max-width: 600px) {
+    .path .long {
+      display: none;
+    }
+    .path .short {
+      display: block;
+    }
+    .path {
+      padding: 20px 20px 18px;
+    }
   }
   .go {
     font-weight: 700;
