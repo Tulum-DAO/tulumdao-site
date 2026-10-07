@@ -92,7 +92,7 @@ export function mount(canvas: HTMLCanvasElement) {
   // on wide screens each layer sits a little away from its text panel (seats and memory panels are
   // on the left, messaging's on the right); on phones the panels span the width, so no shift
   const shift = innerWidth > 900 ? 1 : 0;
-  const LX = { seats: 1.1 * shift, messages: -1.1 * shift, memory: 0.9 * shift };
+  const LX = { seats: 1.5 * shift, messages: -1.1 * shift, memory: 0.9 * shift };
   let renderer: WebGLRenderer;
   try {
     // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
@@ -311,9 +311,12 @@ export function mount(canvas: HTMLCanvasElement) {
   };
   const seats: Lineage[] = [];
   for (let i = 0; i < SEATS; i++) {
-    const a = (i / SEATS) * Math.PI * 2;
-    const r = 1.6 + (i % 2) * 1.05; // two close rows
-    const n = spawn(new Vector3(LX.seats + Math.cos(a) * r, Y.seats + Math.sin(i * 2.1) * 0.8, Math.sin(a) * r), LIGHT, 24);
+    // seat 0 is the general manager, at the centre; the others sit in two close rows around it
+    const k = i - 1;
+    const a = (k / (SEATS - 1)) * Math.PI * 2;
+    const r = i === 0 ? 0 : 1.6 + (k % 2) * 1.05;
+    const y = i === 0 ? Y.seats : Y.seats + Math.sin(i * 2.1) * 0.8;
+    const n = spawn(new Vector3(LX.seats + Math.cos(a) * r, y, Math.sin(a) * r), LIGHT, i === 0 ? 30 : 24);
     if (!n) continue;
     // a history: every seat has already been through a few generations
     const past = 1 + Math.floor(Math.random() * 4);
