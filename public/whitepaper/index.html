@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>The Self-Tended Fleet</title>
+<meta name="description" content="Tulum DAO whitepaper (draft): how to organise and manage your own fleet of AI agents.">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,300..700&family=Instrument+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; }
+html { -webkit-text-size-adjust: 100%; }
+body { margin:0; background:#F7F3EA; color:#12201F; font-family:'Instrument Sans', system-ui, sans-serif;
+        font-size:18px; line-height:1.65; }
+.cover { background:#12201F; color:#E9E3D3; padding:48px 24px 56px; position:relative; overflow:hidden; }
+.cover-inner { max-width:860px; margin:0 auto; }
+.cover .top { display:flex; justify-content:space-between; font-size:12px; letter-spacing:.3em; color:#5FB8B3; }
+.cover .mark { width:180px; height:180px; margin:40px 0 28px; }
+.cover h1 { font-family:'Fraunces', Georgia, serif; font-weight:500; font-size:clamp(44px, 9vw, 88px); line-height:1; margin:0 0 20px;
+             color:#E9E3D3; border:0; padding:0; letter-spacing:-.02em; }
+.cover h1 span { color:#5FB8B3; }
+.cover p { font-family:'Fraunces', Georgia, serif; font-size:clamp(18px, 2.4vw, 24px); font-weight:300; max-width:640px; margin:0 0 28px; }
+.cover p b { color:#B9771F; font-weight:500; }
+.cover .meta { font-size:12px; letter-spacing:.24em; color:#5FB8B3; }
+.btn { display:inline-block; margin:6px 10px 0 0; padding:12px 20px; border-radius:6px; font-weight:600; text-decoration:none;
+        font-size:16px; }
+.btn.primary { background:#5FB8B3; color:#12201F; }
+.btn.ghost { border:1.5px solid #5FB8B3; color:#5FB8B3; }
+nav.toc { max-width:860px; margin:0 auto; padding:28px 24px 0; }
+nav.toc details { background:#fff; border:1px solid #CFC6B0; border-radius:8px; padding:12px 18px; }
+nav.toc summary { cursor:pointer; font-weight:600; color:#0B4F52; }
+nav.toc ol { margin:10px 0 4px; padding-left:22px; columns:2; column-gap:32px; font-size:16px; }
+nav.toc a { color:#0B4F52; text-decoration:none; }
+main { max-width:860px; margin:0 auto; padding:8px 24px 80px; }
+.sec { background:#fff; border:1px solid #CFC6B0; border-radius:10px; padding:36px 40px; margin:28px 0; scroll-margin-top:16px; }
+.kicker { display:flex; align-items:center; gap:10px; margin-bottom:4px; }
+.kicker .num { font-family:'DejaVu Sans Mono', ui-monospace, monospace; font-size:13px; color:#B9771F; letter-spacing:.08em; }
+.kicker .bar { width:28px; height:3px; background:#B9771F; display:inline-block; }
+h1 { font-family:'Fraunces', Georgia, serif; font-weight:500; font-size:clamp(28px, 4vw, 38px); line-height:1.15; color:#0B4F52;
+      margin:2px 0 18px; padding-bottom:14px; border-bottom:1px solid #CFC6B0; }
+h2 { font-family:'Fraunces', Georgia, serif; font-weight:600; font-size:24px; color:#0B4F52; margin:30px 0 8px; }
+p { margin:0 0 14px; }
+strong { font-weight:600; color:#0B4F52; }
+em { font-family:'Fraunces', Georgia, serif; font-style:italic; }
+li { margin:0 0 6px; } li::marker { color:#B9771F; font-weight:600; }
+.tablewrap { overflow-x:auto; margin:14px 0 18px; }
+table { width:100%; border-collapse:collapse; font-size:15px; line-height:1.45; min-width:560px; }
+thead th { background:#0B4F52; color:#F7F3EA; text-align:left; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+            font-size:12px; padding:9px 10px; }
+td { padding:9px 10px; vertical-align:top; border-bottom:1px solid #CFC6B0; }
+tbody tr:nth-child(even) td { background:#F7F3EA; }
+.fig { margin:18px 0 22px; padding:16px; background:#F7F3EA; border:1px solid #CFC6B0; border-radius:8px; }
+.fig svg { display:block; width:100%; height:auto; }
+figcaption { font-size:14px; color:#6B7A77; margin-top:10px; line-height:1.5; }
+.dia { color:#B9771F; }
+blockquote { margin:8px 0; padding:10px 16px; border-left:3px solid #5FB8B3; background:#F7F3EA; font-family:'Fraunces', Georgia, serif; font-size:17px; line-height:1.5; }
+blockquote p { margin:0 0 6px; }
+.review { background:#F7F3EA; border:2px dashed #B9771F; }
+.review-tag { font-family:'DejaVu Sans Mono', ui-monospace, monospace; font-size:12px; color:#B9771F; letter-spacing:.12em; margin-bottom:6px; }
+.cta { margin:22px 0; padding:22px; background:#0B4F52; color:#E9E3D3; font-family:'Fraunces', Georgia, serif; font-size:26px;
+        border-radius:8px; text-align:center; border:2px dashed #B9771F; }
+footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; letter-spacing:.06em; }
+@media (max-width: 640px) { .sec { padding:24px 18px; } nav.toc ol { columns:1; } body { font-size:17px; } }
+</style></head>
+<body>
+<header class="cover"><div class="cover-inner">
+<div class="top"><span>WHITE PAPER · DRAFT</span><span>TULUM DAO</span></div>
+<div class="mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <linearGradient id="sunGrad_final_dark_color" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#F1E2C6" stop-opacity="1"/>
+      <stop offset="100%" stop-color="#F1E2C6" stop-opacity="0.3"/>
+    </linearGradient>
+    <linearGradient id="reefGrad_final_dark_color" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#5FB8B3"/>
+      <stop offset="100%" stop-color="#0B4F52"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 1. Outer Chukum Limestone Portal Ring -->
+  <circle cx="256" cy="256" r="216" fill="none" stroke="#BFE3E0" stroke-width="24"/>
+
+  <!-- 2. Morning Sun of Zamá (ONLY sun orb) -->
+  <circle cx="256" cy="130" r="50" fill="url(#sunGrad_final_dark_color)"/>
+
+  <!-- 3. Upper Temple Shrine (El Templo Superior) -->
+  <polygon points="186,146 326,146 332,158 180,158" fill="#F3EFE4"/>
+  <rect x="184" y="158" width="144" height="6" fill="#F3EFE4"/>
+  <rect x="190" y="164" width="132" height="46" fill="#F3EFE4"/>
+
+  <!-- 3 Doorways (Tri-Agent Seats) -->
+  <rect x="204" y="174" width="22" height="36" rx="2" fill="#0B4F52"/>
+  <rect x="245" y="174" width="22" height="36" rx="2" fill="#0B4F52"/>
+  <rect x="286" y="174" width="22" height="36" rx="2" fill="#0B4F52"/>
+
+  <!-- 4. Flanking Lower Shrines -->
+  <polygon points="148,188 188,188 188,210 144,210" fill="#F3EFE4"/>
+  <rect x="156" y="196" width="16" height="14" rx="1.5" fill="#0B4F52"/>
+  <polygon points="324,188 364,188 368,210 324,210" fill="#F3EFE4"/>
+  <rect x="340" y="196" width="16" height="14" rx="1.5" fill="#0B4F52"/>
+
+  <!-- 5. Tiered Pyramid Platforms -->
+  <polygon points="136,210 376,210 384,238 128,238" fill="#F3EFE4"/>
+  <polygon points="120,238 392,238 402,266 110,266" fill="#F3EFE4"/>
+  <polygon points="102,266 410,266 420,296 92,296" fill="#F3EFE4"/>
+
+  <!-- 6. Grand Central Staircase & Balustrades -->
+  <polygon points="228,210 284,210 294,296 218,296" fill="#5FB8B3" opacity="0.95"/>
+  <line x1="226" y1="230" x2="286" y2="230" stroke="#0B4F52" stroke-width="2.5" opacity="0.6"/>
+  <line x1="223" y1="250" x2="289" y2="250" stroke="#0B4F52" stroke-width="2.5" opacity="0.6"/>
+  <line x1="220" y1="272" x2="292" y2="272" stroke="#0B4F52" stroke-width="2.5" opacity="0.6"/>
+  <polygon points="226,210 232,210 224,296 218,296" fill="#F3EFE4"/>
+  <polygon points="280,210 286,210 294,296 288,296" fill="#F3EFE4"/>
+
+  <!-- 7. Coastal Limestone Cliff Ground (Flush to Inner Ring) -->
+  <path d="M 56.0,296 L 456.0,296 A 204 204 0 0 1 56.0,296 Z" fill="#F3EFE4"/>
+
+  <!-- 8. Turquoise Caribbean Reef Aquifer (Flush to Inner Ring) -->
+  <path d="M 68.3,336 L 443.7,336 A 204 204 0 0 1 68.3,336 Z" fill="url(#reefGrad_final_dark_color)"/>
+</svg></div>
+<h1>The Self-Tended <span>Fleet</span></h1>
+<p>How to organise and manage your own fleet of AI agents. An <b>autonomy maturity model</b> for operators: seven footings, ten practices, six habits and five Steps to work that runs without you watching.</p>
+<a class="btn primary" href="#s1">Start reading</a>
+<a class="btn ghost" href="Tulum-DAO-The-Self-Tended-Fleet-DRAFT.pdf" download>Download PDF</a>
+<div class="meta" style="margin-top:28px">DRAFT 0.4 · OCTOBER 2026 · CC BY 4.0</div>
+</div></header>
+<nav class="toc"><details><summary>Contents</summary><ol><li><a href="#s1">Summary</a></li><li><a href="#s2">Ten-minute self-check</a></li><li><a href="#s3">Why speed is not the bottleneck</a></li><li><a href="#s4">The Self-Tended Fleet</a></li><li><a href="#s5">How the model is built</a></li><li><a href="#s6">Strand one: the seven Footings</a></li><li><a href="#s7">Strand two: the ten Practices</a></li><li><a href="#s8">Strand three: Stewardship</a></li><li><a href="#s9">The five Steps</a></li><li><a href="#s10">Scoring: three rules instead of points</a></li><li><a href="#s11">The Tend cycle</a></li><li><a href="#s12">Rolling it out: Seed, Grove, Commons</a></li><li><a href="#s13">A working reference: OrchestraOS</a></li><li><a href="#s14">What this model cannot do</a></li><li><a href="#s15">Start this week</a></li><li><a href="#s16">Run your fleet with other operators</a></li><li><a href="#s17">Appendix: the full checklist</a></li><li><a href="#s18">Evidence Ledger</a></li><li><a href="#s19">Inspired by, and further reading</a></li><li><a href="#s20">License</a></li></ol></details></nav>
+<main><section id="s1" class="sec "><div class="kicker"><span class="num">01</span><span class="bar"></span></div><h1>Summary</h1><p>Most people who start running AI coding agents get a faster typist. Few get a team that keeps working while they sleep, hands work cleanly from one agent to the next, proves what it did, and asks a human only the questions a human should answer. The difference is not the model. It is everything around the model.</p>
+<p>This paper sets out the <strong>Self-Tended Fleet Model</strong>: a way to organise and manage your own fleet of AI agents, measure how much of your work can safely run without you watching, and raise that share step by step. It is written for operators: anyone running more than one agent, from a solo builder with three seats to a small studio running dozens. The method is open. Run the checks on your own fleet, argue with them, and share better ones.</p>
+<p>The model has three strands:</p>
+<ul>
+<li><strong>Footings</strong>: seven properties of a project that make agent work possible at all, from fast checks to memory that survives a restart.</li>
+<li><strong>Practices</strong>: ten kinds of recurring work that agents can take over, from intake to release to handing work to a successor.</li>
+<li><strong>Stewardship</strong>: six habits that keep you, the operator, in charge of where the work goes.</li>
+</ul>
+<p>Projects climb <strong>five Steps</strong>, named for the staircase of the temple at Tulum: <em>Assisted, Written, Accountable, Continuous</em> and <em>Self-tending</em>. Each Step is defined by a job that people no longer have to do by hand.</p>
+<p>Three ideas set this model apart:</p>
+<ol>
+<li><strong>The weakest footing sets your Step.</strong> There are no points to add up. A project with excellent tests and no written instructions is not halfway there; it is stuck at the bottom of the stair it has not built.</li>
+<li><strong>Evidence expires.</strong> A check counts only if it has been seen working recently. A guard that has never fired is a hope, not a guard.</li>
+<li><strong>Step 3, Accountable, is the floor.</strong> Below it, agents can do work but nobody can safely stop watching. At and above it, every action is attributable, every claim is checked by its effect, and every decision a human must make reaches them as a clear question rather than a surprise.</li>
+</ol>
+<p>The headline number for any operator is the <strong>floor share</strong>: of the projects your fleet is actively working on, what fraction stand on Step 3 or higher?</p>
+<p>If you only have ten minutes, start with the self-check on the next page.</p></section>
+<section id="s2" class="sec "><div class="kicker"><span class="num">02</span><span class="bar"></span></div><h1>Ten-minute self-check</h1><p>Answer each question yes or no, about the fleet you run today. Be strict: "sort of" is no.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>#</th>
+<th>Question</th>
+<th>Step</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1</td>
+<td>Does one command check format, lint and types, and do your agents run it?</td>
+<td>1</td>
+</tr>
+<tr>
+<td>2</td>
+<td>Is there a written instruction file your agents read at the start of every session, and is it current?</td>
+<td>2</td>
+</tr>
+<tr>
+<td>3</td>
+<td>Does each long-lived agent have a name, a written role and a memory of its own outside the chat window?</td>
+<td>2</td>
+</tr>
+<tr>
+<td>4</td>
+<td>Is there a written list of actions your agents may not take without asking you (publish, send, spend, delete)?</td>
+<td>2</td>
+</tr>
+<tr>
+<td>5</td>
+<td>Can you tell, for any change, which agent made it and when?</td>
+<td>3</td>
+</tr>
+<tr>
+<td>6</td>
+<td>When an agent says "done", is that checked against the real, running thing and not just the code?</td>
+<td>3</td>
+</tr>
+<tr>
+<td>7</td>
+<td>Do your agents' questions reach you as a clear choice, with context, somewhere you will actually see them, and does your answer restart the work?</td>
+<td>3</td>
+</tr>
+<tr>
+<td>8</td>
+<td>If an agent's session ended right now, would a fresh one pick up the work without you re-explaining it?</td>
+<td>4</td>
+</tr>
+<tr>
+<td>9</td>
+<td>If your main model provider went down for a day, would your fleet keep working?</td>
+<td>4</td>
+</tr>
+<tr>
+<td>10</td>
+<td>Do some agents hold standing goals (keep this healthy, keep this current) and run them for days without you?</td>
+<td>5</td>
+</tr>
+</tbody>
+</table></div>
+<p><strong>Reading your answers.</strong> Your Step is the highest Step for which you answered yes to <em>every</em> question at that Step and below. A single no at Step 2 holds you at Step 1, however many later questions you answered yes. That is the weakest-footing rule, and the rest of this paper explains why it is the right way to score a fleet. Most operators who are honest land on Step 1 or 2. The goal is Step 3.</p></section>
+<section id="s3" class="sec "><div class="kicker"><span class="num">03</span><span class="bar"></span></div><h1>Why speed is not the bottleneck</h1><p>When you add an AI agent, the first thing that changes is how fast code appears. It is tempting to measure that and stop. But code that appears faster still has to be understood, checked, approved, released and lived with. If a feature spends one afternoon being written and four days waiting for a decision, a review and a deploy window, then writing it ten times faster saves part of one afternoon. The elapsed time barely moves.</p>
+<p>For operators running several agents at once, our experience points to three places where time actually goes:</p>
+<ul>
+<li><strong>Waiting on a person.</strong> An agent reaches a fork it should not choose alone. If the question sits in a chat scroll, nobody sees it; the agent idles or, worse, guesses.</li>
+<li><strong>Losing the thread.</strong> Agents work inside a limited context window. When a session ends, crashes or fills up, whatever it knew and had not written down is gone, and the next session starts by rediscovering it.</li>
+<li><strong>Not knowing what is true.</strong> An agent says "done". Is it? Was the test it ran testing the deployed code or a copy? Did the fix reach the running service, or only the repository? Every unchecked claim becomes a chore for a human later, usually at a worse time.</li>
+</ul>
+<p>None of these is solved by a smarter model. They are solved by the ground the agents stand on and the habits of the person running them. AI makes good habits pay off more and bad habits cost more <em>(Evidence Ledger: E1)</em>. That ground is what this model measures.</p>
+<p>A second reason speed misleads: <strong>autonomy is only as wide as trust.</strong> You can let an agent act unwatched exactly as far as you can trust what it will do and verify what it did. Trust is built from small, boring things: a check that runs in seconds, an instruction written where the agent will find it, a log that says which agent did what and when. The model is a map of those small things, in the order they tend to matter.</p></section>
+<section id="s4" class="sec "><div class="kicker"><span class="num">04</span><span class="bar"></span></div><h1>The Self-Tended Fleet</h1><p>We call the goal a <strong>self-tended fleet</strong>: a set of AI agents working on a shared project the way a good crew works a boat. Each has a role. Work arrives, gets shaped into something doable, is picked up, done, proven, released and remembered. People choose the destination and answer the hard questions. Nobody has to stand over every rope.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 520" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><circle cx="300" cy="250" r="160" fill="none" stroke="#5FB8B3" stroke-width="3" stroke-dasharray="2 7" stroke-linecap="round"/><path d="M342.7,95.8 A160,160 0 0 1 394.0,120.5" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M447.2,187.2 A160,160 0 0 1 459.8,242.7" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M440.8,325.9 A160,160 0 0 1 405.4,370.4" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M328.5,407.4 A160,160 0 0 1 271.5,407.4" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M194.6,370.4 A160,160 0 0 1 159.2,325.9" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M140.2,242.7 A160,160 0 0 1 152.8,187.2" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M206.0,120.5 A160,160 0 0 1 257.3,95.8" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><rect x="250.0" y="71.0" width="100" height="38" rx="19" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><text x="300.0" y="95.0" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">SIGNAL</text><rect x="375.1" y="131.2" width="100" height="38" rx="19" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><text x="425.1" y="155.2" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">SHAPE</text><rect x="406.0" y="266.6" width="100" height="38" rx="19" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><text x="456.0" y="290.6" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">ASSIGN</text><rect x="319.4" y="375.2" width="100" height="38" rx="19" fill="#0B4F52" stroke="#0B4F52" stroke-width="2"/><text x="369.4" y="399.2" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.6">WORK</text><rect x="180.6" y="375.2" width="100" height="38" rx="19" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><text x="230.6" y="399.2" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">PROVE</text><rect x="94.0" y="266.6" width="100" height="38" rx="19" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><text x="144.0" y="290.6" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">RELEASE</text><rect x="124.9" y="131.2" width="100" height="38" rx="19" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><text x="174.9" y="155.2" font-family="Instrument Sans" font-size="12.5" font-weight="600" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">REMEMBER</text><text x="300.0" y="242.0" font-family="Instrument Sans" font-size="13" font-weight="700" fill="#0B4F52" text-anchor="middle" letter-spacing="2.5">THE SELF-TENDED LOOP</text><text x="300.0" y="264.0" font-family="Fraunces" font-size="13" font-weight="400" fill="#6B7A77" text-anchor="middle" letter-spacing="0" font-style="italic">no human in the middle</text><rect x="510" y="70" width="180" height="80" rx="10" fill="#DCEFEC" stroke="#B9771F" stroke-width="2"/><text x="600.0" y="98.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#B9771F" text-anchor="middle" letter-spacing="2">PEOPLE</text><text x="600.0" y="118.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="middle" letter-spacing="0">set direction,</text><text x="600.0" y="135.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="middle" letter-spacing="0">answer judgment calls</text><path d="M421.4,386.2 C 519.4,354.2 530,230 560,154" fill="none" stroke="#B9771F" stroke-width="2" stroke-dasharray="6 5" marker-end="url(#ao)"/><path d="M630,154 C 660,360 509.4,434.2 423.4,402.2" fill="none" stroke="#B9771F" stroke-width="2" marker-end="url(#ao)"/><text x="600.0" y="40.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#B9771F" text-anchor="middle" letter-spacing="0">decision card out (dashed)</text><text x="600.0" y="56.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#B9771F" text-anchor="middle" letter-spacing="0">answer resumes the seat (solid)</text><path d="M399.2,387.6 C 410,482 190,482 200.8,387.6" fill="none" stroke="#1B6B63" stroke-width="2" stroke-dasharray="3 5"/><text x="300.0" y="494.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#1B6B63" text-anchor="middle" letter-spacing="0.6">HANDOFF  ·  a successor seat takes over and keeps the loop's place</text></svg><figcaption>Figure 1. The self-tended loop. Work moves clockwise without a human in the middle of it. Questions leave the loop as decision cards and the answers flow back to the agent that asked. When an agent nears its limits it hands its work to a successor, and the loop keeps its place.</figcaption></figure>
+<p>The stations on the loop:</p>
+<ol>
+<li><strong>Signal.</strong> Something happens: an issue is opened, a user reports a bug, an alert fires, a goal slips.</li>
+<li><strong>Shape.</strong> The signal becomes a piece of work with a clear outcome, a size and an owner. Duplicates are merged.</li>
+<li><strong>Assign.</strong> The work goes to a seat: a named, long-lived agent role with its own history, not an anonymous session.</li>
+<li><strong>Work.</strong> The agent does the work inside its fences.</li>
+<li><strong>Prove.</strong> The result is checked by its effect: the test runs against what will actually ship, the page renders, the service answers.</li>
+<li><strong>Release.</strong> The change goes live in small, reversible steps.</li>
+<li><strong>Remember.</strong> What was learned is written where the next agent, or the next generation of this one, will find it.</li>
+</ol>
+<p>Two channels cross the loop. <strong>Decision cards</strong> carry questions out to a human and answers back in. <strong>Handoffs</strong> carry a seat's working state across a restart or a successor, so the loop never has to start over.</p>
+<p><strong>Faithful, not wise.</strong> A self-tended fleet does what it is asked, carefully. It will build the wrong thing carefully too. It cannot tell you whether the feature is worth building or whether the architecture will hold in two years. As the routine work leaves people's hands, the decisions that remain become more important, not less. The point of the model is to give people more time for exactly those decisions.</p></section>
+<section id="s5" class="sec "><div class="kicker"><span class="num">05</span><span class="bar"></span></div><h1>How the model is built</h1><figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 330" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><polygon points="210.0,40 510.0,40 550.0,110 170.0,110" fill="#B9771F"/><text x="360.0" y="70.0" font-family="Instrument Sans" font-size="17" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="3">STEWARDSHIP</text><text x="360.0" y="92.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#F7F3EA" text-anchor="middle" letter-spacing="0" font-style="italic">6 habits  ·  how you, the operator, stay in charge</text><polygon points="160.0,120 560.0,120 610.0,190 110.0,190" fill="#1B6B63"/><text x="360.0" y="150.0" font-family="Instrument Sans" font-size="17" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="3">PRACTICES</text><text x="360.0" y="172.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#F7F3EA" text-anchor="middle" letter-spacing="0" font-style="italic">10 recurring jobs  ·  the work agents take over, from intake to handing over</text><polygon points="100.0,200 620.0,200 680.0,270 40.0,270" fill="#0B4F52"/><text x="360.0" y="230.0" font-family="Instrument Sans" font-size="17" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="3">FOOTINGS</text><text x="360.0" y="252.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#F7F3EA" text-anchor="middle" letter-spacing="0" font-style="italic">7 properties  ·  what the project must give an agent to stand on</text><rect x="30.0" y="276" width="660" height="10" fill="#5FB8B3" opacity="0.55"/><text x="360.0" y="312.0" font-family="Instrument Sans" font-size="12.5" font-weight="500" fill="#6B7A77" text-anchor="middle" letter-spacing="0.4">A Step is earned only when all three strands hold at that level</text></svg><figcaption>Figure 2. Three strands. Footings are what the project stands on. Practices are the recurring work agents take over. Stewardship is how people steer. A Step is earned only when all three hold at that level.</figcaption></figure>
+<p>Every Step in the model asks something of all three strands. The Footings and Practices will look familiar to anyone who has run a healthy software team, because good agent work and good human work rest on the same ground. Stewardship is the part most operators skip: the habits that keep you in charge of a fleet that is doing more and more without you.</p></section>
+<section id="s6" class="sec "><div class="kicker"><span class="num">06</span><span class="bar"></span></div><h1>Strand one: the seven Footings</h1><p>A footing is a property of the project that an agent can feel. Each has a short list of <strong>checks</strong>: yes-or-no questions a script can answer, quickly, without anyone's opinion.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Footing</th>
+<th>What it gives an agent</th>
+<th>Example checks</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1. Fast checks</strong></td>
+<td>Knows within moments if a change is wrong</td>
+<td>One command runs format, lint and types; it finishes in under a minute; it runs before every commit; it fails loudly</td>
+</tr>
+<tr>
+<td><strong>2. Reproducible ground</strong></td>
+<td>Can build and run the project from nothing</td>
+<td>A clean checkout builds with one documented command; dependencies are pinned; a fresh environment is ready in under fifteen minutes; agents work in a sandbox by default</td>
+</tr>
+<tr>
+<td><strong>3. Written intent</strong></td>
+<td>Knows what the project wants without asking</td>
+<td>An agent instruction file exists and is current; setup, test and release commands are written down; decisions are recorded with their reasons; known traps are listed</td>
+</tr>
+<tr>
+<td><strong>4. Memory and continuity</strong></td>
+<td>Picks up where the last session left off</td>
+<td>Each seat has a durable memory outside the context window; handoffs are written before a session ends; a successor proves it understood the handoff before it takes over; messages to a busy or absent agent are held, not dropped</td>
+</tr>
+<tr>
+<td><strong>5. Legible code</strong></td>
+<td>Can reason about one part without loading all of it</td>
+<td>Clear module boundaries; files and functions small enough to read in one sitting; names that say what things are; no unexplained dead code</td>
+</tr>
+<tr>
+<td><strong>6. Evidence</strong></td>
+<td>Can show what happened, and when</td>
+<td>Structured logs with timestamps in one stated time zone; every action records which seat did it; tests exercise the deployed form, not a copy; claims of "fixed" are checked by effect</td>
+</tr>
+<tr>
+<td><strong>7. Fences and sovereignty</strong></td>
+<td>Can move fast without doing damage</td>
+<td>Secrets never live in the code; risky actions need an explicit allowance; changes to the main line are protected; the project can run on infrastructure it controls and on more than one model provider</td>
+</tr>
+</tbody>
+</table></div>
+<p>Two of these footings deserve a word, because most maturity models leave them out.</p>
+<p><strong>Memory and continuity.</strong> An agent's context window is a working memory with a hard edge. Long work crosses that edge, so a fleet that cannot hand work across it is limited to tasks that fit in one sitting. Continuity is not a nice-to-have for multi-day work; it is the precondition. The test is simple: kill the agent mid-task and start a new one. Does the new one know what it was doing, and can it prove it? <em>(E4–E8)</em></p>
+<p><strong>Evidence.</strong> Agents report success fluently. A fleet that takes those reports at face value accumulates small fictions: the fix that reached the repository but not the running service, the test that passed against a stale copy, the guard that was written but never wired in. Evidence means every important claim can be checked by looking at its effect in the world, and the people running the fleet make a habit of doing so. <em>(E9–E12)</em></p>
+<p><strong>On the numbers.</strong> The time limits above (one minute, fifteen minutes) are starting points, not laws. The principle behind them is that a check should finish before the agent, or a person, would be tempted to move on without it. Tune them for your fleet, and write down what you chose.</p></section>
+<section id="s7" class="sec "><div class="kicker"><span class="num">07</span><span class="bar"></span></div><h1>Strand two: the ten Practices</h1><p>Practices are the recurring jobs a fleet can take over. Each moves from <em>done by a person</em> to <em>done by an agent and checked</em> to <em>done by an agent and trusted</em>.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Practice</th>
+<th>What it covers</th>
+<th>Mature looks like</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Intake</strong></td>
+<td>Turning signals into shaped work</td>
+<td>Every inbound signal becomes a sized, deduplicated item with an owner within a day</td>
+</tr>
+<tr>
+<td><strong>Building</strong></td>
+<td>Doing the work</td>
+<td>One agent per task, then several in parallel, then large goals split automatically into ordered sub-tasks</td>
+</tr>
+<tr>
+<td><strong>Reviewing</strong></td>
+<td>Reading every change before it lands</td>
+<td>Every change gets a written review from an agent that did not write it, within minutes</td>
+</tr>
+<tr>
+<td><strong>Proving</strong></td>
+<td>Checking work by its effect</td>
+<td>"Done" means a check that touches the real, deployed thing has passed</td>
+</tr>
+<tr>
+<td><strong>Releasing</strong></td>
+<td>Shipping safely</td>
+<td>Small, staged releases that roll back on their own when health drops</td>
+</tr>
+<tr>
+<td><strong>Responding</strong></td>
+<td>Handling incidents</td>
+<td>Problems are noticed by the fleet first; the first responder arrives with context already gathered</td>
+</tr>
+<tr>
+<td><strong>Recording</strong></td>
+<td>Keeping docs and decisions current</td>
+<td>Docs are updated in the commit that changes the behaviour; decisions are written down with their reasons</td>
+</tr>
+<tr>
+<td><strong>Asking</strong></td>
+<td>Routing decisions to people</td>
+<td>Every question for a human is a structured card with options and context, delivered to where that person actually is, and the answer resumes the work</td>
+</tr>
+<tr>
+<td><strong>Handing over</strong></td>
+<td>Continuity across sessions</td>
+<td>Seats rotate to a fresh session before they run out of room, with no lost work and no human needed</td>
+</tr>
+<tr>
+<td><strong>Choosing runtimes</strong></td>
+<td>Picking the model for the job</td>
+<td>Work is matched to the model that suits it, and the fleet keeps running if one provider is down or out of quota</td>
+</tr>
+</tbody>
+</table></div>
+<p>Two Practices are new relative to most autonomy models, and both come from running real fleets.</p>
+<p><strong>Asking</strong> is the other half of autonomy. An agent that never asks will eventually guess wrong about something that matters. An agent that asks in a chat log will wait forever. The mature form is a dedicated decision surface: each question carries its context, its options and its consequences, reaches the person on their phone or watch, and wakes the agent that asked when it is answered. The measure is <strong>decision latency</strong>: how long the fleet waits on people. <em>(E16, E17)</em></p>
+<p><strong>Handing over</strong> is what makes long work possible. A seat that can rotate to a fresh session, carrying a written handoff that its successor must demonstrate it understood, can work on a goal for days. A seat that cannot is a very fast intern with no memory. <em>(E5, E6)</em></p></section>
+<section id="s8" class="sec "><div class="kicker"><span class="num">08</span><span class="bar"></span></div><h1>Strand three: Stewardship</h1><p>The first two strands describe what the fleet needs. The third describes what you need. As more work runs without you, it gets easier to lose track of what your fleet is for, what it has decided and what it is allowed to do. Stewardship is six habits that stop that happening.</p>
+<ol>
+<li><strong>A written charter.</strong> Each seat has a written role, a scope and, where it has one, a standing goal, and you can read them all in one place. If you cannot say what a seat is for, neither can it.</li>
+<li><strong>A decision log.</strong> Every decision you make on a card is recorded with what you chose and why. Over time this becomes your fleet's memory of your judgment, and it lets agents stop asking questions you have already answered.</li>
+<li><strong>Consent before reach.</strong> Agents act on your behalf only within limits you agreed to. Anything outward-facing (publishing, sending, spending, deleting) needs an explicit allowance.</li>
+<li><strong>Interruptions earn their place.</strong> Your attention is the scarcest resource in the fleet. Agents decide what they safely can, batch what can wait, and bring you only what needs you. You measure how long they wait on you, and you treat a long wait as a fleet problem, not a personal failing. <em>(E17, E18)</em></li>
+<li><strong>No single point of capture.</strong> The fleet runs on infrastructure you control and on more than one model provider. Losing any one vendor slows the work; it does not stop it. <em>(E22, E23)</em></li>
+<li><strong>Honest reporting.</strong> The fleet's reports say what was checked, how, and what was not. Known gaps are listed as plainly as wins. You hold yourself to the same rule when you tell anyone else what your fleet does.</li>
+</ol>
+<p>These habits cost little at the start and are very hard to add once a fleet is large. That is why they appear from Step 1 onward, not at the top.</p></section>
+<section id="s9" class="sec "><div class="kicker"><span class="num">09</span><span class="bar"></span></div><h1>The five Steps</h1><figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 460" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><rect x="40" y="328" width="124" height="62" fill="#E9E3D3" rx="3"/><text x="54.0" y="358.0" font-family="Fraunces" font-size="24" font-weight="600" fill="#B9771F" text-anchor="start" letter-spacing="0">1</text><text x="54.0" y="378.0" font-family="Instrument Sans" font-size="10.5" font-weight="700" fill="#0B4F52" text-anchor="start" letter-spacing="1.2">ASSISTED</text><text x="44.0" y="299.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">typing most of the</text><text x="44.0" y="314.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">code</text><rect x="168" y="266" width="124" height="124" fill="#E9E3D3" rx="3"/><text x="182.0" y="296.0" font-family="Fraunces" font-size="24" font-weight="600" fill="#B9771F" text-anchor="start" letter-spacing="0">2</text><text x="182.0" y="316.0" font-family="Instrument Sans" font-size="10.5" font-weight="700" fill="#0B4F52" text-anchor="start" letter-spacing="1.2">WRITTEN</text><text x="172.0" y="237.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">re-explaining the</text><text x="172.0" y="252.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">project</text><rect x="296" y="204" width="124" height="186" fill="#0B4F52" rx="3"/><text x="310.0" y="234.0" font-family="Fraunces" font-size="24" font-weight="600" fill="#DCEFEC" text-anchor="start" letter-spacing="0">3</text><text x="310.0" y="254.0" font-family="Instrument Sans" font-size="10.5" font-weight="700" fill="#F7F3EA" text-anchor="start" letter-spacing="1.2">ACCOUNTABLE</text><text x="300.0" y="175.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">watching, and</text><text x="300.0" y="190.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">checking 'done'</text><rect x="424" y="142" width="124" height="248" fill="#0B4F52" rx="3"/><text x="438.0" y="172.0" font-family="Fraunces" font-size="24" font-weight="600" fill="#DCEFEC" text-anchor="start" letter-spacing="0">4</text><text x="438.0" y="192.0" font-family="Instrument Sans" font-size="10.5" font-weight="700" fill="#F7F3EA" text-anchor="start" letter-spacing="1.2">CONTINUOUS</text><text x="428.0" y="113.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">restarting and</text><text x="428.0" y="128.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">re-briefing agents</text><rect x="552" y="80" width="124" height="310" fill="#1B6B63" rx="3"/><text x="566.0" y="110.0" font-family="Fraunces" font-size="24" font-weight="600" fill="#DCEFEC" text-anchor="start" letter-spacing="0">5</text><text x="566.0" y="130.0" font-family="Instrument Sans" font-size="10.5" font-weight="700" fill="#F7F3EA" text-anchor="start" letter-spacing="1.2">SELF-TENDING</text><text x="556.0" y="36.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">breaking work</text><text x="556.0" y="51.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">down; tending the</text><text x="556.0" y="66.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">machinery</text><line x1="20" y1="204" x2="700" y2="204" stroke="#B9771F" stroke-width="2" stroke-dasharray="7 5"/><text x="24.0" y="196.0" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#B9771F" text-anchor="start" letter-spacing="1.2">THE FLOOR · safe to stop watching</text><rect x="20" y="390" width="680" height="14" fill="#5FB8B3" opacity="0.5"/><text x="24.0" y="430.0" font-family="Instrument Sans" font-size="11.5" font-weight="500" fill="#6B7A77" text-anchor="start" letter-spacing="0.3">Above each Step: what people no longer do by hand</text></svg><figcaption>Figure 3. The five Steps. Each Step is defined by a job people no longer do by hand. Step 3, Accountable, is the floor: the first Step at which it is safe to stop watching.</figcaption></figure>
+<p>Each Step lists what changes, what people stop doing, and the checks a project must pass. A project stands on a Step only when <strong>every</strong> footing, practice and stewardship check for that Step and all Steps below it has passed recently.</p>
+<h2>Step 1: Assisted</h2>
+<p><em>One person, one agent, every move watched.</em></p>
+<p>The agent writes code at a person's elbow. It can run, but setup is manual and nothing checks its work automatically. The person reads everything.</p>
+<ul>
+<li><strong>People stop:</strong> typing most of the code.</li>
+<li><strong>Footing checks:</strong> a README explains what the project is; one command runs format, lint and type checks; unit tests exist and run.</li>
+<li><strong>Practice checks:</strong> work is done by an agent with a person reviewing every change.</li>
+<li><strong>Stewardship checks:</strong> each seat has a written role.</li>
+<li><strong>To climb:</strong> write down what you have been saying out loud.</li>
+</ul>
+<h2>Step 2: Written</h2>
+<p><em>What the team knows is where an agent can find it.</em></p>
+<p>Instructions, commands, conventions and past decisions are written into the project. A fresh agent, or a fresh person, can get started without asking anyone.</p>
+<ul>
+<li><strong>People stop:</strong> re-explaining the project to every new session.</li>
+<li><strong>Footing checks:</strong> an agent instruction file is present and current; a clean checkout builds with one documented command; checks run before every commit; the main line is protected; secrets are kept out of the code; logs are structured.</li>
+<li><strong>Practice checks:</strong> decisions are recorded with reasons; each long-lived agent has a named seat and a memory of its own.</li>
+<li><strong>Stewardship checks:</strong> all seats' roles and scopes are readable in one place; risky actions are listed and need your allowance.</li>
+<li><strong>To climb:</strong> make the rules enforce themselves, and make every action traceable.</li>
+</ul>
+<h2>Step 3: Accountable (the floor)</h2>
+<p><em>Every action is attributable, every claim is checked, every decision reaches a person.</em></p>
+<p>This is the Step where it becomes safe to stop watching. Rules are enforced by automation rather than memory. Every change can be traced to the seat that made it. "Done" is checked by its effect. And when an agent needs a person, it asks properly and waits rather than guessing.</p>
+<ul>
+<li><strong>People stop:</strong> watching agents work, and checking whether "done" means done.</li>
+<li><strong>Footing checks:</strong> tests exercise the deployed form; every action records its seat and a timestamp; agents run sandboxed by default; dependency and secret scanning run on every change; handoffs are written before a session ends.</li>
+<li><strong>Practice checks:</strong> every change is reviewed by an agent that did not write it; questions for people are decision cards with options and context, and the answer resumes the asking agent; releases can be rolled back with one command.</li>
+<li><strong>Stewardship checks:</strong> your decisions are logged with what you chose and why; the fleet's reports state what was and was not verified.</li>
+<li><strong>To climb:</strong> make feedback fast enough that agents can run in parallel, and make sessions survive their own limits.</li>
+</ul>
+<h2>Step 4: Continuous</h2>
+<p><em>The fleet keeps working across restarts, limits and outages.</em></p>
+<p>Seats rotate to fresh sessions before they run out of context, and a successor proves it understood the handoff before it takes over. Several agents work at once on separate tasks. Messages to a busy agent are held for it. If one model provider is down or out of quota, work moves to another.</p>
+<ul>
+<li><strong>People stop:</strong> restarting agents, re-briefing them, and noticing when one has stalled.</li>
+<li><strong>Footing checks:</strong> the fast check finishes in under a minute; a successor is verified against its predecessor's state before promotion; messages are held for absent seats; the fleet runs on at least two model providers.</li>
+<li><strong>Practice checks:</strong> inbound signals are shaped into work automatically; several tasks run in parallel; agent review, proving and intake carry a real share of the load; incidents are noticed by the fleet first.</li>
+<li><strong>Stewardship checks:</strong> the fleet runs on infrastructure you control; how long agents wait on you is measured.</li>
+<li><strong>To climb:</strong> give agents standing goals instead of tasks, and let the fleet tend itself.</li>
+</ul>
+<h2>Step 5: Self-tending</h2>
+<p><em>People set direction; the fleet tends itself.</em></p>
+<p>Large goals split into ordered sub-tasks automatically. Some seats hold standing goals (keep this service healthy, keep this guide accurate) rather than individual tasks. The fleet audits its own checks, notices when a guard has not fired in too long, and proposes fixes. People manage a portfolio of goals and answer judgment calls.</p>
+<ul>
+<li><strong>People stop:</strong> breaking work down, and maintaining the fleet's own machinery.</li>
+<li><strong>Footing checks:</strong> every check carries fresh evidence without a person collecting it.</li>
+<li><strong>Practice checks:</strong> goals decompose into ordered sub-tasks; standing-goal seats run for days; the fleet raises its own maintenance work.</li>
+<li><strong>Stewardship checks:</strong> you can see, question and change every standing goal in one place.</li>
+</ul>
+<p><strong>A plain word about Step 5.</strong> Very few teams anywhere stand on it across all of their work, and we do not claim to. The aim of this model is not to reach the top everywhere. It is to get every active project onto the floor, and keep it there, and let the upper Steps grow where they pay.</p></section>
+<section id="s10" class="sec "><div class="kicker"><span class="num">10</span><span class="bar"></span></div><h1>Scoring: three rules instead of points</h1><p>Most maturity models add up points. Points have a flaw: a project can collect plenty of advanced credit while missing something basic, and the total hides the gap. The Self-Tended Fleet Model scores with three rules instead.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 370" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><line x1="70" y1="242" x2="626" y2="242" stroke="#CFC6B0" stroke-width="1"/><text x="62.0" y="272.0" font-family="Instrument Sans" font-size="11" font-weight="600" fill="#6B7A77" text-anchor="end" letter-spacing="0">Step 1</text><line x1="70" y1="194" x2="626" y2="194" stroke="#CFC6B0" stroke-width="1"/><text x="62.0" y="224.0" font-family="Instrument Sans" font-size="11" font-weight="600" fill="#6B7A77" text-anchor="end" letter-spacing="0">Step 2</text><line x1="70" y1="146" x2="626" y2="146" stroke="#CFC6B0" stroke-width="1"/><text x="62.0" y="176.0" font-family="Instrument Sans" font-size="11" font-weight="600" fill="#6B7A77" text-anchor="end" letter-spacing="0">Step 3</text><line x1="70" y1="98" x2="626" y2="98" stroke="#CFC6B0" stroke-width="1"/><text x="62.0" y="128.0" font-family="Instrument Sans" font-size="11" font-weight="600" fill="#6B7A77" text-anchor="end" letter-spacing="0">Step 4</text><line x1="70" y1="50" x2="626" y2="50" stroke="#CFC6B0" stroke-width="1"/><text x="62.0" y="80.0" font-family="Instrument Sans" font-size="11" font-weight="600" fill="#6B7A77" text-anchor="end" letter-spacing="0">Step 5</text><rect x="80" y="98" width="58" height="192" rx="3" fill="#0B4F52"/><text x="109.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Fast checks</text><rect x="158" y="146" width="58" height="144" rx="3" fill="#0B4F52"/><text x="187.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Reproducible</text><text x="187.0" y="325.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">ground</text><rect x="236" y="146" width="58" height="144" rx="3" fill="#0B4F52"/><text x="265.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Written intent</text><rect x="314" y="194" width="58" height="96" rx="3" fill="#B9771F"/><text x="343.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Memory &</text><text x="343.0" y="325.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">continuity</text><rect x="392" y="146" width="58" height="144" rx="3" fill="#0B4F52"/><text x="421.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Legible code</text><rect x="470" y="98" width="58" height="192" rx="3" fill="#0B4F52"/><text x="499.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Evidence</text><rect x="548" y="98" width="58" height="192" rx="3" fill="#0B4F52"/><text x="577.0" y="310.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">Fences</text><text x="577.0" y="325.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#12201F" text-anchor="middle" letter-spacing="0">& sovereignty</text><rect x="70" y="194" width="556" height="96" fill="#5FB8B3" opacity="0.28"/><line x1="70" y1="194" x2="626" y2="194" stroke="#5FB8B3" stroke-width="3"/><text x="630.0" y="198.0" font-family="Instrument Sans" font-size="11.5" font-weight="600" fill="#1B6B63" text-anchor="start" letter-spacing="0">stands on</text><text x="630.0" y="216.0" font-family="Instrument Sans" font-size="15" font-weight="700" fill="#1B6B63" text-anchor="start" letter-spacing="1.5">STEP 2</text><text x="343.0" y="182.0" font-family="Fraunces" font-size="12" font-weight="600" fill="#B9771F" text-anchor="middle" letter-spacing="0" font-style="italic">the lowest bar</text><text x="360.0" y="30.0" font-family="Instrument Sans" font-size="12" font-weight="600" fill="#6B7A77" text-anchor="middle" letter-spacing="0.4">Average of footings: 3.3  ·  Step under the weakest-footing rule: 2</text></svg><figcaption>Figure 4. The weakest-footing rule. This illustrative project is strong on fast checks and fences but has no handoffs. It stands on Step 2, not on the average of its footings.</figcaption></figure>
+<p><strong>Rule 1: the weakest footing sets the Step.</strong> A project's Step is the highest Step for which every check, at that Step and below, passes. If one footing is missing, the project cannot stand above the Step that footing requires. This makes the next thing to fix obvious: it is always the lowest bar.</p>
+<p><strong>Rule 2: evidence expires.</strong> Every passing check carries the date of the evidence behind it. Evidence older than thirty days no longer counts until it is re-run. A check that was green in spring tells you nothing about autumn. <em>(E10, E13, E18)</em></p>
+<p><strong>Rule 3: a guard must be seen firing.</strong> For checks that are protections (a fence on risky actions, a scan that blocks secrets, a rollback that triggers on bad health), passing means it has been <strong>observed refusing something</strong>, in a test or in real life, within the evidence window. A protection that has only ever been switched on, and never seen to act, does not count. Unarmed and idle look identical from the outside. <em>(E11, E12)</em></p>
+<p>Checks stay binary (pass or fail, no partial credit) and should be cheap enough to re-run every day.</p>
+<p><strong>The numbers that matter.</strong> For your fleet as a whole, three numbers tell the story:</p>
+<ul>
+<li><strong>Floor share</strong>: active projects on Step 3 or higher, divided by all active projects. This is the headline. "Seven of my nine active projects are on the floor" is something you can understand and act on in one glance.</li>
+<li><strong>Unattended share</strong>: of the changes that shipped this month, what fraction needed no human action other than answering decision cards.</li>
+<li><strong>Decision latency</strong>: the median time a decision card waits for an answer. This is the fleet's real speed limit.</li>
+</ul>
+<p>These are paired with outcome measures you should track for yourself: time from signal to release, incidents and time to recover, rework (changes reverted or redone), and cost per shipped change. Readiness is a leading indicator; outcomes are the proof. We do not suggest targets for outcomes, because they depend on the work.</p></section>
+<section id="s11" class="sec "><div class="kicker"><span class="num">11</span><span class="bar"></span></div><h1>The Tend cycle</h1><p>Getting onto the floor is not a project with an end date. It is a habit. We describe it as a five-part cycle, repeated every few weeks.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 350" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><circle cx="360" cy="186" r="118" fill="none" stroke="#CFC6B0" stroke-width="2"/><path d="M398.2,74.4 A118,118 0 0 1 454.4,115.1" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M478.0,187.9 A118,118 0 0 1 456.6,253.8" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M394.7,298.8 A118,118 0 0 1 325.3,298.8" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M263.4,253.8 A118,118 0 0 1 242.0,187.9" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><path d="M265.6,115.1 A118,118 0 0 1 321.8,74.4" fill="none" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><circle cx="360.0" cy="68.0" r="34" fill="#0B4F52"/><text x="360.0" y="72.0" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.2">SURVEY</text><text x="360.0" y="24.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="middle" letter-spacing="0" font-style="italic">run every check</text><circle cx="472.2" cy="149.5" r="34" fill="#0B4F52"/><text x="472.2" y="153.5" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.2">CHOOSE</text><text x="518.2" y="153.5" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">the gaps that hold most</text><circle cx="429.4" cy="281.5" r="34" fill="#0B4F52"/><text x="429.4" y="285.5" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.2">LIFT</text><text x="475.4" y="285.5" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">fix once, reuse</text><circle cx="290.6" cy="281.5" r="34" fill="#B9771F"/><text x="290.6" y="285.5" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.2">PROVE</text><text x="244.6" y="285.5" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="end" letter-spacing="0" font-style="italic">see it change the world</text><circle cx="247.8" cy="149.5" r="34" fill="#0B4F52"/><text x="247.8" y="153.5" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.2">KEEP</text><text x="201.8" y="153.5" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="end" letter-spacing="0" font-style="italic">wire it into the rhythm</text><text x="360.0" y="182.0" font-family="Instrument Sans" font-size="13" font-weight="700" fill="#0B4F52" text-anchor="middle" letter-spacing="2.5">THE TEND</text><text x="360.0" y="201.0" font-family="Instrument Sans" font-size="13" font-weight="700" fill="#0B4F52" text-anchor="middle" letter-spacing="2.5">CYCLE</text><text x="360.0" y="222.0" font-family="Fraunces" font-size="11.5" font-weight="400" fill="#6B7A77" text-anchor="middle" letter-spacing="0" font-style="italic">every few weeks</text></svg><figcaption>Figure 5. The Tend cycle. Proving is a step of its own, because an improvement that has not been seen working has not happened yet.</figcaption></figure>
+<ol>
+<li><strong>Survey.</strong> Run every check on every active project. Record the evidence and its date. Publish the floor share.</li>
+<li><strong>Choose.</strong> Pick the few gaps that hold the most projects below the floor. Under the weakest-footing rule, these are usually the same one or two footings across many projects.</li>
+<li><strong>Lift.</strong> Fix them once, in a reusable way: a template, a default, a shared script, or an agent whose job is to apply the fix everywhere. New projects should start on Step 2 by default.</li>
+<li><strong>Prove.</strong> Check that the fix changed the world, not just the repository. Re-run the checks. For protections, make them fire. A lift without proof does not move the score.</li>
+<li><strong>Keep.</strong> Wire the checks into the fleet's normal rhythm, so evidence refreshes without anyone remembering to do it, and so a slipping project is noticed by the fleet first.</li>
+</ol></section>
+<section id="s12" class="sec "><div class="kicker"><span class="num">12</span><span class="bar"></span></div><h1>Rolling it out: Seed, Grove, Commons</h1><figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 320" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><circle cx="230" cy="165" r="145" fill="#DCEFEC" stroke="#0B4F52" stroke-width="1.5"/><circle cx="230" cy="165" r="98" fill="#5FB8B3" stroke="#0B4F52" stroke-width="1.5"/><circle cx="230" cy="165" r="50" fill="#0B4F52" stroke="#0B4F52" stroke-width="1.5"/><text x="230.0" y="170.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#F7F3EA" text-anchor="middle" letter-spacing="1.6">SEED</text><text x="230.0" y="99.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">GROVE</text><text x="230.0" y="50.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">COMMONS</text><line x1="400" y1="56" x2="400" y2="104" stroke="#B9771F" stroke-width="3"/><text x="420.0" y="70.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#B9771F" text-anchor="start" letter-spacing="1.6">SEED</text><text x="420.0" y="89.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0">One long-lived seat brings one active project</text><text x="420.0" y="106.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0">to Step 3. Write down every surprise.</text><line x1="400" y1="138" x2="400" y2="186" stroke="#B9771F" stroke-width="3"/><text x="420.0" y="152.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#B9771F" text-anchor="start" letter-spacing="1.6">GROVE</text><text x="420.0" y="171.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0">Many seats with roles, handoffs, one decision</text><text x="420.0" y="188.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0">surface. Step 4 on the seed; the floor elsewhere.</text><line x1="400" y1="220" x2="400" y2="268" stroke="#B9771F" stroke-width="3"/><text x="420.0" y="234.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#B9771F" text-anchor="start" letter-spacing="1.6">COMMONS</text><text x="420.0" y="253.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0">Share checks, scores and surprises with</text><text x="420.0" y="270.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0">other operators. Borrow their checks.</text></svg><figcaption>Figure 6. Seed, Grove, Commons. Start with one seat on one project; grow to a fleet of seats with roles; then compare notes with other operators.</figcaption></figure>
+<p><strong>Seed: one seat, one project.</strong> Choose a project people care about and is active. Bring it to Step 3 with a single long-lived agent seat. Learn where the friction really is. Write down every surprise.</p>
+<p><strong>Grove: many seats, distinct roles.</strong> Add seats with distinct roles. Introduce handoffs and rotation, a shared message store and the decision surface. Aim for Step 4 on the seed project and the floor on every other active one. Measure decision latency from the first day.</p>
+<p><strong>Commons: compare notes.</strong> Share your checks, your scores and what surprised you with other operators running their own fleets. Borrow their checks. Every fleet finds failure modes the others have not hit yet, and a shared checklist gets better faster than any one operator's. This is what Tulum DAO is for. <em>(E3)</em></p>
+<h2>The decision ladder</h2>
+<p>As autonomy grows, the question is not "how much do agents do?" but "for each kind of action, who decides?" We use four rungs.</p>
+<figure class="fig"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 340" width="100%" role="img"><defs><marker id="ar" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#0B4F52"/></marker><marker id="ao" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="#B9771F"/></marker></defs><rect x="130" y="30" width="520" height="56" rx="6" fill="#F7F3EA" stroke="#12201F" stroke-width="2"/><rect x="130" y="30" width="10" height="56" rx="3" fill="#12201F"/><text x="160.0" y="54.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#12201F" text-anchor="start" letter-spacing="1.4">RUNG 4  ·  STOP</text><text x="160.0" y="73.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">Cannot verify, or no rule covers it. Say so plainly.</text><rect x="130" y="100" width="520" height="56" rx="6" fill="#F7F3EA" stroke="#B9771F" stroke-width="2"/><rect x="130" y="100" width="10" height="56" rx="3" fill="#B9771F"/><text x="160.0" y="124.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#B9771F" text-anchor="start" letter-spacing="1.4">RUNG 3  ·  ASK ON A CARD</text><text x="160.0" y="143.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">Outward-facing, irreversible or costly. A person chooses.</text><rect x="130" y="170" width="520" height="56" rx="6" fill="#F7F3EA" stroke="#1B6B63" stroke-width="2"/><rect x="130" y="170" width="10" height="56" rx="3" fill="#1B6B63"/><text x="160.0" y="194.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#1B6B63" text-anchor="start" letter-spacing="1.4">RUNG 2  ·  ACT INSIDE A FENCE</text><text x="160.0" y="213.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">A guard can refuse: deny-list, sandbox, secret scan, spend limit.</text><rect x="130" y="240" width="520" height="56" rx="6" fill="#F7F3EA" stroke="#0B4F52" stroke-width="2"/><rect x="130" y="240" width="10" height="56" rx="3" fill="#0B4F52"/><text x="160.0" y="264.0" font-family="Instrument Sans" font-size="12.5" font-weight="700" fill="#0B4F52" text-anchor="start" letter-spacing="1.4">RUNG 1  ·  ACT</text><text x="160.0" y="283.0" font-family="Fraunces" font-size="12.5" font-weight="400" fill="#12201F" text-anchor="start" letter-spacing="0" font-style="italic">Routine work inside the project's checks. Recorded.</text><line x1="80" y1="300" x2="80" y2="34" stroke="#0B4F52" stroke-width="2" marker-end="url(#ar)"/><text x="66" y="170" transform="rotate(-90 66 170)" font-family="Instrument Sans" font-size="11" font-weight="700" fill="#0B4F52" text-anchor="middle" letter-spacing="1.6">MORE HUMAN JUDGMENT</text><text x="650.0" y="322.0" font-family="Instrument Sans" font-size="11.5" font-weight="500" fill="#6B7A77" text-anchor="end" letter-spacing="0">Every kind of action has a rung, and the rung is written down</text></svg><figcaption>Figure 7. The decision ladder. Most work should live on the lower rungs. Moving an action down a rung is a decision people make deliberately, with evidence.</figcaption></figure>
+<ol>
+<li><strong>Act.</strong> The agent does it and records it. Routine changes inside the project's checks.</li>
+<li><strong>Act inside a fence.</strong> The agent does it, but a guard can refuse: a deny-list, a sandbox, a secret scan, a spend limit.</li>
+<li><strong>Ask on a card.</strong> The agent prepares the decision (context, options, consequences) and a person chooses. Anything outward-facing, irreversible or costly lives here by default.</li>
+<li><strong>Stop.</strong> The agent does not proceed and says so plainly. Things it cannot verify, or that no rule covers.</li>
+</ol>
+<p>We do not publish target percentages for each rung. The right shape depends on the work and the risk. What matters is that every kind of action has a rung, the rung is written down, and moving an action to a lower rung is itself a visible decision. Agents are better at gathering facts than at judgment calls, and they rarely choose to stop on their own <em>(E14, E15, E19, E20)</em>.</p></section>
+<section id="s13" class="sec "><div class="kicker"><span class="num">13</span><span class="bar"></span></div><h1>A working reference: OrchestraOS</h1><p>Tulum DAO also publishes <strong>OrchestraOS</strong>, an open-source harness (Apache-2.0) for running a fleet of coding agents as a team. It is where many of the ideas in this paper were learned, and it is one place to try them. We describe it here as a reference, not as a requirement. The model is tool-neutral; any stack that passes the checks counts.</p>
+<p>What OrchestraOS provides today, according to its public documentation:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Part of the model</th>
+<th>How OrchestraOS approaches it</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Seats and memory (Footing 4)</td>
+<td>Agents are long-lived <strong>seats</strong> with a lineage of sessions; per-seat memory and a shared facts store survive restarts</td>
+</tr>
+<tr>
+<td>Handing over (Practice)</td>
+<td>When a session nears its context limit it writes a handoff; a successor boots, answers questions grounded in its predecessor's state to prove it understood, and only then takes over. On by default for Claude seats</td>
+</tr>
+<tr>
+<td>Messaging</td>
+<td>A durable message store with inboxes and threads; mail for a busy seat is held rather than lost</td>
+</tr>
+<tr>
+<td>Asking (Practice)</td>
+<td>Every decision is a card (approve, choose, fill in, or "waiting on you") on a web dashboard and an iOS and watch app; the answer resumes the agent that asked</td>
+</tr>
+<tr>
+<td>Choosing runtimes (Practice)</td>
+<td>A runtime catalog detects which agent CLIs are installed and logged in (Claude Code, Gemini, Codex) and offers their models</td>
+</tr>
+<tr>
+<td>Getting started</td>
+<td>Public repository, a seven-step gate every newcomer runs, and a beginner's guide that assumes no terminal experience</td>
+</tr>
+</tbody>
+</table></div>
+<p>What it does not do yet, in its own words, matters just as much: it is <strong>not a finished product</strong>. It runs one operator's fleet every day, and rotation on runtimes other than Claude is experimental. Scoring it against this model, honestly, is a good first exercise for any operator who installs it.</p></section>
+<section id="s14" class="sec "><div class="kicker"><span class="num">14</span><span class="bar"></span></div><h1>What this model cannot do</h1><ul>
+<li><strong>It cannot tell you what to build.</strong> A project can stand on Step 5 and build the wrong thing perfectly.</li>
+<li><strong>It measures readiness, not results.</strong> A high floor share with flat outcomes means something else is wrong: the work chosen, the decisions made, or the checks themselves.</li>
+<li><strong>It can be gamed by weak checks.</strong> A check that is easy to pass and proves nothing will inflate a score. This is why the checks are public and why guards must be seen firing.</li>
+<li><strong>It does not remove cost.</strong> Running many agents costs money and quota. Track cost per shipped change, and keep a limit on spend at the "fence" rung.</li>
+<li><strong>It does not replace you.</strong> It changes what you do. The work moves from typing and watching toward choosing, judging and teaching the fleet. That work is harder and more valuable.</li>
+</ul></section>
+<section id="s15" class="sec "><div class="kicker"><span class="num">15</span><span class="bar"></span></div><h1>Start this week</h1><ol>
+<li><strong>Pick your active projects.</strong> Write the list. That is the denominator for your floor share.</li>
+<li><strong>Run the Step 1 and Step 2 checks</strong> on each. Most can be scripted in an afternoon.</li>
+<li><strong>Find the weakest footing</strong> that appears most often. Fix it once, as a template, and apply it everywhere.</li>
+<li><strong>Set up one decision surface</strong>, even a simple one, and route every agent question to it. Start measuring decision latency.</li>
+<li><strong>Write your first handoff.</strong> Kill an agent mid-task, start a fresh one from the handoff, and see what it got wrong. Fix the handoff.</li>
+<li><strong>Prove one guard fires.</strong> Pick a protection you believe is on. Make it refuse something. If it does not, you have found your most valuable fix.</li>
+<li><strong>Write down your floor share</strong>, and how you measured it. Then do it again next month, and compare.</li>
+</ol></section>
+<section id="s16" class="sec "><div class="kicker"><span class="num">16</span><span class="bar"></span></div><h1>Run your fleet with other operators</h1><p>Tulum DAO is a community of people who each run their own fleet of AI agents. Nobody's fleet belongs to the community; what the community shares is what we learn running them. This paper is one result: a model built from real fleets, written down so it can be argued with and improved.</p>
+<p>If you run agents and want to compare notes with people solving the same problems (handoffs that lose the thread, agents that say "done" when they are not, questions that arrive at the wrong moment), come and join us.</p>
+<div class="cta">[JOIN LINK]</div>
+<p>Bring your self-check score. It is the quickest way to find the operators who are a Step ahead of you, and the ones you can help.</p></section>
+<section id="s17" class="sec "><div class="kicker"><span class="num">17</span><span class="bar"></span></div><h1>Appendix: the full checklist</h1><p>A project stands on a Step when every check at that Step and below has passed with evidence less than thirty days old. Protective checks (marked <span class="dia">◆</span>) count only when seen refusing something.</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Step</th>
+<th>Footings</th>
+<th>Practices</th>
+<th>Stewardship</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>1 Assisted</strong></td>
+<td>README explains the project · one command for format, lint and types · unit tests exist and run</td>
+<td>Agent does the work; a person reviews every change</td>
+<td>Each seat has a written role</td>
+</tr>
+<tr>
+<td><strong>2 Written</strong></td>
+<td>Agent instruction file current · clean checkout builds in one documented command · dependencies pinned · checks run before every commit · main line protected <span class="dia">◆</span> · secrets kept out of code <span class="dia">◆</span> · structured logs</td>
+<td>Decisions recorded with reasons · named seats with their own memory</td>
+<td>All seat roles and scopes in one place · list of risky actions needing your allowance</td>
+</tr>
+<tr>
+<td><strong>3 Accountable</strong></td>
+<td>Tests exercise the deployed form · every action records seat and time · sandbox by default <span class="dia">◆</span> · dependency and secret scanning on every change <span class="dia">◆</span> · handoffs written before session end</td>
+<td>Independent agent review of every change · decisions asked on cards and answers resume work · one-command rollback <span class="dia">◆</span></td>
+<td>Your decisions logged with what and why · reports state what was not verified</td>
+</tr>
+<tr>
+<td><strong>4 Continuous</strong></td>
+<td>Fast check under one minute · successor verified before promotion · messages held for absent seats · two or more model providers</td>
+<td>Automatic intake · parallel tasks · agent review, proving and intake carry real load · fleet notices incidents first</td>
+<td>Runs on infrastructure you control · time spent waiting on you is measured</td>
+</tr>
+<tr>
+<td><strong>5 Self-tending</strong></td>
+<td>All evidence refreshes without a person</td>
+<td>Goals decompose into ordered sub-tasks · standing-goal seats run for days · fleet raises its own maintenance work</td>
+<td>Every standing goal visible and changeable in one place</td>
+</tr>
+</tbody>
+</table></div></section>
+<section id="s18" class="sec "><div class="kicker"><span class="num">18</span><span class="bar"></span></div><h1>Evidence Ledger</h1><p>This paper follows its own Rule 2: <strong>evidence expires.</strong> The main text holds the model, which changes slowly. Every number, study and quotation lives here instead, each with the date it was last checked and the date by which it must be checked again. An entry past its re-check date should be treated as expired until someone verifies it again. When a newer source replaces an older one, the older entry is retired, not quietly kept.</p>
+<p><strong>Ledger edition 2026.10</strong> · all entries checked <strong>2026-10-07</strong> · re-check by <strong>2026-11-06</strong>. Quotations are verbatim from the original source. The notes say who produced each source and how much weight it can bear. Sources from companies that sell AI tools are marked as vendor sources.</p>
+<h2>Adoption and the case for the model</h2>
+<p><strong>E1 · Supports: Why speed is not the bottleneck</strong></p>
+<blockquote>
+<p>"AI's primary role in software development is that of an amplifier. It magnifies the strengths of high-performing organizations and the dysfunctions of struggling ones."</p>
+</blockquote>
+<p>Google Cloud DORA, <em>State of AI-assisted Software Development 2025</em>, p.3. Survey of 4,867 technology professionals, June–July 2025.</p>
+<p><strong>E2 · Supports: Summary</strong></p>
+<blockquote>
+<p>"As of May–July 2026, 90% of professional developers were using AI coding agents at work at least weekly in one form or another (local agents or remote cloud agents), with 68% using them daily."</p>
+</blockquote>
+<p>JetBrains, <em>AI Coding Agents: Adoption Trends</em> (Developer Ecosystem Survey 2026), August 2026. More than 15,000 developers, reweighted to be globally representative. Vendor source.</p>
+<p><strong>E3 · Supports: Commons; Run your fleet with other operators</strong></p>
+<blockquote>
+<p>"Everyone's creating their own way to working with AI agents, mostly alone and often guessing."</p>
+</blockquote>
+<p>Temporal, <em>The State of Development 2026</em>, published 2026-08-25. 554 US and UK engineers who already use agents, surveyed April–May 2026. Vendor source.</p>
+<h2>Memory, continuity and handoffs (Footing 4, Handing over)</h2>
+<p><strong>E4 · Supports: Footing 4</strong></p>
+<blockquote>
+<p>"In our survey, 35.7% said the most common blocker to using more AI agents is tracking state, followed by debugging (agents or otherwise) and managing costs (tokens or compute)."</p>
+</blockquote>
+<p>Temporal, <em>The State of Development 2026</em> (as E3). Note that the vendor sells software for managing state.</p>
+<p><strong>E5 · Supports: Footing 4; Handing over</strong></p>
+<blockquote>
+<p>"The core challenge of long-running agents is that they must work in discrete sessions, and each new session begins with no memory of what came before."</p>
+</blockquote>
+<p>Anthropic, <em>Effective harnesses for long-running agents</em>, 2025-11-26. Engineering guidance, not a measurement. Vendor source.</p>
+<p><strong>E6 · Supports: Handing over (rotation with a written handoff)</strong></p>
+<blockquote>
+<p>"Context resets—clearing the context window entirely and starting a fresh agent, combined with a structured handoff that carries the previous agent's state and the next steps—addresses both these issues."</p>
+</blockquote>
+<p>Anthropic, <em>Harness design for long-running application development</em>, 2026-03-24. The same post reports that a newer model made resets unnecessary in its harness. That is a reason to re-test the practice when the model changes, as Rule 2 requires.</p>
+<p><strong>E7 · Supports: Footing 4 (how a handoff is laid out)</strong></p>
+<blockquote>
+<p>"…performance is often highest when relevant information occurs at the beginning or end of the input context, and significantly degrades when models must access relevant information in the middle of long contexts, even for explicitly long-context models."</p>
+</blockquote>
+<p>Liu et al., <em>Lost in the Middle: How Language Models Use Long Contexts</em> (TACL), p.1. A peer-reviewed study, tested on 2023 models.</p>
+<p><strong>E8 · Challenges a naive reading of Footing 4</strong></p>
+<blockquote>
+<p>"Bounding the context window steepens decay rather than easing it, running directly against what a lost-in-the-middle explanation would predict."</p>
+</blockquote>
+<p>Mittal, <em>How Fast Do Agents Rot?</em>, arXiv 2609.01660, 2026-08-31, p.8. Single-author preprint based on 10,664 agent runs. This is why the model asks for handoffs that keep the agent's own state, together with checks at each step. A shorter context on its own is not the fix.</p>
+<h2>Evidence: is "done" really done? (Footing 6, Rules 2 and 3)</h2>
+<p><strong>E9 · Supports: Footing 6 (self-reports mislead)</strong></p>
+<blockquote>
+<p>"Before starting tasks, developers forecast that allowing AI will reduce completion time by 24%. After completing the study, developers estimate that allowing AI reduced completion time by 20%. Surprisingly, we find that allowing AI actually increases completion time by 19%—AI tooling slowed developers down."</p>
+</blockquote>
+<p>METR, arXiv 2507.09089, July 2025. Randomised trial with 16 developers and 246 tasks, using early-2025 tools. <strong>METR has since marked these results out of date</strong> (see E10). The finding that still holds is the gap between how fast people <em>felt</em> and how fast they <em>measured</em>. The 19% figure itself is no longer current.</p>
+<p><strong>E10 · Supports: Rule 2 (evidence expires)</strong></p>
+<blockquote>
+<p>"⚠️ These results are out of date. We have released results that are current as of early 2026, in a continuation of this study. We believe these historical results no longer reflect the current impact of AI models on open-source developer productivity."</p>
+</blockquote>
+<p>METR, banner added to its July 2025 study page. METR's February 2026 follow-up adds: "Some developers self-report very high speedups, though as we documented in our earlier study those estimates can be quite unreliable."</p>
+<p><strong>E11 · Supports: Rule 3; Practices: Proving</strong></p>
+<blockquote>
+<p>"Claude 3.7 Sonnet in the Inspect ReAct agent scaffold has an average success rate of 38% (±19%, 95% CI) on these issues, as measured by the maintainer-written test cases"</p>
+<p>"However, when manually reviewing a subset of these PRs, none of them are mergeable as-is."</p>
+</blockquote>
+<p>METR, <em>Research Update: Algorithmic vs. Holistic Evaluation</em>, 2025-08-13. A small sample: 18 issues and one agent.</p>
+<p><strong>E12 · Supports: Footing 6</strong></p>
+<blockquote>
+<p>"The agent decided to delete all the tests because then none of them would fail."</p>
+</blockquote>
+<p>Michael Grinich (WorkOS), quoted in Arize AI, <em>The Agent Reliability Gap: 2026 Report</em>, published 2026-08-28. Drawn from 14 practitioner interviews; an anecdote, not a statistic. Vendor source.</p>
+<p><strong>E13 · Supports: Rule 2</strong></p>
+<blockquote>
+<p>"every component in a harness encodes an assumption about what the model can't do on its own, and those assumptions are worth stress testing, both because they may be incorrect, and because they can quickly go stale as models improve."</p>
+</blockquote>
+<p>Anthropic, <em>Harness design for long-running application development</em>, 2026-03-24. Vendor source.</p>
+<h2>Decisions, asking and attention (Asking, Stewardship, the decision ladder)</h2>
+<p><strong>E14 · Supports: the decision ladder (judgment belongs higher up)</strong></p>
+<blockquote>
+<p>"models are best at gathering evidence (75% on Q&amp;A tasks), worse at open-ended delegated decisions (66%), and worst on the specific “trap” failure modes we've baked into DataBench where there is an obvious and plausible but wrong easy answer and success requires going deeper (54%)."</p>
+</blockquote>
+<p>Hex, <em>Introducing DataBench</em>, 2026-08-13. A vendor's own benchmark of 100 data-analysis tasks on a synthetic business. Its model rankings are not repeated here because they date quickly.</p>
+<p><strong>E15 · Supports: the decision ladder, rung 4 "Stop"</strong></p>
+<blockquote>
+<p>"Often the right answer is “I'm not sure we can answer that honestly” (spoiler: this is where models perform worst, they do not like giving up)."</p>
+</blockquote>
+<p>Hex, <em>Introducing DataBench</em> (as E14).</p>
+<p><strong>E16 · Supports: Practices: Asking (ask about plans, not every step)</strong></p>
+<blockquote>
+<p>"when Claude presents a plan for approval, users reject 39% of them. But for individual permissions requests, the rejection rate is only 3%."</p>
+</blockquote>
+<p>Anthropic (Claude blog), <em>Auto mode is now the default in Claude Code</em>, 2026-08-07. Vendor data; no sample size given.</p>
+<p><strong>E17 · Supports: Stewardship, "interruptions earn their place"</strong></p>
+<blockquote>
+<p>"As sessions got longer, humans did worse: they blocked about 17% of dangerous commands early in a session, dropping to about 5% after 50 or more prior prompts, while auto mode's block rate stayed flat regardless of session length."</p>
+</blockquote>
+<p>Anthropic (Claude blog), 2026-08-07 (as E16). A vendor-run study with 1,053 paid testers in a test environment.</p>
+<p><strong>E18 · Supports: Rule 2 (a human gate wears down too)</strong></p>
+<blockquote>
+<p>"Pooled by within-reviewer experience decile, the cumulative gap reaches +14.5 pp from first to tenth decile."</p>
+</blockquote>
+<p>Yu et al., <em>Habituation at the Gate</em>, arXiv 2606.22721, 2026-06-21. An independent preprint covering 400 reviewers and 11,429 reviews of AI-agent code. It measures how approval rates rose as reviewers gained experience. The authors' own caveat: "if agents genuinely improved, rising approval would be rational rather than habituative."</p>
+<p><strong>E19 · Supports: Ten-minute self-check; the decision ladder</strong></p>
+<blockquote>
+<p>"Trust is conditional: 48% trust AI when they can easily verify it, while only 7% trust it with important decisions."</p>
+</blockquote>
+<p>Stack Overflow, <em>Developer Survey 2026</em>, AI trust data page, published 2026-10-06. 30,903 valid responses collected June–August 2026; 14,304 answered the trust question.</p>
+<h2>Fences, cost and capture (Footing 7, rung 2)</h2>
+<p><strong>E20 · Supports: the decision ladder, rung 2 "Act inside a fence"</strong></p>
+<blockquote>
+<p>"Implement authorization in downstream systems rather than relying on an LLM to decide if an action is allowed or not."</p>
+</blockquote>
+<p>OWASP, <em>Top 10 for LLM Applications 2025</em>, LLM06 Excessive Agency, PDF p.28. Licensed CC BY-SA 4.0. Independent.</p>
+<p><strong>E21 · Supports: spend limits</strong></p>
+<blockquote>
+<p>"Apply rate limiting and user quotas to restrict the number of requests a single source entity can make in a given time period."</p>
+</blockquote>
+<p>OWASP, <em>Top 10 for LLM Applications 2025</em>, LLM10 Unbounded Consumption, PDF p.40.</p>
+<p><strong>E22 · Supports: No single point of capture</strong></p>
+<blockquote>
+<p>"A feature rollout caused routine settings requests to trigger repeated background checks. These checks opened new connections across multiple internal services, and failed checks generated additional attempts. This exhausted shared network connection capacity, preventing otherwise healthy services from reliably communicating."</p>
+</blockquote>
+<p>OpenAI, incident write-up for the outage of 2026-09-29 (status.openai.com). On the same day, Anthropic's status page recorded: "Impact occurred from 07:00 PT / 14:00 UTC to 07:59 PT / 14:59 UTC." These are two separate incidents at different times. Neither proves anything about the other provider, but both show that a single provider can stop.</p>
+<p><strong>E23 · Supports: Choosing runtimes</strong></p>
+<blockquote>
+<p>"More than 70% of organizations now use three or more models, and the share using more than six models nearly doubled."</p>
+</blockquote>
+<p>Datadog, <em>State of AI Engineering 2026</em>, p.3. Based on production telemetry from Datadog's own customers, with data through March 2026. Licensed CC BY-ND 4.0. Vendor source.</p></section>
+<section id="s19" class="sec "><div class="kicker"><span class="num">19</span><span class="bar"></span></div><h1>Inspired by, and further reading</h1><p>This paper was prompted by Factory's white paper <em>Software Factory: An Autonomy Maturity Model for the Enterprise</em> (factory.ai, 2026), which frames AI-driven software delivery as an operating-model change, scores repositories against binary signals across five levels, and proposes the share of repositories above a production floor as a headline metric for leadership. We found that framing useful and recommend reading it. The Self-Tended Fleet Model is our own: a different structure (three strands, the weakest-footing rule, expiring evidence, the decision ladder, continuity and asking as first-class practices) written for individual operators running their own fleets rather than for enterprise procurement. Any errors are ours.</p>
+<p>Also relevant:</p>
+<ul>
+<li>Gene M. Amdahl, "Validity of the single processor approach to achieving large scale computing capabilities" (1967), the classic argument that speeding up one part of a process is limited by the parts you did not speed up.</li>
+<li>The Capability Maturity Model (Software Engineering Institute, Carnegie Mellon), the origin of staged maturity levels in software.</li>
+<li>OrchestraOS, published by Tulum DAO: github.com/Tulum-DAO/orchestraos.</li>
+</ul></section>
+<section id="s20" class="sec "><div class="kicker"><span class="num">20</span><span class="bar"></span></div><h1>License</h1><p>© 2026 Tulum DAO. <em>The Self-Tended Fleet</em> is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). You may share and adapt it for any purpose, including commercially, as long as you give appropriate credit to Tulum DAO, link to the license (creativecommons.org/licenses/by/4.0), and indicate if changes were made.</p>
+<p>Quoted material from other works remains under its original terms.</p></section></main>
+<footer>© 2026 Tulum DAO · CC BY 4.0 · Draft for review, not for distribution</footer>
+</body></html>

@@ -20,3 +20,9 @@
   [headers.values]
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
+
+# The whitepaper draft is served UNLINKED and noindex until Shaw approves publishing.
+[[headers]]
+  for = "/whitepaper/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"

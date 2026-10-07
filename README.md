@@ -27,3 +27,10 @@ The sync refuses to write a doc that contains a private hostname or tailnet addr
 - The hero text is painted opaque on the first frame (it is the LCP element).
 
 Fonts: Bricolage Grotesque and IBM Plex Mono, both SIL OFL (see `public/fonts/`).
+
+## The whitepaper draft
+
+`public/whitepaper/` holds The Self-Tended Fleet draft, copied from the `tulum-dao-whitepaper`
+seat's build (`.workspace/tulum-dao-whitepaper/web/` on the operator's VPS). It is served at
+`/whitepaper/` UNLINKED and noindex (meta tag + `X-Robots-Tag` in `netlify.toml`) until Shaw
+approves publishing. Don't link it from the nav, the home page or OG tags.
