@@ -596,6 +596,14 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
       padding-top: 0;
       padding-bottom: 6vh;
     }
+    /* the decision layer: its card and the approval card arrive together in the upper middle of
+       the screen; room for the approval card is reserved directly above the panel */
+    .descent .layer[data-layer='approvals'] {
+      align-items: center;
+      min-height: 90vh;
+      padding-top: 26vh;
+      padding-bottom: 4vh;
+    }
     .panel {
       width: 100%;
       max-width: 34rem;
