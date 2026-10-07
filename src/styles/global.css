@@ -126,6 +126,9 @@ pre {
 
 /* Home: the page bottoms out in the abyss; the header sits on the surface. */
 body.surface-home {
+  background: var(--limestone);
+}
+.surface-home .site-foot {
   background: var(--abyss);
 }
 .surface-home .site-head {

@@ -238,6 +238,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let depth = 0;
   let depthTarget = 0;
   let approvalsT = 0;
+  let floorT = 0; // 0 until "Two ways to run it" comes up, 1 once it reaches mid-screen
   const readScroll = () => {
     const mid = innerHeight / 2;
     let i = 0;
@@ -262,6 +263,8 @@ export function mount(canvas: HTMLCanvasElement) {
       const r = ap.getBoundingClientRect();
       approvalsT = clamp(1 - (r.top + r.height * 0.35) / innerHeight, 0, 1);
     }
+    const floor = sections.find((s) => s.classList.contains('paths'));
+    if (floor) floorT = smooth(0.95, 0.5, floor.getBoundingClientRect().top / innerHeight);
   };
   addEventListener('scroll', readScroll, { passive: true });
 
@@ -403,8 +406,10 @@ export function mount(canvas: HTMLCanvasElement) {
     card.position.y = lerp(Y.approvals - 2, camera.position.y - 4.2, e);
     card.position.x = Math.sin(clock * 0.6) * 0.15 * (1 - e) - (innerWidth > 900 ? 1.1 * e : 0);
     card.rotation.z = Math.sin(clock * 0.5) * 0.08 * (1 - e);
-    card.visible = approvalsT > 0;
-    (card.material as MeshBasicMaterial).opacity = 0.95 * smooth(0, 0.35, approvalsT);
+    // it fades in as the approvals section rises, and fades out as the floor section comes up
+    const cardAlpha = 0.95 * smooth(0, 0.35, approvalsT) * (1 - floorT);
+    card.visible = cardAlpha > 0.01;
+    (card.material as MeshBasicMaterial).opacity = cardAlpha;
 
     ngeo.attributes.position.needsUpdate = true;
     ngeo.attributes.color.needsUpdate = true;
