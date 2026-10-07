@@ -89,6 +89,10 @@ type Thread = { a: Vector3; b: Vector3; color: Color; life: number; max: number;
 
 export function mount(canvas: HTMLCanvasElement) {
   const mobile = Math.min(innerWidth, innerHeight) < 700;
+  // on wide screens each layer sits a little away from its text panel (seats and memory panels are
+  // on the left, messaging's on the right); on phones the panels span the width, so no shift
+  const shift = innerWidth > 900 ? 1 : 0;
+  const LX = { seats: 1.1 * shift, messages: -1.1 * shift, memory: 0.9 * shift };
   let renderer: WebGLRenderer;
   try {
     // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
@@ -227,7 +231,7 @@ export function mount(canvas: HTMLCanvasElement) {
 
   // ---- labels: plain HTML over the canvas, placed from 3D each frame (crisp text, no font atlas)
   const labelLayer = document.getElementById('cenote-labels');
-  type Label = { el: HTMLElement; sub: HTMLElement | null; at: () => Vector3; alpha: () => number; last: string };
+  type Label = { el: HTMLElement; sub: HTMLElement | null; at: () => Vector3; alpha: () => number; last: string; w: number; h: number; d: number; x: number; y: number; a: number };
   const labels: Label[] = [];
   const addLabel = (
     name: string,
@@ -262,7 +266,7 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l = { el, sub, at, alpha, last: '' };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0 };
     labels.push(l);
     return l;
   };
@@ -270,6 +274,7 @@ export function mount(canvas: HTMLCanvasElement) {
     if (l.sub && l.last !== text) {
       l.sub.textContent = text;
       l.last = text;
+      l.w = 0; // re-measure: the text changed width
     }
   };
   const proj = new Vector3();
@@ -290,7 +295,7 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   type Ring = { line: Line; mat: LineBasicMaterial; born: number; r: number };
   type Lineage = { node: Node; rings: Ring[]; handoffAt: number; gen: number; label: Label; rt: string };
-  const ringRadius = (i: number) => 0.42 + i * 0.17;
+  const ringRadius = (i: number) => 0.3 + i * 0.11;
   const addRing = (l: Lineage, born: number, r: number) => {
     // normal blending: additive would turn the ochre readback flash pale against the teal water
     const mat = new LineBasicMaterial({ color: MAYA.clone(), transparent: true, opacity: 0, depthWrite: false });
@@ -307,8 +312,8 @@ export function mount(canvas: HTMLCanvasElement) {
   const seats: Lineage[] = [];
   for (let i = 0; i < SEATS; i++) {
     const a = (i / SEATS) * Math.PI * 2;
-    const r = 3.2 + (i % 3) * 0.7;
-    const n = spawn(new Vector3(Math.cos(a) * r, Y.seats + Math.sin(i * 2.1) * 0.8, Math.sin(a) * r), LIGHT, 24);
+    const r = 1.6 + (i % 2) * 1.05; // two close rows
+    const n = spawn(new Vector3(LX.seats + Math.cos(a) * r, Y.seats + Math.sin(i * 2.1) * 0.8, Math.sin(a) * r), LIGHT, 24);
     if (!n) continue;
     // a history: every seat has already been through a few generations
     const past = 1 + Math.floor(Math.random() * 4);
@@ -328,8 +333,8 @@ export function mount(canvas: HTMLCanvasElement) {
   const TALK = mobile ? 12 : 22;
   for (let i = 0; i < TALK; i++) {
     const a = (i / TALK) * Math.PI * 2 + Math.random() * 0.4;
-    const r = 1.2 + Math.sqrt(Math.random()) * 5.6;
-    const n = spawn(new Vector3(Math.cos(a) * r, Y.messages + (Math.random() - 0.5) * 3.5, Math.sin(a) * r), MAYA, 20);
+    const r = 0.6 + Math.sqrt(Math.random()) * 2.7;
+    const n = spawn(new Vector3(LX.messages + Math.cos(a) * r, Y.messages + (Math.random() - 0.5) * 2.2, Math.sin(a) * r), MAYA, 20);
     if (!n) continue;
     const ring = new Line(circle, new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false }));
     ring.scale.setScalar(0.32);
@@ -380,20 +385,20 @@ export function mount(canvas: HTMLCanvasElement) {
   const askers: Node[] = [];
   for (let i = 0; i < 7; i++) {
     const a = (i / 7) * Math.PI * 2 + 0.3;
-    const n = spawn(new Vector3(Math.cos(a) * 3.6, Y.approvals, Math.sin(a) * 3.6), MAYA, 20, 0.55);
+    const n = spawn(new Vector3(Math.cos(a) * 2.3, Y.approvals, Math.sin(a) * 2.3), MAYA, 20, 0.55);
     if (n) askers.push(n);
   }
 
   // memory that survives a restart: a seat at the centre of the facts it has learned. Every few
   // seconds it restarts. Its light and its links go out, but the facts stay lit; the next
   // generation lights up and re-links to each fact in turn (recall).
-  const memSeat = spawn(new Vector3(0, Y.memory, -0.4), LIGHT, 30)!;
+  const memSeat = spawn(new Vector3(LX.memory, Y.memory, -0.4), LIGHT, 30)!;
   const FACTS = mobile ? 12 : 16;
   const facts: Node[] = [];
   for (let i = 0; i < FACTS; i++) {
     const a = (i / FACTS) * Math.PI * 2 + (i % 2) * 0.2;
-    const r = i % 2 ? 2.9 + Math.random() * 0.5 : 1.6 + Math.random() * 0.4;
-    const f = spawn(new Vector3(Math.cos(a) * r, Y.memory + (Math.random() - 0.5) * 0.6, Math.sin(a) * r - 0.4), SAND, 15);
+    const r = i % 2 ? 2.0 + Math.random() * 0.35 : 1.1 + Math.random() * 0.3;
+    const f = spawn(new Vector3(LX.memory + Math.cos(a) * r, Y.memory + (Math.random() - 0.5) * 0.6, Math.sin(a) * r - 0.4), SAND, 15);
     if (f) {
       f.drift = 0; // facts hold still: they are the part that persists
       facts.push(f);
@@ -753,20 +758,43 @@ export function mount(canvas: HTMLCanvasElement) {
 
     renderer.render(scene, camera);
 
-    // labels follow their lights; they fade with distance so only the layer you are in is named
+    // labels follow their lights; they fade with distance so only the layer you are in is named.
+    // Placed nearest-first: a label that would overlap one already placed is hidden for now, so a
+    // tight cluster never turns into overlapping text.
     const W = innerWidth;
     const H = innerHeight;
+    const shown: Label[] = [];
     for (const l of labels) {
       const p = l.at();
-      const dist = camera.position.distanceTo(p);
-      const a = clamp(l.alpha(), 0, 1) * smooth(13, 8.5, dist) * smooth(2.2, 3.5, dist);
+      l.d = camera.position.distanceTo(p);
+      l.a = clamp(l.alpha(), 0, 1) * smooth(13, 8.5, l.d) * smooth(2.2, 3.5, l.d);
       proj.copy(p).project(camera);
-      if (a < 0.03 || proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) {
+      if (l.a < 0.03 || proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) {
+        l.a = 0;
+        continue;
+      }
+      l.x = (proj.x * 0.5 + 0.5) * W + 9;
+      l.y = (-proj.y * 0.5 + 0.5) * H - 9;
+      if (!l.w) {
+        l.w = l.el.offsetWidth || 90;
+        l.h = l.el.offsetHeight || 28;
+      }
+      shown.push(l);
+    }
+    shown.sort((p, q) => p.d - q.d);
+    const placed: Label[] = [];
+    for (const l of shown) {
+      const hit = placed.some((o) => l.x < o.x + o.w && o.x < l.x + l.w && l.y < o.y + o.h && o.y < l.y + l.h);
+      if (hit) l.a = 0;
+      else placed.push(l);
+    }
+    for (const l of labels) {
+      if (!l.a) {
         if (l.el.style.opacity !== '0') l.el.style.opacity = '0';
         continue;
       }
-      l.el.style.opacity = a.toFixed(2);
-      l.el.style.transform = `translate3d(${((proj.x * 0.5 + 0.5) * W + 9).toFixed(1)}px, ${((-proj.y * 0.5 + 0.5) * H - 9).toFixed(1)}px, 0)`;
+      l.el.style.opacity = l.a.toFixed(2);
+      l.el.style.transform = `translate3d(${l.x.toFixed(1)}px, ${l.y.toFixed(1)}px, 0)`;
     }
 
     if (!painted) {
