@@ -55,6 +55,9 @@ figcaption { font-size:14px; color:#6B7A77; margin-top:10px; line-height:1.5; }
 .dia { color:#B9771F; }
 blockquote { margin:8px 0; padding:10px 16px; border-left:3px solid #5FB8B3; background:#F7F3EA; font-family:'Fraunces', Georgia, serif; font-size:17px; line-height:1.5; }
 blockquote p { margin:0 0 6px; }
+.promptwrap { position:relative; margin:16px 0; }
+pre { background:#12201F; color:#E9E3D3; padding:18px; border-radius:8px; white-space:pre-wrap; word-break:break-word; font-family:'DejaVu Sans Mono', ui-monospace, monospace; font-size:14px; line-height:1.5; max-height:520px; overflow:auto; }
+.copybtn { display:block; margin:0 0 8px auto; padding:8px 14px; border:0; border-radius:6px; background:#5FB8B3; color:#12201F; font-weight:700; font-size:15px; cursor:pointer; }
 .review { background:#F7F3EA; border:2px dashed #B9771F; }
 .review-tag { font-family:'DejaVu Sans Mono', ui-monospace, monospace; font-size:12px; color:#B9771F; letter-spacing:.12em; margin-bottom:6px; }
 .cta { margin:22px 0; padding:22px; background:#0B4F52; color:#E9E3D3; font-family:'Fraunces', Georgia, serif; font-size:26px;
@@ -122,9 +125,9 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 <p>How to organise and manage your own fleet of AI agents. An <b>autonomy maturity model</b> for operators: seven footings, ten practices, six habits and five Steps to work that runs without you watching.</p>
 <a class="btn primary" href="#s1">Start reading</a>
 <a class="btn ghost" href="Tulum-DAO-The-Self-Tended-Fleet-DRAFT.pdf" download>Download PDF</a>
-<div class="meta" style="margin-top:28px">DRAFT 0.4 · OCTOBER 2026 · CC BY 4.0</div>
+<div class="meta" style="margin-top:28px">DRAFT 0.5 · OCTOBER 2026 · CC BY 4.0</div>
 </div></header>
-<nav class="toc"><details><summary>Contents</summary><ol><li><a href="#s1">Summary</a></li><li><a href="#s2">Ten-minute self-check</a></li><li><a href="#s3">Why speed is not the bottleneck</a></li><li><a href="#s4">The Self-Tended Fleet</a></li><li><a href="#s5">How the model is built</a></li><li><a href="#s6">Strand one: the seven Footings</a></li><li><a href="#s7">Strand two: the ten Practices</a></li><li><a href="#s8">Strand three: Stewardship</a></li><li><a href="#s9">The five Steps</a></li><li><a href="#s10">Scoring: three rules instead of points</a></li><li><a href="#s11">The Tend cycle</a></li><li><a href="#s12">Rolling it out: Seed, Grove, Commons</a></li><li><a href="#s13">A working reference: OrchestraOS</a></li><li><a href="#s14">What this model cannot do</a></li><li><a href="#s15">Start this week</a></li><li><a href="#s16">Run your fleet with other operators</a></li><li><a href="#s17">Appendix: the full checklist</a></li><li><a href="#s18">Evidence Ledger</a></li><li><a href="#s19">Inspired by, and further reading</a></li><li><a href="#s20">License</a></li></ol></details></nav>
+<nav class="toc"><details><summary>Contents</summary><ol><li><a href="#s1">Summary</a></li><li><a href="#s2">Ten-minute self-check</a></li><li><a href="#s3">Why speed is not the bottleneck</a></li><li><a href="#s4">The Self-Tended Fleet</a></li><li><a href="#s5">How the model is built</a></li><li><a href="#s6">Strand one: the seven Footings</a></li><li><a href="#s7">Strand two: the ten Practices</a></li><li><a href="#s8">Strand three: Stewardship</a></li><li><a href="#s9">The five Steps</a></li><li><a href="#s10">Scoring: three rules instead of points</a></li><li><a href="#s11">The Tend cycle</a></li><li><a href="#s12">Rolling it out: Seed, Grove, Commons</a></li><li><a href="#s13">A working reference: OrchestraOS</a></li><li><a href="#s14">What this model cannot do</a></li><li><a href="#s15">Start this week</a></li><li><a href="#s16">Run your fleet with other operators</a></li><li><a href="#s17">Appendix: the full checklist</a></li><li><a href="#s18">Appendix: the Fleet audit prompt</a></li><li><a href="#s19">Evidence Ledger</a></li><li><a href="#s20">Inspired by, and further reading</a></li><li><a href="#s21">License</a></li></ol></details></nav>
 <main><section id="s1" class="sec "><div class="kicker"><span class="num">01</span><span class="bar"></span></div><h1>Summary</h1><p>Most people who start running AI coding agents get a faster typist. Few get a team that keeps working while they sleep, hands work cleanly from one agent to the next, proves what it did, and asks a human only the questions a human should answer. The difference is not the model. It is everything around the model.</p>
 <p>This paper sets out the <strong>Self-Tended Fleet Model</strong>: a way to organise and manage your own fleet of AI agents, measure how much of your work can safely run without you watching, and raise that share step by step. It is written for operators: anyone running more than one agent, from a solo builder with three seats to a small studio running dozens. The method is open. Run the checks on your own fleet, argue with them, and share better ones.</p>
 <p>The model has three strands:</p>
@@ -204,7 +207,8 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 </tr>
 </tbody>
 </table></div>
-<p><strong>Reading your answers.</strong> Your Step is the highest Step for which you answered yes to <em>every</em> question at that Step and below. A single no at Step 2 holds you at Step 1, however many later questions you answered yes. That is the weakest-footing rule, and the rest of this paper explains why it is the right way to score a fleet. Most operators who are honest land on Step 1 or 2. The goal is Step 3.</p></section>
+<p><strong>Reading your answers.</strong> Your Step is the highest Step for which you answered yes to <em>every</em> question at that Step and below. A single no at Step 2 holds you at Step 1, however many later questions you answered yes. That is the weakest-footing rule, and the rest of this paper explains why it is the right way to score a fleet. Most operators who are honest land on Step 1 or 2. The goal is Step 3.</p>
+<p><strong>Rather have your agent do it?</strong> Copy the <em>Fleet audit prompt</em> (in the appendix, after the checklist) into whichever AI agent you use most. It interviews you and, if it can see your files, checks the answers for itself. It does not change anything. It ends with your Step, your weakest footing and your three fastest fixes.</p></section>
 <section id="s3" class="sec "><div class="kicker"><span class="num">03</span><span class="bar"></span></div><h1>Why speed is not the bottleneck</h1><p>When you add an AI agent, the first thing that changes is how fast code appears. It is tempting to measure that and stop. But code that appears faster still has to be understood, checked, approved, released and lived with. If a feature spends one afternoon being written and four days waiting for a decision, a review and a deploy window, then writing it ten times faster saves part of one afternoon. The elapsed time barely moves.</p>
 <p>For operators running several agents at once, our experience points to three places where time actually goes:</p>
 <ul>
@@ -489,6 +493,7 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 <li><strong>It does not replace you.</strong> It changes what you do. The work moves from typing and watching toward choosing, judging and teaching the fleet. That work is harder and more valuable.</li>
 </ul></section>
 <section id="s15" class="sec "><div class="kicker"><span class="num">15</span><span class="bar"></span></div><h1>Start this week</h1><ol>
+<li><strong>Run the Fleet audit prompt</strong> with your own agent (in the appendix) and save the result. It is your baseline.</li>
 <li><strong>Pick your active projects.</strong> Write the list. That is the denominator for your floor share.</li>
 <li><strong>Run the Step 1 and Step 2 checks</strong> on each. Most can be scripted in an afternoon.</li>
 <li><strong>Find the weakest footing</strong> that appears most often. Fix it once, as a template, and apply it everywhere.</li>
@@ -544,7 +549,89 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 </tr>
 </tbody>
 </table></div></section>
-<section id="s18" class="sec "><div class="kicker"><span class="num">18</span><span class="bar"></span></div><h1>Evidence Ledger</h1><p>This paper follows its own Rule 2: <strong>evidence expires.</strong> The main text holds the model, which changes slowly. Every number, study and quotation lives here instead, each with the date it was last checked and the date by which it must be checked again. An entry past its re-check date should be treated as expired until someone verifies it again. When a newer source replaces an older one, the older entry is retired, not quietly kept.</p>
+<section id="s18" class="sec "><div class="kicker"><span class="num">18</span><span class="bar"></span></div><h1>Appendix: the Fleet audit prompt</h1><p>Paste this into the AI agent you use most: Claude Code, Codex, Gemini, ChatGPT, Cursor or any other. It works two ways:</p>
+<ul>
+<li><strong>In a chat window</strong>, the agent interviews you.</li>
+<li><strong>In an agent that can see your files</strong>, it looks for evidence first (instruction files, hooks, configuration, git history) and only asks about what it cannot see. It asks before running even a read-only command, and it never builds, installs, changes or sends anything.</li>
+</ul>
+<p>Expect about fifteen minutes. The result is your Step, a table of all thirty checks, your weakest footing, three fixes in order, and any risks it noticed. Save the result, date it, and run it again in a month. Evidence expires, and so does your score.</p>
+<pre><code>You are helping me audit how I run my AI agents, using the Self-Tended Fleet model from Tulum DAO (an open maturity model, CC BY 4.0). Act as a careful, friendly auditor. Find where my setup is solid and where it has gaps, honestly. Do not flatter me, do not soften the result, and do not sell me anything.
+
+GROUND RULES
+- Read-only. Do not create, change, delete, install, commit, send or publish anything. Do not run builds, tests, installs or anything that uses the network. Your fixes are recommendations only.
+- Before you look at anything, list the read-only commands you plan to run (for example ls, cat, grep, git log) and ask me once for permission to run that batch.
+- Check, don't assume. If you can see my files, look for evidence before asking. Mark each check SEEN (you saw proof), TOLD (I said so, or a doc claims it) or UNKNOWN. If what I tell you contradicts what you see, report both and trust what you SEE.
+- Ask at most 3 questions per message, in plain language, and wait for my answers.
+- A check that is only partly true counts as a gap. Check each part separately.
+
+THE MODEL IN BRIEF
+A &quot;fleet&quot; is any setup where one person runs more than one AI agent, or one agent for long stretches without watching.
+- Footings (what the agents stand on): F1 fast checks, F2 reproducible ground, F3 written intent, F4 memory &amp; continuity, F5 legible code, F6 evidence, F7 fences &amp; sovereignty.
+- [P] marks a practice, meaning recurring work the fleet does. [S] marks stewardship, meaning how I stay in charge.
+- There are five Steps: 1 Assisted, 2 Written, 3 Accountable (the floor: safe to stop watching), 4 Continuous, 5 Self-tending.
+- My Step is the highest Step at which EVERY check, at that Step and every Step below it, passes.
+- Evidence older than 30 days doesn't count; if I can't say roughly when something last happened, mark it UNKNOWN.
+- A safety guard counts only if it has been seen stopping something BEFORE it happened. Acceptable evidence is a log line, CI history, or a record of the block. An alert after the fact is not a block.
+
+CONTEXT (ask first)
+- What do I use agents for, and with which tools or models?
+- Roughly how many agents or sessions do I run at once, and on how many projects?
+- Can you see my files right now, and if so, where should you look? Agent configuration outside the project, such as ~/.claude/, ~/.codex/, ~/.gemini/ or rules files, is in scope if you can see it.
+
+THE CHECKS (one row each, in order; look first, ask second)
+If I run 1-3 interactive sessions and nothing runs unattended, do Steps 1-3 properly and cover Steps 4-5 in one quick yes/no message. Once a Step clearly fails, go through the higher Steps quickly, not in depth.
+
+Step 1, Assisted
+1. [F1] One command runs format, lint and type checks.
+2. [F1] Agents actually run that command before saying they're done.
+3. [F1] Unit tests exist and have run in the last 30 days.
+4. [S] Each agent that persists across sessions has a written role. Mark N/A if none persist.
+
+Step 2, Written
+5. [F3] An instruction file agents read at the start of every session (for example AGENTS.md, CLAUDE.md, GEMINI.md, a rules file, or a prompt injected when the agent starts), updated in the last 30 days or matching the current code.
+6. [F2] A clean copy builds with one documented command.
+7. [F2] Dependencies are pinned, meaning exact versions or a lockfile.
+8. [F1] Checks run automatically before every commit, for example a git hook.
+9. [F7] The main branch is protected, so nothing can be pushed to it directly.
+10. [F7] Secrets (keys, tokens) are kept out of the code and its history.
+11. [S] Decisions are written down with their reasons.
+12. [F4] Each long-lived agent has its own memory outside the chat window.
+13. [F7] A written list of actions agents must ask me about first: publish, deploy, push to main, send, spend, delete.
+
+Step 3, Accountable
+14. [F6] For any change, I can tell which agent made it and when.
+15. [F6] &quot;Done&quot; is checked against the real, running thing (the live page, the service, a real test run), not just the agent's word.
+16. [P] Questions for me arrive as clear choices with context, somewhere I'll actually see them, and my answer restarts the work.
+17. [P] Every change is reviewed by a different agent or a person.
+18. [P] A release can be rolled back with one command. Undoing a git commit doesn't count.
+19. [F7] Agents run sandboxed or with a permission allowlist by default, not with every permission prompt switched off.
+20. [F7] Secret or dependency scanning has been seen blocking something, by the rule above.
+21. [F4] A handoff note is written before a session ends.
+
+Step 4, Continuous
+22. [F4] If an agent's session ended now, a fresh one could carry on without me re-explaining.
+23. [F4] A successor shows it understood the handoff before it takes over.
+24. [F4] Messages to a busy or absent agent are held, not lost.
+25. [F7] If my main model provider were down for a day, work would continue on another.
+26. [F7] There are limits on agent loops and on spend.
+27. [F1] The fast check finishes in under a minute (TOLD is fine; don't run it).
+
+Step 5, Self-tending
+28. [P] Some agents hold standing goals and run for days without me.
+29. [P] Large goals are broken into ordered sub-tasks automatically.
+30. [S] The fleet refreshes its own evidence and raises its own maintenance work.
+
+WHAT TO GIVE ME AT THE END
+1. My Step, written as &quot;Step N (name)&quot;. If any Step 1 check fails, write &quot;Not yet Step 1&quot;. Then: the single check that holds me there, and the Step I would reach if only that blocker were fixed.
+2. A table with these columns: # | check | SEEN / TOLD / UNKNOWN | pass, gap or N/A | short note.
+3. My weakest footing (F1–F7), and what it costs me day to day, in plain words.
+4. The three fixes that would raise my Step fastest, smallest first. For each: what to do, roughly how long it takes, and how I'll know it worked. &quot;Worked&quot; means something I can see happen, for example a commit that gets blocked, not just a file that exists.
+5. Anything risky you noticed: for example secrets in plain text, agents that can publish, deploy or spend without asking, safety switched off, or a guard never seen to fire.
+6. One honest line on whether a more structured fleet is worth it for me at all. If I only use one agent now and then, say so.
+
+Start with the context questions now.
+</code></pre></section>
+<section id="s19" class="sec "><div class="kicker"><span class="num">19</span><span class="bar"></span></div><h1>Evidence Ledger</h1><p>This paper follows its own Rule 2: <strong>evidence expires.</strong> The main text holds the model, which changes slowly. Every number, study and quotation lives here instead, each with the date it was last checked and the date by which it must be checked again. An entry past its re-check date should be treated as expired until someone verifies it again. When a newer source replaces an older one, the older entry is retired, not quietly kept.</p>
 <p><strong>Ledger edition 2026.10</strong> · all entries checked <strong>2026-10-07</strong> · re-check by <strong>2026-11-06</strong>. Quotations are verbatim from the original source. The notes say who produced each source and how much weight it can bear. Sources from companies that sell AI tools are marked as vendor sources.</p>
 <h2>Adoption and the case for the model</h2>
 <p><strong>E1 · Supports: Why speed is not the bottleneck</strong></p>
@@ -667,14 +754,27 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 <p>"More than 70% of organizations now use three or more models, and the share using more than six models nearly doubled."</p>
 </blockquote>
 <p>Datadog, <em>State of AI Engineering 2026</em>, p.3. Based on production telemetry from Datadog's own customers, with data through March 2026. Licensed CC BY-ND 4.0. Vendor source.</p></section>
-<section id="s19" class="sec "><div class="kicker"><span class="num">19</span><span class="bar"></span></div><h1>Inspired by, and further reading</h1><p>This paper was prompted by Factory's white paper <em>Software Factory: An Autonomy Maturity Model for the Enterprise</em> (factory.ai, 2026), which frames AI-driven software delivery as an operating-model change, scores repositories against binary signals across five levels, and proposes the share of repositories above a production floor as a headline metric for leadership. We found that framing useful and recommend reading it. The Self-Tended Fleet Model is our own: a different structure (three strands, the weakest-footing rule, expiring evidence, the decision ladder, continuity and asking as first-class practices) written for individual operators running their own fleets rather than for enterprise procurement. Any errors are ours.</p>
+<section id="s20" class="sec "><div class="kicker"><span class="num">20</span><span class="bar"></span></div><h1>Inspired by, and further reading</h1><p>This paper was prompted by Factory's white paper <em>Software Factory: An Autonomy Maturity Model for the Enterprise</em> (factory.ai, 2026), which frames AI-driven software delivery as an operating-model change, scores repositories against binary signals across five levels, and proposes the share of repositories above a production floor as a headline metric for leadership. We found that framing useful and recommend reading it. The Self-Tended Fleet Model is our own: a different structure (three strands, the weakest-footing rule, expiring evidence, the decision ladder, continuity and asking as first-class practices) written for individual operators running their own fleets rather than for enterprise procurement. Any errors are ours.</p>
 <p>Also relevant:</p>
 <ul>
 <li>Gene M. Amdahl, "Validity of the single processor approach to achieving large scale computing capabilities" (1967), the classic argument that speeding up one part of a process is limited by the parts you did not speed up.</li>
 <li>The Capability Maturity Model (Software Engineering Institute, Carnegie Mellon), the origin of staged maturity levels in software.</li>
 <li>OrchestraOS, published by Tulum DAO: github.com/Tulum-DAO/orchestraos.</li>
 </ul></section>
-<section id="s20" class="sec "><div class="kicker"><span class="num">20</span><span class="bar"></span></div><h1>License</h1><p>© 2026 Tulum DAO. <em>The Self-Tended Fleet</em> is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). You may share and adapt it for any purpose, including commercially, as long as you give appropriate credit to Tulum DAO, link to the license (creativecommons.org/licenses/by/4.0), and indicate if changes were made.</p>
+<section id="s21" class="sec "><div class="kicker"><span class="num">21</span><span class="bar"></span></div><h1>License</h1><p>© 2026 Tulum DAO. <em>The Self-Tended Fleet</em> is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). You may share and adapt it for any purpose, including commercially, as long as you give appropriate credit to Tulum DAO, link to the license (creativecommons.org/licenses/by/4.0), and indicate if changes were made.</p>
 <p>Quoted material from other works remains under its original terms.</p></section></main>
 <footer>© 2026 Tulum DAO · CC BY 4.0 · Draft for review, not for distribution</footer>
+<script>
+document.querySelectorAll('pre').forEach(function(pre){
+  var w=document.createElement('div'); w.className='promptwrap'; pre.parentNode.insertBefore(w,pre); 
+  var b=document.createElement('button'); b.className='copybtn'; b.type='button'; b.textContent='Copy prompt';
+  b.addEventListener('click',function(){
+    var t=pre.innerText;
+    function done(){ b.textContent='Copied ✓'; setTimeout(function(){b.textContent='Copy prompt';},2000); }
+    if(navigator.clipboard&&window.isSecureContext){ navigator.clipboard.writeText(t).then(done,fallback);} else fallback();
+    function fallback(){ var ta=document.createElement('textarea'); ta.value=t; ta.style.position='fixed'; ta.style.opacity='0'; document.body.appendChild(ta); ta.select(); try{document.execCommand('copy'); done();}catch(e){ b.textContent='Select and copy manually'; } document.body.removeChild(ta); }
+  });
+  w.appendChild(b); w.appendChild(pre);
+});
+</script>
 </body></html>
