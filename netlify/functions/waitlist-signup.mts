@@ -2,7 +2,7 @@
 // Responds the same way whether the address is new, pending or already confirmed, so the
 // endpoint cannot be used to test who is on the list.
 import type { Config, Context } from "@netlify/functions";
-import { clientIp, idFor, json, normalizeEmail, rateLimited, redirect, sendConfirm, sha256, store, wantsJson, type Signup } from "../lib/waitlist.mts";
+import { clientIp, idFor, json, keyedHash, normalizeEmail, rateLimited, redirect, sendConfirm, store, wantsJson, type Signup } from "../lib/waitlist.mts";
 
 const RESEND_GAP_MS = 10 * 60 * 1000;
 const MAX_CONFIRM_SENDS = 3;
@@ -32,8 +32,7 @@ export default async (req: Request, ctx: Context) => {
   const email = normalizeEmail(body.email);
   if (!email) return fail("invalid_email", 400);
 
-  const ipHash = (await sha256("ip:" + clientIp(req, ctx))).slice(0, 24);
-  if (await rateLimited(ipHash)) return fail("rate_limited", 429);
+  if (await rateLimited(await keyedHash("signup:" + clientIp(req, ctx)))) return fail("rate_limited", 429);
 
   const source = (body.source || "site").replace(/[^a-z0-9_\-:/.]/gi, "").slice(0, 64) || "site";
   const id = await idFor(email);
@@ -43,9 +42,10 @@ export default async (req: Request, ctx: Context) => {
 
   if (prev?.status === "confirmed") return done();
 
+  // Rejoining after an unsubscribe is a new opt-in: give it a fresh confirm-mail allowance.
   const rec: Signup = prev
-    ? { ...prev, status: "pending" }
-    : { email, source, ts: now.toISOString(), status: "pending", ip_hash: ipHash, confirm_sends: 0 };
+    ? { ...prev, status: "pending", ...(prev.status === "unsubscribed" ? { confirm_sends: 0 } : {}) }
+    : { email, source, ts: now.toISOString(), status: "pending", confirm_sends: 0 };
 
   const last = rec.confirm_sent_at ? Date.parse(rec.confirm_sent_at) : 0;
   const mayResend = (rec.confirm_sends ?? 0) < MAX_CONFIRM_SENDS && now.getTime() - last > RESEND_GAP_MS;

@@ -1,7 +1,7 @@
 // GET /api/waitlist/admin[?format=csv|json], POST {unsubscribe:[...]} — HTTP Basic auth (any user, password =
 // WAITLIST_ADMIN_PASSWORD), checked here, server-side. The list never ships in the publish dir.
 import type { Config, Context } from "@netlify/functions";
-import { clientIp, idFor, normalizeEmail, rateLimited, safeEqual, sha256, store, type Signup } from "../lib/waitlist.mts";
+import { clientIp, idFor, keyedHash, normalizeEmail, rateLimited, safeEqual, store, type Signup } from "../lib/waitlist.mts";
 
 const nostore = { "Cache-Control": "no-store", "X-Robots-Tag": "noindex", "Referrer-Policy": "no-referrer" };
 const deny = () => new Response("Authentication required", {
@@ -33,8 +33,7 @@ export default async (req: Request, ctx: Context) => {
   const got = password(req);
   if (got === null) return deny();
   if (!safeEqual(got, want)) {
-    const ipHash = (await sha256("admin:" + clientIp(req, ctx))).slice(0, 24);
-    if (await rateLimited("admin-" + ipHash, 10, 3600)) return new Response("Too many attempts", { status: 429, headers: nostore });
+    if (await rateLimited("admin-" + (await keyedHash("admin:" + clientIp(req, ctx))), 10, 3600)) return new Response("Too many attempts", { status: 429, headers: nostore });
     return deny();
   }
 
@@ -76,14 +75,17 @@ export default async (req: Request, ctx: Context) => {
   }
   if (format === "csv") {
     const cols = ["email", "status", "source", "ts", "confirmed_at", "unsubscribed_at"] as const;
-    const lines = [cols.join(","), ...rows.map((r) => cols.map((c) => csvCell(String(r[c] ?? ""))).join(","))];
+    const head = ["email", "status", "source", "signed_up_utc", "confirmed_utc", "unsubscribed_utc"];
+    const lines = [head.join(","), ...rows.map((r) => cols.map((c) => csvCell(String(r[c] ?? ""))).join(","))];
     const day = new Date().toISOString().slice(0, 10);
     return new Response(lines.join("\r\n") + "\r\n", {
       headers: { ...nostore, "Content-Type": "text/csv; charset=utf-8", "Content-Disposition": `attachment; filename="tulumdao-waitlist-${day}.csv"` },
     });
   }
 
-  const tr = rows.map((r) => `<tr><td>${esc(r.email)}</td><td class="st ${r.status}">${r.status}</td><td>${esc(r.source)}</td><td>${esc(r.ts.slice(0, 16).replace("T", " "))}</td></tr>`).join("");
+  // Shaw reads this page: Tulum time (America/Cancun, UTC-5, no DST). Storage and CSV stay UTC.
+  const tulum = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Cancun", year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hour12: false });
+  const tr = rows.map((r) => `<tr><td>${esc(r.email)}</td><td class="st ${r.status}">${r.status}</td><td>${esc(r.source)}</td><td>${esc(tulum.format(new Date(r.ts)).replace(",", ""))}</td></tr>`).join("");
   const html = `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Waitlist admin</title>
 <style>:root{--bg:#faf8f4;--fg:#1a1a1a;--mute:#666;--line:#e3ded4;--ok:#1d7a46;--warn:#9a6a00;--off:#999}
 @media(prefers-color-scheme:dark){:root{--bg:#121212;--fg:#eee;--mute:#999;--line:#2a2a2a;--ok:#5fcf8f;--warn:#e0b44a;--off:#777}}
@@ -94,8 +96,8 @@ th{color:var(--mute);font-weight:500}.st.confirmed{color:var(--ok)}.st.pending{c
 .wrap{overflow-x:auto}a{color:inherit}</style></head><body>
 <h1>Tulum DAO waitlist</h1>
 <div class="k"><div><b>${counts.confirmed}</b><span>confirmed</span></div><div><b>${counts.pending}</b><span>pending</span></div><div><b>${counts.unsubscribed}</b><span>unsubscribed</span></div><div><b>${counts.total}</b><span>total</span></div></div>
-<p><a href="?format=csv">Download CSV</a> · times UTC</p>
-<div class="wrap"><table><thead><tr><th>Email</th><th>Status</th><th>Source</th><th>Signed up</th></tr></thead><tbody>${tr || '<tr><td colspan="4">No signups yet.</td></tr>'}</tbody></table></div>
+<p><a href="?format=csv">Download CSV</a> (UTC) · times shown in Tulum time (UTC-5)</p>
+<div class="wrap"><table><thead><tr><th>Email</th><th>Status</th><th>Source</th><th>Signed up (Tulum)</th></tr></thead><tbody>${tr || '<tr><td colspan="4">No signups yet.</td></tr>'}</tbody></table></div>
 </body></html>`;
   return new Response(html, { headers: { ...nostore, "Content-Type": "text/html; charset=utf-8" } });
 };
