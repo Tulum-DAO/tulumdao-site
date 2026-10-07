@@ -444,12 +444,6 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     .panel {
       padding: 20px 20px 22px;
     }
-    /* the approval card rises in the top of the screen; its panel sits below it */
-    .descent .layer[data-layer='approvals'] {
-      align-items: flex-end;
-      min-height: 100vh;
-      padding-bottom: 8vh;
-    }
   }
   .panel .aside {
     color: var(--foam-2);
@@ -621,10 +615,20 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     .path-grid {
       grid-template-columns: minmax(0, 1fr);
     }
-    .layer,
-    .layer[data-layer] {
-      justify-content: flex-start;
-      min-height: 80vh;
+    /* narrow screens stack each layer: its scene (lens-shifted up in src/scripts/cenote.ts)
+       draws centred in the top of the screen, and its card sits centred below it */
+    .descent .layer,
+    .descent .layer[data-layer] {
+      justify-content: center;
+      align-items: flex-end;
+      min-height: 100vh;
+      padding-top: 0;
+      padding-bottom: 6vh;
+    }
+    .panel {
+      width: 100%;
+      max-width: 34rem;
+      margin-inline: auto;
     }
   }
 </style>
