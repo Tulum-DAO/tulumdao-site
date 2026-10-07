@@ -1,0 +1,150 @@
+@font-face {
+  font-family: 'Bricolage';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 200 800;
+  src: url('/fonts/bricolage.woff2') format('woff2-variations');
+}
+@font-face {
+  font-family: 'Plex Mono';
+  font-style: normal;
+  font-display: swap;
+  font-weight: 400;
+  src: url('/fonts/plex-mono.woff2') format('woff2');
+}
+
+/* The page is a cenote: limestone at the surface, Maya blue in the light, then down into the
+   deep water. Ochre is kept for the things a human does (copy, approve). */
+:root {
+  --limestone: #e3e6dc;
+  --limestone-2: #d3d9cd;
+  --maya: #6fb7c6;
+  --cenote: #0e5a67;
+  --deep: #06262e;
+  --abyss: #031a20;
+  --ochre: #c99a3b;
+  --ochre-hi: #e0b555;
+  --ink: #0c2328;
+  --ink-2: #33494d;
+  --foam: #eef3ef;
+  --foam-2: #b9d0d0;
+
+  --font: 'Bricolage', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --mono: 'Plex Mono', ui-monospace, 'SFMono-Regular', Menlo, Consolas, monospace;
+
+  --gutter: clamp(16px, 4vw, 48px);
+  --measure: 68ch;
+
+  /* the docs reading surface */
+  --doc-bg: var(--limestone);
+  --doc-ink: var(--ink);
+  --doc-ink-2: var(--ink-2);
+  --doc-rule: #b9c3b6;
+  --doc-code-bg: #f3f5ef;
+  --doc-link: #0b5563;
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) {
+    --doc-bg: var(--deep);
+    --doc-ink: var(--foam);
+    --doc-ink-2: var(--foam-2);
+    --doc-rule: #1d4a53;
+    --doc-code-bg: #0a323b;
+    --doc-link: #8fd0dc;
+    color-scheme: dark;
+  }
+}
+:root[data-theme='dark'] {
+  --doc-bg: var(--deep);
+  --doc-ink: var(--foam);
+  --doc-ink-2: var(--foam-2);
+  --doc-rule: #1d4a53;
+  --doc-code-bg: #0a323b;
+  --doc-link: #8fd0dc;
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+body {
+  margin: 0;
+  font-family: var(--font);
+  font-size: 1.0625rem;
+  line-height: 1.55;
+  font-optical-sizing: auto;
+  background: var(--limestone);
+  color: var(--ink);
+  overflow-x: hidden;
+}
+img,
+svg {
+  max-width: 100%;
+}
+a {
+  color: inherit;
+}
+:focus-visible {
+  outline: 3px solid var(--ochre-hi);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+.skip {
+  position: absolute;
+  left: 8px;
+  top: -100px;
+  background: var(--ink);
+  color: var(--foam);
+  padding: 8px 12px;
+  z-index: 100;
+}
+.skip:focus {
+  top: 8px;
+}
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+code,
+kbd,
+pre {
+  font-family: var(--mono);
+  font-size: 0.9em;
+}
+
+/* Home: the page bottoms out in the abyss; the header sits on the surface. */
+body.surface-home {
+  background: var(--abyss);
+}
+.surface-home .site-head {
+  background: var(--limestone);
+}
+.cenote-live .surface-home .site-head {
+  background: transparent;
+}
+
+/* code blocks follow the docs theme */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='light']) .astro-code,
+  :root:not([data-theme='light']) .astro-code span {
+    color: var(--shiki-dark) !important;
+    background-color: var(--shiki-dark-bg) !important;
+  }
+}
+:root[data-theme='dark'] .astro-code,
+:root[data-theme='dark'] .astro-code span {
+  color: var(--shiki-dark) !important;
+  background-color: var(--shiki-dark-bg) !important;
+}

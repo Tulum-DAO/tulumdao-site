@@ -1,0 +1,4 @@
+User-agent: *
+Allow: /
+
+Sitemap: https://tulumdao.com/sitemap-index.xml

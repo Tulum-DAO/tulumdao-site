@@ -1,0 +1,428 @@
+---
+import Base from '../layouts/Base.astro';
+import Install from '../components/Install.astro';
+
+const REPO = 'https://github.com/Tulum-DAO/orchestraos';
+---
+
+<Base
+  surface="home"
+  title="OrchestraOS by Tulum DAO"
+  description="OrchestraOS is an open harness for running a fleet of coding agents as a team. Clone it from github.com/Tulum-DAO/orchestraos and run make install."
+>
+  <div id="backdrop" aria-hidden="true"></div>
+  <canvas id="cenote" aria-hidden="true"></canvas>
+
+  <section class="hero" data-bg="#e3e6dc" data-depth="0">
+    <div class="hero-copy">
+      <h1>Run a fleet of coding agents as a team.</h1>
+      <p class="lede">
+        OrchestraOS is an open harness, published by Tulum DAO. Agents message each other, remember
+        across restarts, rotate themselves before they run out of context, and put every real decision
+        in front of you on your phone.
+      </p>
+      <a class="repo" href={REPO}>
+        <svg viewBox="0 0 16 16" width="22" height="22" aria-hidden="true"
+          ><path
+            fill="currentColor"
+            d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.013 8.013 0 0016 8c0-4.42-3.58-8-8-8z"
+          ></path></svg
+        >
+        <span class="repo-path"><span class="repo-host">github.com/</span>Tulum-DAO/orchestraos</span>
+      </a>
+    </div>
+    <div class="hero-install">
+      <Install />
+    </div>
+  </section>
+
+  <section class="honest" data-bg="#b7d6d8" data-depth="0.12">
+    <p>
+      <strong>This is not a finished product.</strong> It runs one operator's fleet every day, and that
+      setup is the reference install. It is open so the people who want it to exist can build it with us.
+    </p>
+  </section>
+
+  <div class="descent">
+    <section class="layer" data-bg="#3f8e9c" data-depth="0.3" data-layer="seats">
+      <div class="panel">
+        <h2>Seats and generations</h2>
+        <p>
+          An agent is a seat with a lineage. Each generation is one CLI session: Claude Code, Gemini or
+          Codex. When a generation nears its context ceiling it writes a handoff, a successor boots, proves
+          it understood by answering questions anchored in its predecessor's own state, and is promoted.
+        </p>
+        <p class="aside">
+          Rotation is on by default for Claude seats. Gemini and Codex are experimental and stay unarmed
+          until you opt in. <a href="/docs/rotation/">How rotation works</a>
+        </p>
+      </div>
+    </section>
+
+    <section class="layer" data-bg="#0e5a67" data-depth="0.5" data-layer="messages">
+      <div class="panel">
+        <h2>Messages that wait for you</h2>
+        <p>
+          A durable message store with inboxes, acknowledgements and threads. The router parks mail for a
+          busy seat instead of losing it, so agents can hand each other work.
+        </p>
+      </div>
+    </section>
+
+    <section class="layer" data-bg="#083a44" data-depth="0.7" data-layer="memory">
+      <div class="panel">
+        <h2>Memory that survives a restart</h2>
+        <p>
+          A shared facts store with freshness, memory directories for each seat that outlive rotation, and a
+          recall hook that feeds Arturo, the assistant.
+        </p>
+      </div>
+    </section>
+
+    <section class="layer" data-bg="#06262e" data-depth="0.88" data-layer="approvals">
+      <div class="panel">
+        <h2>Every real decision comes up to you</h2>
+        <p>
+          Anything an agent needs from you is a card: approve or deny, a menu, a questionnaire, or a
+          "waiting on you" block. Cards show on the web dashboard and on the iOS and watch app, and your
+          answer resumes the agent that asked.
+        </p>
+        <p class="aside">
+          The runtime catalog checks which CLIs you have installed and logged in to, so the harness runs on a
+          subscription you already pay for.
+        </p>
+      </div>
+    </section>
+  </div>
+
+  <section class="paths" data-bg="#031a20" data-depth="1">
+    <h2>Two ways to run it</h2>
+    <div class="path-grid">
+      <a class="path" href="/docs/install/">
+        <h3>The minimum path</h3>
+        <p>
+          One machine, one CLI, no voice, no chat bridges. Gateway up, one seat spawned, one card answered
+          from the web dashboard. The target is under thirty minutes on a clean Ubuntu VPS.
+        </p>
+        <span class="go">Start here</span>
+      </a>
+      <a class="path" href="/docs/reference-install/">
+        <h3>The reference install</h3>
+        <p>
+          The operator's own setup: a VPS plus a Mac over Tailscale, tmux seats, the rotation beat, push
+          notifications, Telegram and voice. Do this second.
+        </p>
+        <span class="go">Read the reference install</span>
+      </a>
+    </div>
+    <ul class="more">
+      <li><a href="/docs/beginners-guide/">Never used a terminal? The beginner's guide</a></li>
+      <li><a href="/docs/costs/">What a VPS and a CLI plan cost, and the no-cost option</a></li>
+      <li><a href="/docs/onboarding/">Connect your phone and browser to your gateway</a></li>
+      <li><a href="/docs/architecture/">The architecture map</a></li>
+    </ul>
+  </section>
+
+  <section class="build" data-bg="#031a20" data-depth="1">
+    <h2>Build it with us</h2>
+    <p>
+      Fork the repo, branch, and open a pull request against <code>main</code>. CI runs the tests for each
+      package and a secrets scan, and both must pass. Sign off your commits (DCO). There are thirteen tracks,
+      each with its own doc and a start prompt you can paste into your own agent, and a list of small
+      good-first issues.
+    </p>
+    <p class="links">
+      <a href={`${REPO}/blob/main/docs/tracks/README.md`}>The thirteen tracks</a>
+      <a href={`${REPO}/blob/main/docs/HACKATHON_ISSUES.md`}>Good first issues</a>
+      <a href={`${REPO}/blob/main/CONTRIBUTING.md`}>Contributing</a>
+    </p>
+  </section>
+</Base>
+
+<script>
+  // Progressive enhancement: everything above renders without this. The scene loads after first
+  // paint, only when the browser is idle, and never when the visitor asked for reduced motion.
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  const canvas = document.getElementById('cenote') as HTMLCanvasElement;
+  const start = () => {
+    if (reduce.matches) return;
+    import('../scripts/cenote').then((m) => m.mount(canvas)).catch(() => {});
+  };
+  const idle = (fn: () => void) =>
+    'requestIdleCallback' in window ? requestIdleCallback(fn, { timeout: 2500 }) : setTimeout(fn, 1200);
+  if (document.readyState === 'complete') idle(start);
+  else addEventListener('load', () => idle(start), { once: true });
+</script>
+
+<style>
+  #backdrop,
+  #cenote {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+  }
+  #backdrop {
+    z-index: 0;
+    background: var(--limestone);
+    display: none;
+  }
+  #cenote {
+    z-index: 1;
+    opacity: 0;
+    transition: opacity 1.2s ease;
+  }
+  :global(.cenote-live) #backdrop {
+    display: block;
+  }
+  :global(.cenote-live) #cenote {
+    opacity: 1;
+  }
+  section {
+    position: relative;
+    z-index: 2;
+    padding-inline: var(--gutter);
+  }
+  /* Without the scene each section carries its own water colour. */
+  section,
+  .layer {
+    background: var(--bg, transparent);
+  }
+  :global(.cenote-live) section {
+    background: transparent;
+  }
+
+  .hero {
+    --bg: var(--limestone);
+    display: grid;
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.05fr);
+    grid-template-areas: 'h1 install' 'lede install' 'repo install' '. install';
+    grid-template-rows: auto auto auto 1fr;
+    column-gap: clamp(32px, 5vw, 80px);
+    align-items: start;
+    padding-top: clamp(24px, 6vh, 72px);
+    padding-bottom: clamp(48px, 10vh, 120px);
+  }
+  .hero-copy {
+    display: contents;
+  }
+  h1 {
+    grid-area: h1;
+    font-size: clamp(2.6rem, 6.4vw, 5.6rem);
+    line-height: 0.96;
+    letter-spacing: -0.035em;
+    font-weight: 760;
+    margin: 0 0 24px;
+    max-width: 12ch;
+    text-wrap: balance;
+  }
+  .lede {
+    grid-area: lede;
+    font-size: clamp(1.08rem, 1.5vw, 1.28rem);
+    line-height: 1.5;
+    color: var(--ink-2);
+    max-width: 46ch;
+    margin: 0 0 28px;
+  }
+  .repo {
+    grid-area: repo;
+    justify-self: start;
+    display: inline-flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px 18px 12px 14px;
+    border: 2px solid var(--ink);
+    border-radius: 999px;
+    text-decoration: none;
+    font-weight: 650;
+    font-size: clamp(1rem, 1.6vw, 1.2rem);
+    background: rgba(255, 255, 255, 0.35);
+  }
+  .repo:hover {
+    background: var(--ink);
+    color: var(--foam);
+  }
+  .repo-host {
+    font-weight: 450;
+    opacity: 0.75;
+  }
+  .hero-install {
+    grid-area: install;
+    padding-top: clamp(4px, 2vw, 18px);
+  }
+
+  .honest {
+    --bg: #b7d6d8;
+    padding-block: 28px 64px;
+  }
+  .honest p {
+    max-width: 62ch;
+    margin: 0;
+    font-size: 1.1rem;
+    color: var(--ink);
+  }
+
+  .descent {
+    position: relative;
+    z-index: 2;
+  }
+  .layer {
+    min-height: 92vh;
+    display: flex;
+    align-items: center;
+    padding-block: 12vh;
+  }
+  .layer[data-layer='seats'] {
+    --bg: #3f8e9c;
+  }
+  .layer[data-layer='messages'] {
+    --bg: var(--cenote);
+    justify-content: flex-end;
+  }
+  .layer[data-layer='memory'] {
+    --bg: #083a44;
+  }
+  .layer[data-layer='approvals'] {
+    --bg: var(--deep);
+    justify-content: flex-end;
+  }
+  .panel {
+    max-width: 34rem;
+    padding: clamp(22px, 3vw, 34px);
+    border-radius: 22px;
+    background: rgba(3, 26, 32, 0.74);
+    color: var(--foam);
+    -webkit-backdrop-filter: blur(6px);
+    backdrop-filter: blur(6px);
+  }
+  .panel h2 {
+    font-size: clamp(1.7rem, 3.4vw, 2.6rem);
+    line-height: 1.04;
+    letter-spacing: -0.025em;
+    font-weight: 720;
+    margin: 0 0 14px;
+  }
+  .panel p {
+    margin: 0 0 12px;
+    color: var(--foam);
+  }
+  .panel .aside {
+    color: var(--foam-2);
+    font-size: 0.97rem;
+    margin: 0;
+  }
+  .panel a {
+    color: var(--ochre-hi);
+    font-weight: 600;
+  }
+
+  .paths,
+  .build {
+    --bg: var(--abyss);
+    color: var(--foam);
+  }
+  .paths {
+    padding-top: 18vh;
+    padding-bottom: 40px;
+  }
+  .paths h2,
+  .build h2 {
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-weight: 740;
+    margin: 0 0 28px;
+  }
+  .path-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px;
+    max-width: 1100px;
+  }
+  .path {
+    display: block;
+    text-decoration: none;
+    padding: 26px 26px 22px;
+    border: 1.5px solid #2a5b64;
+    border-radius: 18px;
+    background: rgba(14, 90, 103, 0.22);
+  }
+  .path:hover {
+    border-color: var(--ochre);
+  }
+  .path:first-child {
+    border-color: var(--maya);
+    background: rgba(111, 183, 198, 0.12);
+  }
+  .path h3 {
+    font-size: 1.45rem;
+    letter-spacing: -0.015em;
+    margin: 0 0 10px;
+  }
+  .path p {
+    margin: 0 0 18px;
+    color: var(--foam-2);
+  }
+  .go {
+    font-weight: 700;
+    color: var(--ochre-hi);
+  }
+  .more {
+    list-style: none;
+    padding: 0;
+    margin: 30px 0 0;
+    display: grid;
+    gap: 10px;
+  }
+  .more a {
+    color: var(--foam);
+    text-underline-offset: 4px;
+  }
+  .build {
+    padding-top: 64px;
+    padding-bottom: 24px;
+  }
+  .build p {
+    max-width: var(--measure);
+    color: var(--foam-2);
+  }
+  .build code {
+    color: var(--foam);
+  }
+  .links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px 26px;
+  }
+  .links a {
+    color: var(--foam);
+    font-weight: 650;
+    text-underline-offset: 4px;
+  }
+
+  @media (max-width: 900px) {
+    .hero {
+      grid-template-columns: minmax(0, 1fr);
+      grid-template-areas: 'h1' 'repo' 'install' 'lede';
+      grid-template-rows: none;
+    }
+    h1 {
+      margin-bottom: 18px;
+    }
+    .repo {
+      margin-bottom: 26px;
+    }
+    .lede {
+      margin: 32px 0 0;
+    }
+    .path-grid {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    .layer,
+    .layer[data-layer] {
+      justify-content: flex-start;
+      min-height: 80vh;
+    }
+  }
+</style>

@@ -1,0 +1,152 @@
+---
+import lock from '../../docs.lock.json';
+// The command is read out of docs/INSTALL.md by scripts/sync-docs.mjs. Never type it here.
+const lines: string[] = lock.install;
+const text = lines.join('\n');
+---
+
+<ol class="steps">
+  <li class="step">
+    <h2 class="step-title">Log in to one agent CLI first</h2>
+    <p>
+      Install <strong>Claude Code</strong>, <strong>Gemini</strong> (the <code>agy</code> CLI) or <strong>Codex</strong>,
+      and finish its login before you clone. A seat started against a CLI you haven't logged in to fails
+      without telling you why.{' '}<a href="/docs/install/#0-prerequisites">Prerequisites and login commands</a>
+    </p>
+  </li>
+  <li class="step">
+    <h2 class="step-title">Clone and install</h2>
+    <div class="cmd">
+      <pre aria-label="Install command"><code>{lines.map((l) => <span class="line">{l}</span>)}</code></pre>
+      <div class="cmd-bar">
+        <button class="copy" type="button" data-copy={text} hidden>
+          <span class="copy-label">Copy</span>
+        </button>
+      </div>
+    </div>
+    <p class="after">
+      Then <code>./bin/orchestra init</code> and <code>./bin/orchestra doctor</code>.{' '}<a href="/docs/install/#1-clone-init-doctor">Read the full install</a>
+    </p>
+  </li>
+</ol>
+
+<script>
+  for (const btn of document.querySelectorAll<HTMLButtonElement>('button.copy')) {
+    btn.hidden = false;
+    const label = btn.querySelector('.copy-label')!;
+    btn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(btn.dataset.copy ?? '');
+        label.textContent = 'Copied';
+      } catch {
+        // clipboard blocked (insecure context, permissions): select the text instead
+        const code = btn.parentElement!.querySelector('code')!;
+        getSelection()?.selectAllChildren(code);
+        label.textContent = 'Selected, press Ctrl+C';
+      }
+      setTimeout(() => (label.textContent = 'Copy'), 2200);
+    });
+  }
+</script>
+
+<style>
+  .steps {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    counter-reset: step;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 28px;
+  }
+  .step {
+    counter-increment: step;
+    position: relative;
+    padding-left: 52px;
+  }
+  .step::before {
+    content: counter(step);
+    position: absolute;
+    left: 0;
+    top: -2px;
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    border: 2px solid var(--ink);
+    display: grid;
+    place-items: center;
+    font-weight: 700;
+    font-size: 0.95rem;
+  }
+  .step-title {
+    font-size: 1.2rem;
+    font-weight: 680;
+    letter-spacing: -0.01em;
+    margin: 0 0 6px;
+    line-height: 1.25;
+  }
+  .step p {
+    margin: 0;
+    color: var(--ink-2);
+    max-width: 60ch;
+  }
+  .step p a {
+    color: var(--ink);
+    font-weight: 600;
+    white-space: nowrap;
+  }
+  .cmd {
+    position: relative;
+    margin: 12px 0 12px;
+    background: var(--ink);
+    color: var(--foam);
+    border-radius: 14px;
+    box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 18px 40px -24px rgba(6, 38, 46, 0.7);
+  }
+  pre {
+    margin: 0;
+    padding: 20px 22px 8px;
+    overflow-x: auto;
+    font-size: clamp(0.8rem, 1.05vw, 0.95rem);
+    line-height: 1.75;
+  }
+  .line {
+    display: block;
+    white-space: pre-wrap;
+    padding-left: 2ch;
+    text-indent: -2ch;
+  }
+  .line::before {
+    content: '$ ';
+    color: var(--maya);
+    user-select: none;
+  }
+  .cmd-bar {
+    display: flex;
+    justify-content: flex-end;
+    padding: 0 12px 12px;
+    min-height: 12px;
+  }
+  .copy {
+    min-height: 44px;
+    padding: 0 18px;
+    border: 0;
+    border-radius: 10px;
+    background: var(--ochre);
+    color: var(--ink);
+    font: 700 0.95rem var(--font);
+    cursor: pointer;
+  }
+  .copy:hover {
+    background: var(--ochre-hi);
+  }
+  @media (max-width: 560px) {
+    .step {
+      padding-left: 0;
+    }
+    .step::before {
+      position: static;
+      margin-bottom: 8px;
+    }
+  }
+</style>

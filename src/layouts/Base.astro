@@ -1,0 +1,126 @@
+---
+import '../styles/global.css';
+import lock from '../../docs.lock.json';
+
+interface Props {
+  title: string;
+  description: string;
+  surface?: 'home' | 'docs';
+}
+const { title, description, surface = 'docs' } = Astro.props;
+const canonical = new URL(Astro.url.pathname, Astro.site);
+const short = lock.sha.slice(0, 7);
+const syncedDay = lock.committedAt.slice(0, 10);
+---
+
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{title}</title>
+    <meta name="description" content={description} />
+    <link rel="canonical" href={canonical} />
+    <link rel="icon" href="/favicon.svg" type="image/svg+xml" />
+    <link rel="preload" href="/fonts/bricolage.woff2" as="font" type="font/woff2" crossorigin />
+    <meta name="theme-color" content="#e3e6dc" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content={new URL('/og.png', Astro.site)} />
+    <meta name="twitter:card" content="summary_large_image" />
+  </head>
+  <body class={`surface-${surface}`}>
+    <a class="skip" href="#main">Skip to content</a>
+    <header class="site-head">
+      <a class="mark" href="/" aria-label="Tulum DAO home">
+        <svg viewBox="0 0 32 32" width="28" height="28" aria-hidden="true">
+          <circle cx="16" cy="16" r="14" fill="none" stroke="currentColor" stroke-width="2"></circle>
+          <circle cx="16" cy="16" r="8" fill="none" stroke="currentColor" stroke-width="2" opacity=".55"></circle>
+          <circle cx="16" cy="16" r="2.6" fill="currentColor"></circle>
+        </svg>
+        <span>Tulum DAO</span>
+      </a>
+      <nav aria-label="Site">
+        <a href="/docs/">Docs</a>
+        <a href="https://github.com/Tulum-DAO/orchestraos">GitHub</a>
+      </nav>
+    </header>
+    <main id="main">
+      <slot />
+    </main>
+    <footer class="site-foot">
+      <p>
+        OrchestraOS is published by Tulum DAO under the
+        <a href="https://github.com/Tulum-DAO/orchestraos/blob/main/LICENSE">Apache 2.0 license</a>.
+      </p>
+      <p>
+        The docs on this site are built from
+        <a href={`https://github.com/${lock.repo}/tree/${lock.sha}`}><code>{lock.repo}@{short}</code></a>, committed {syncedDay}.
+      </p>
+    </footer>
+  </body>
+</html>
+
+<style>
+  .site-head {
+    position: relative;
+    z-index: 5;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px var(--gutter);
+  }
+  .mark {
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 700;
+    font-size: 1.05rem;
+    letter-spacing: -0.01em;
+    text-decoration: none;
+  }
+  nav {
+    display: flex;
+    gap: 22px;
+  }
+  nav a {
+    text-decoration: none;
+    font-weight: 560;
+    padding: 6px 0;
+    border-bottom: 2px solid transparent;
+  }
+  nav a:hover {
+    border-bottom-color: currentColor;
+  }
+  .site-foot {
+    position: relative;
+    z-index: 5;
+    padding: 40px var(--gutter) 56px;
+    font-size: 0.92rem;
+    max-width: 80ch;
+  }
+  .site-foot p {
+    margin: 0 0 6px;
+  }
+  .surface-home .site-foot {
+    color: var(--foam-2);
+  }
+  .surface-home .site-foot a {
+    color: var(--foam);
+  }
+  .surface-docs {
+    background: var(--doc-bg);
+    color: var(--doc-ink);
+  }
+  .surface-docs .site-head {
+    border-bottom: 1px solid var(--doc-rule);
+  }
+  .surface-docs .site-foot {
+    color: var(--doc-ink-2);
+    border-top: 1px solid var(--doc-rule);
+    max-width: none;
+  }
+</style>

@@ -1,0 +1,92 @@
+---
+import Base from '../../layouts/Base.astro';
+import Install from '../../components/Install.astro';
+import { getCollection } from 'astro:content';
+import lock from '../../../docs.lock.json';
+
+const docs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order);
+const blurbs: Record<string, string> = {
+  overview: 'What is in the box, the two ways to run it, and how to contribute.',
+  install: 'One machine, one CLI. Gateway up, one seat, one card answered, in under thirty minutes.',
+  'beginners-guide': 'Never used a terminal? Start here.',
+  costs: 'What a VPS and a CLI plan cost, and the no-cost option.',
+  onboarding: 'Pair your own phone and browser with your gateway, and what each failure means.',
+  'reference-install': "The operator's own setup: VPS plus Mac, rotation beat, push, Telegram, voice.",
+  architecture: 'The map. Read it before you touch rotation or approvals.',
+  rotation: 'How a seat hands off to its successor before it runs out of context.',
+};
+---
+
+<Base title="OrchestraOS docs" description="How to install and run OrchestraOS, built from the Tulum-DAO/orchestraos repository.">
+  <div class="docs-home">
+    <h1>Set up OrchestraOS</h1>
+    <p class="lede">
+      Every page here is built from the
+      <a href={`https://github.com/${lock.repo}/tree/${lock.sha}`}>OrchestraOS repository</a> at commit
+      <code>{lock.sha.slice(0, 7)}</code>, so it says what the code says.
+    </p>
+    <div class="quick"><Install /></div>
+    <h2>Read in this order</h2>
+    <ol class="list">
+      {
+        docs.map((d) => (
+          <li>
+            <a href={`/docs/${d.id}/`}>{d.data.title}</a>
+            <p>{blurbs[d.id]}</p>
+          </li>
+        ))
+      }
+    </ol>
+  </div>
+</Base>
+
+<style>
+  .docs-home {
+    max-width: 760px;
+    padding: 40px var(--gutter) 64px;
+  }
+  h1 {
+    font-size: clamp(2.2rem, 5vw, 3.6rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    margin: 0 0 16px;
+  }
+  .lede {
+    color: var(--doc-ink-2);
+    font-size: 1.12rem;
+    margin: 0 0 32px;
+  }
+  .lede a {
+    color: var(--doc-link);
+  }
+  .quick {
+    margin-bottom: 48px;
+    --ink-2: var(--doc-ink-2);
+  }
+  .quick :global(.step p a) {
+    color: var(--doc-link);
+  }
+  .quick :global(.step::before) {
+    border-color: var(--doc-ink);
+  }
+  h2 {
+    font-size: 1.5rem;
+    letter-spacing: -0.015em;
+    margin: 0 0 12px;
+  }
+  .list {
+    margin: 0;
+    padding-left: 1.4em;
+    display: grid;
+    gap: 14px;
+  }
+  .list a {
+    color: var(--doc-ink);
+    font-weight: 680;
+    font-size: 1.12rem;
+  }
+  .list p {
+    margin: 2px 0 0;
+    color: var(--doc-ink-2);
+  }
+</style>
