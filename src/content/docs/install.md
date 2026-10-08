@@ -125,8 +125,9 @@ On your own computer and/or phone: install Tailscale and sign in **with the same
 - **Windows:** the installer from tailscale.com/download; after installing, click the
   Tailscale icon in the taskbar's notification area (bottom right) to log in.
 - **Linux:** the commands at tailscale.com/download, then `sudo tailscale up`.
-- **Phone:** the **Tailscale** app from the App Store or Google Play. Run `tailscale status` on
-the VPS again: your device is now listed too.
+- **Phone:** the **Tailscale** app from the App Store or Google Play.
+
+Run `tailscale status` on the VPS again: your device is now listed too.
 
 Check: on the VPS, `tailscale ip -4` prints its tailnet address (it starts with `100.`).
 From your laptop, `ping <that address>` answers (`Ctrl-C` stops it). From now on
@@ -308,7 +309,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/3dbe1a3f873d2127a612623b525d05b23e071d77/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/a28bfcb301fa0be7c76ee284dfc357e6ae504c3f/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 

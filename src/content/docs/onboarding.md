@@ -84,7 +84,8 @@ orchestra pair --base-url https://<machine>.<tailnet>.ts.net:8445 --scopes read,
 ```
 
 `orchestra devices` lists paired devices; `orchestra devices --revoke <device id>`
-cuts one off (its token stops working on its next request).
+cuts one off (its token stops working on its next request). Revoking is your decision: an
+agent should not revoke a device on its own. Re-pairing with a new code undoes it.
 
 This prints the pairing code: one long word starting with `orc1_`. Copy all of it and
 paste it into the app's pairing box. It carries your server's address too, so there is
@@ -292,7 +293,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/3dbe1a3f873d2127a612623b525d05b23e071d77/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/a28bfcb301fa0be7c76ee284dfc357e6ae504c3f/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -306,7 +307,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/3dbe1a3f873d2127a612623b525d05b23e071d77/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/a28bfcb301fa0be7c76ee284dfc357e6ae504c3f/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.

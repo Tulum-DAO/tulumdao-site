@@ -57,7 +57,8 @@ orchestra down && orchestra up --detach
 
 **If you upgraded between #208 and #218 (2026-10-08):** back then `init` did not rebuild an
 existing API build, so your API may still lack the web terminal origin check from #208.
-Run `orchestra upgrade` once more (or `rm -rf api/dist && orchestra init --yes`), then the
+Run `orchestra upgrade` once more (or `rm -rf api/dist && orchestra init --yes`, which removes only the API's build output inside
+your checkout; `init` rebuilds it straight away), then the
 restart above. From #218 on, a plain upgrade rebuilds correctly.
 
 `orchestra upgrade` never restarts anything itself. Spawned seats keep the code they were
@@ -97,7 +98,7 @@ session they were spawned with. A seat only picks up harness-side code changes
 (a changed `spawn-agent.sh`, a changed rotation beat behavior) the next time
 it's respawned or rotated. If a change specifically requires every seat to
 restart (rare — the commit message should say so), rotate each one by hand
-([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/3dbe1a3f873d2127a612623b525d05b23e071d77/docs/GATE.md) step 6) rather than killing panes directly.
+([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/a28bfcb301fa0be7c76ee284dfc357e6ae504c3f/docs/GATE.md) step 6) rather than killing panes directly.
 
 ## If something breaks after upgrading
 
