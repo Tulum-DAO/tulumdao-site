@@ -363,6 +363,8 @@ export function mount(canvas: HTMLCanvasElement) {
   // project managers round it, and each PM's workers in its orbit. Mail follows that shape (worker
   // and PM most, PM and GM less; an escalation climbs worker -> PM -> GM). Scroll on and they spread
   // back out and mail each other directly.
+  // radius of the ring round a busy seat, where its parked mail circles: small, so it hugs its seat
+  const ORBIT = 0.19;
   type Role = 'gm' | 'pm' | 'worker';
   type Talker = {
     node: Node;
@@ -404,7 +406,7 @@ export function mount(canvas: HTMLCanvasElement) {
     if (!n) return null;
     n.drift = 0; // talkers bob from their own phase, set each frame (they also move)
     const ring = new Line(circle, new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false }));
-    ring.scale.setScalar(0.32);
+    ring.scale.setScalar(ORBIT); // parked mail circles on this ring
     scene.add(ring);
     // the GM is Claude; PMs and workers mix the three runtimes
     const rt: Runtime = role === 'gm' ? 'claude' : role === 'pm' ? RUNTIME_CYCLE[i % RUNTIME_CYCLE.length] : RUNTIME_CYCLE[worker++ % RUNTIME_CYCLE.length];
@@ -495,7 +497,6 @@ export function mount(canvas: HTMLCanvasElement) {
     reply: boolean;
     forward: Talker | null; // an escalation: on delivery, the receiver passes it up to this seat
   };
-  const ORBIT = 0.45;
   const dest = new Vector3();
   // where a message should stop: the receiver's centre if it is free, otherwise the near edge of
   // its orbit (on the side the message comes from), so it never enters a busy orb
@@ -826,7 +827,7 @@ export function mount(canvas: HTMLCanvasElement) {
       if (pk.state === 'wait') {
         // parked OUTSIDE a busy seat; it circles there until the seat's turn ends
         pk.waited += dt;
-        pk.ang += dt * 2.2;
+        pk.ang += dt * 4.4; // a tight ring: turn faster so the circling still reads
         pk.node.pos.set(center.x + Math.cos(pk.ang) * ORBIT, center.y + 0.1, center.z + Math.sin(pk.ang) * ORBIT);
         if (pk.to.busy) continue;
         pk.state = 'land';
