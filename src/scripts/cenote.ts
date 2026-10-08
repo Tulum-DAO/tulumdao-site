@@ -252,7 +252,13 @@ export function mount(canvas: HTMLCanvasElement) {
     dim: Node | null; // a seat whose light dims while its name has no room
     hub: Vector3 | null; // the centre of its cluster: the name prefers the side facing away from it
     toward: boolean; // ...or facing it (a PM's name sits in the open gap between its orbit and the GM)
+    group: string; // the layer it belongs to; a layer's names are solved together
+    hidden: boolean; // no room in this layout: faded out until the layout changes
+    o: number; // opacity on screen, eased, so a name fades instead of popping
+    on: boolean; // its light is on screen this frame
+    longest: string; // the longest its second line gets (busy, mid-handoff): room is kept for it
   };
+  let labelGroup = 'seats'; // the layer being built; addLabel tags each name with it
   const labels: Label[] = [];
   const addLabel = (
     name: string,
@@ -287,7 +293,7 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, hub: null, toward: false };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, hub: null, toward: false, group: labelGroup, hidden: false, o: 0, on: false, longest: '' };
     labels.push(l);
     return l;
   };
@@ -305,6 +311,7 @@ export function mount(canvas: HTMLCanvasElement) {
   // seats and generations. A seat is a light; every generation it has been through is a ring around
   // it, newest innermost, fading as it ages outward, like the rings of a tree.
   const SEATS = mobile ? 13 : 18;
+  const HANDOFF = mobile ? 'handoff' : 'reading handoff'; // short on a phone, so names fit
   // fewer rings on a phone: each ring is a draw call, and wide rings would touch their neighbours
   const MAX_RINGS = mobile ? 4 : 6;
   const circle = new BufferGeometry();
@@ -345,7 +352,8 @@ export function mount(canvas: HTMLCanvasElement) {
     // a history: every seat has already been through a few generations
     const past = 1 + Math.floor(Math.random() * 4);
     const rt = runtimeFor(i);
-    const label = addLabel(SEAT_NAMES[i % SEAT_NAMES.length], () => n.pos, () => n.alpha, i === 0 ? 'gm' : '', {
+    // the name holds steady through a handoff (the light dips; the name doesn't flicker with it)
+    const label = addLabel(SEAT_NAMES[i % SEAT_NAMES.length], () => n.pos, () => Math.max(n.alpha, 0.85 * n.target), i === 0 ? 'gm' : '', {
       runtime: rt,
       role: i === 0 ? 'general manager' : undefined,
     });
@@ -353,6 +361,7 @@ export function mount(canvas: HTMLCanvasElement) {
       label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
       label.hub = seats[0]?.node.pos ?? null;
     }
+    label.longest = `${RUNTIMES[rt].name}, gen 10, ${HANDOFF}`;
     const l: Lineage = { node: n, rings: [], handoffAt: -100, gen: past + 1, label, rt: RUNTIMES[rt].name };
     for (let g = past - 1; g >= 0; g--) addRing(l, -100, ringRadius(g));
     seats.push(l);
@@ -384,6 +393,7 @@ export function mount(canvas: HTMLCanvasElement) {
     phase: number;
   };
   const talkers: Talker[] = [];
+  labelGroup = 'messages';
   const PM_NAMES = ['pm-web', 'pm-mobile', 'pm-data', 'pm-infra'];
   const PMS = 4;
   const PER_PM = mobile ? 4 : 6;
@@ -414,7 +424,7 @@ export function mount(canvas: HTMLCanvasElement) {
       role === 'gm'
         ? addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: 'general manager' })
         : role === 'pm'
-          ? addLabel(name, () => n.pos, () => n.alpha, 'pm', { runtime: rt, role: mobile ? undefined : 'project manager' })
+          ? addLabel(name, () => n.pos, () => n.alpha, 'pm', { runtime: rt }) // styled like every agent; only the text differs
           : addLabel(name, () => n.pos, () => n.alpha, 'talker', { runtime: rt });
     const tk: Talker = {
       node: n,
@@ -431,6 +441,7 @@ export function mount(canvas: HTMLCanvasElement) {
       hub: new Vector3(),
       phase: Math.random() * 6.28,
     };
+    if (label && role === 'worker') label.longest = mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`;
     orbitPos(tk, tk.hub);
     if (role !== 'gm') tk.hub.y += Math.sin(i * 1.7) * (role === 'pm' ? 0.12 : 0.22);
     talkers.push(tk);
@@ -464,8 +475,8 @@ export function mount(canvas: HTMLCanvasElement) {
   const workers = talkers.filter((t) => t.role === 'worker');
   let gather = 0; // 0 spread out, 1 gathered into the shape
   let gatherTarget = 0;
-  // spokes: faint lines from each agent's parent to it (GM -> PMs, PM -> its workers), and a faint
-  // orbit ring round each PM's workers, drawn while they are gathered
+  // spokes: faint lines from each agent's parent to it (GM -> PMs, PM -> its workers), drawn while
+  // they are gathered. The grouping reads from position and spokes alone.
   const kpos = new Float32Array(TALK * 6);
   const kcol = new Float32Array(TALK * 8);
   const kgeo = new BufferGeometry();
@@ -474,12 +485,6 @@ export function mount(canvas: HTMLCanvasElement) {
   const spokes = new LineSegments(kgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false }));
   spokes.frustumCulled = false;
   scene.add(spokes);
-  const orbitRings = pms.map(() => {
-    const line = new Line(circle, new LineBasicMaterial({ color: MAYA, transparent: true, opacity: 0, depthWrite: false, fog: false }));
-    line.scale.set(WORKER_R, 1, WORKER_R * ZS);
-    scene.add(line);
-    return line;
-  });
   // fly: rides the line from one orb centre to the other. wait: the receiver is busy, so it circles
   // beside it. land: the receiver is free again, so it flies into the receiver's centre. done: it
   // has been delivered and fades out inside the receiver.
@@ -528,6 +533,7 @@ export function mount(canvas: HTMLCanvasElement) {
   // memory that survives a restart: a seat at the centre of the facts it has learned. Every few
   // seconds it restarts. Its light and its links go out, but the facts stay lit; the next
   // generation lights up and re-links to each fact in turn (recall).
+  labelGroup = 'memory';
   const memSeat = spawn(new Vector3(LX.memory, Y.memory, -0.4), LIGHT, 30)!;
   const FACTS = mobile ? 12 : 16;
   const facts: Node[] = [];
@@ -544,6 +550,9 @@ export function mount(canvas: HTMLCanvasElement) {
     const f = facts[i * 3 + 1];
     if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false }).hub = memSeat.pos;
   });
+  // the seats' own lights: what a name may not cover (mail in flight is left out: it is gone in a
+  // moment, and solving names around it would tie the layout to chance)
+  const fixedLights: Node[] = [...seats.map((l) => l.node), ...talkers.map((t) => t.node), ...facts, memSeat];
   let memGen = 7;
   const memLabel = addLabel('dev-api', () => memSeat.pos, () => (memSeat.alpha < 0.1 ? 0.85 : memSeat.alpha), 'mem', { runtime: 'claude' });
   const lpos = new Float32Array(FACTS * 6);
@@ -670,6 +679,101 @@ export function mount(canvas: HTMLCanvasElement) {
   resize();
   depth = depthTarget;
 
+  // ---- names: where each sits relative to its light, and the solve that picks it (see the label
+  // pass in the loop)
+  const solvedAs = new Map<string, string>(); // layer -> the layout its names were solved for
+  const sideAt = (l: Label, narrow: boolean): [number, number] => {
+    const { sx, sy, w, h } = l;
+    switch (l.side) {
+      case 'over':
+        return [sx - w / 2, sy - h - 9];
+      case 'right':
+        return narrow ? [sx + 11, sy - h / 2] : [sx + 9, sy - 9];
+      case 'left':
+        return narrow ? [sx - w - 11, sy - h / 2] : [sx - w - 9, sy - 9];
+      default:
+        return [sx - w / 2, sy + 9];
+    }
+  };
+  const solveNames = (group: Label[], W: number, H: number, narrow: boolean, EDGE: number) => {
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    // the text panels on screen are taken already: no name may slide under one
+    for (const el of panels) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < H) placed.push({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 });
+    }
+    // the seats' lights, its own included: the four sides keep clear of it, but a name pushed in
+    // from the screen edge may not land on it
+    const LIGHT_R = 7;
+    const lights: [number, number][] = [];
+    for (const n of fixedLights) {
+      if (!n.live || n.alpha < 0.1) continue;
+      proj.copy(n.pos).project(camera);
+      if (proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) continue;
+      lights.push([(proj.x * 0.5 + 0.5) * W, (-proj.y * 0.5 + 0.5) * H]);
+    }
+    // the GM first, then the PMs, then the rest nearest-first
+    const rank = (l: Label) => (l.el.classList.contains('gm') ? 2 : l.el.classList.contains('pm') ? 1 : 0);
+    const order = [...group].sort((p, q) => rank(q) - rank(p) || p.d - q.d);
+    for (const l of order) {
+      const { sx, sy, h } = l;
+      // room for the longest its text gets, so a name that later reads 'busy' still fits
+      let w = l.w;
+      if (l.longest && l.sub) {
+        const now = l.sub.textContent;
+        l.sub.textContent = l.longest;
+        w = Math.max(w, l.el.offsetWidth);
+        l.sub.textContent = now;
+      }
+      const wNow = l.w;
+      l.w = w; // sideAt reads it: solve at the longest width
+      // preference: away from the cluster's centre first (the open side), else the screen's default
+      let sides = narrow ? ['under', 'over', 'right', 'left'] : ['right', 'left', 'under', 'over'];
+      if (l.hub) {
+        proj.copy(l.hub).project(camera);
+        const flip = l.toward ? -1 : 1;
+        const dx = (sx - (proj.x * 0.5 + 0.5) * W) * flip;
+        const dy = (sy - (-proj.y * 0.5 + 0.5) * H) * flip;
+        const lr = dx > 0 ? 'right' : 'left';
+        const ud = dy > 0 ? 'under' : 'over';
+        const first = Math.abs(dx) > Math.abs(dy) ? [lr, ud] : [ud, lr];
+        sides = [...first, ...sides.filter((o) => !first.includes(o))];
+      }
+      const gm = rank(l) === 2;
+      const pm = rank(l) === 1;
+      let found = '';
+      for (const side of sides) {
+        l.side = side;
+        const [x0, y0] = sideAt(l, narrow);
+        const x = clamp(x0, EDGE, W - w - EDGE);
+        const y = clamp(y0, EDGE, H - h - EDGE);
+        // a side only counts if the name fits there as it is: a name held in by the screen edge
+        // would stop riding with its light and slide against it as the layer moves
+        const free =
+          x === x0 &&
+          y === y0 &&
+          !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h) &&
+          !lights.some(([lx, ly]) => lx + LIGHT_R > x && lx - LIGHT_R < x + w && ly + LIGHT_R > y && ly - LIGHT_R < y + h);
+        if (gm || free) {
+          found = side;
+          break;
+        }
+      }
+      // the GM's and the PMs' names always show: with no clear side they take their first choice
+      if (!found && (gm || pm)) found = sides[0];
+      l.side = found || sides[0];
+      l.hidden = !found;
+      if (found) {
+        const [x0, y0] = sideAt(l, narrow);
+        const pad = gm ? 10 : pm ? 5 : 0;
+        placed.push({ x: clamp(x0, EDGE, W - w - EDGE) - pad, y: clamp(y0, EDGE, H - h - EDGE) - pad, w: w + pad * 2, h: h + pad * 2 });
+      }
+      l.w = wNow;
+      // a seat whose name has no room in this layout shows as a dimmer, background seat
+      if (l.dim) l.dim.target = l.hidden ? 0.3 : 1;
+    }
+  };
+
   // ---- the loop
   let last = performance.now();
   let nextHandoff = 1.2;
@@ -725,7 +829,7 @@ export function mount(canvas: HTMLCanvasElement) {
       // the core glows ochre while the successor answers the readback, then turns back to light
       const since = clock - l.handoffAt;
       l.node.color.copy(LIGHT).lerp(OCHRE, since < 2 ? smooth(0, 0.3, since) * (1 - smooth(1.2, 2, since)) : 0);
-      setSub(l.label, since < 1.8 ? `${l.rt}, gen ${l.gen}, reading handoff` : `${l.rt}, gen ${l.gen}`);
+      setSub(l.label, since < 1.8 ? `${l.rt}, gen ${l.gen}, ${HANDOFF}` : `${l.rt}, gen ${l.gen}`);
       l.rings.forEach((ring, i) => {
         const age = clock - ring.born;
         ring.r += (ringRadius(i) - ring.r) * Math.min(1, dt * 3);
@@ -764,12 +868,6 @@ export function mount(canvas: HTMLCanvasElement) {
       kgeo.attributes.position.needsUpdate = true;
       kgeo.attributes.color.needsUpdate = true;
       spokes.visible = near > 0.01;
-      pms.forEach((pm, p) => {
-        const ring = orbitRings[p];
-        ring.position.copy(pm.node.pos);
-        (ring.material as LineBasicMaterial).opacity = 0.22 * near;
-        ring.visible = near > 0.01;
-      });
     }
     if (clock > nextMessage && talkers.length > 1) {
       nextMessage = clock + 0.22 + Math.random() * 0.3;
@@ -801,8 +899,9 @@ export function mount(canvas: HTMLCanvasElement) {
       tk.ring.position.copy(tk.node.pos);
       tk.ring.visible = m.opacity > 0.01;
       // phones: the short form, so names fit beside a crowded hub
-      // (on a phone a PM's role goes on this line, short; its name line stays short too)
-      if (tk.label) setSub(tk.label, tk.busy ? (mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`) : tk.role === 'pm' && mobile ? `PM, ${tk.rt}` : tk.rt);
+      // a PM's role goes on this line (short on a phone)
+      const role = tk.role === 'pm' ? (mobile ? 'PM, ' : 'project manager, ') : '';
+      if (tk.label) setSub(tk.label, tk.busy ? (mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`) : role + tk.rt);
     }
     for (let i = packets.length - 1; i >= 0; i--) {
       const pk = packets[i];
@@ -1001,115 +1100,64 @@ export function mount(canvas: HTMLCanvasElement) {
 
     renderer.render(scene, camera);
 
-    // labels follow their lights; they fade with distance so only the layer you are in is named.
-    // Placed nearest-first: a label that would overlap one already placed is hidden for now, so a
-    // tight cluster never turns into overlapping text.
+    // Labels follow their lights; they fade with distance so only the layer you are in is named.
+    // Each layer's names are solved ONCE per layout and then locked: which side of its light each
+    // name sits on, and which names have no room (those fade out and stay out). While the lights
+    // move, a name rides with its light on its locked side; it never hops. A layout is re-solved
+    // only when the layer's arrangement changes (messaging gathering or spreading) or the layer is
+    // entered afresh, and the names fade across that change rather than jump.
     const W = innerWidth;
     const H = innerHeight;
     const narrow = W <= 900;
-    const shown: Label[] = [];
+    const EDGE = 16; // every name stays this far inside the screen
     for (const l of labels) {
       const p = l.at();
       l.d = camera.position.distanceTo(p);
       l.a = clamp(l.alpha(), 0, 1) * smooth(13, 8.5, l.d) * smooth(2.2, 3.5, l.d);
       proj.copy(p).project(camera);
-      if (l.a < 0.03 || proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) {
-        l.a = 0;
-        continue;
-      }
+      l.on = proj.z <= 1 && Math.abs(proj.x) <= 1.05 && Math.abs(proj.y) <= 1.05;
+      if (!l.on) l.a = 0;
+      if (l.a < 0.03) l.a = 0;
       if (!l.w) {
         l.w = l.el.offsetWidth || 90;
         l.h = l.el.offsetHeight || 28;
       }
       l.sx = (proj.x * 0.5 + 0.5) * W;
       l.sy = (-proj.y * 0.5 + 0.5) * H;
-      shown.push(l);
     }
-    // the GM first, then the PMs, then the rest nearest-first
-    const rank = (l: Label) => (l.el.classList.contains('gm') ? 2 : l.el.classList.contains('pm') ? 1 : 0);
-    shown.sort((p, q) => rank(q) - rank(p) || p.d - q.d);
-    // Each name tries the sides of its light in turn (the side it used last frame first, so names
-    // don't hop) and takes the first that is clear. Wide screens prefer up and to the right; phones
-    // prefer centred just under the light, so names don't pull every layer's weight to the right.
-    // The GM's name is placed first, always shown, and keeps clear space round it.
-    const placed: { x: number; y: number; w: number; h: number }[] = [];
-    // the text panels on screen are taken already: no name may slide under one
-    for (const el of panels) {
-      const r = el.getBoundingClientRect();
-      if (r.bottom > 0 && r.top < H) placed.push({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 });
-    }
-    const GM_PAD = 10;
-    const EDGE = 16; // every name stays this far inside the screen
-    // lights and mail in flight are obstacles too: a name may not cover one. Its own light counts:
-    // the four sides keep clear of it, but a name pushed in from the screen edge may not land on it.
-    const LIGHT_R = 7;
-    const lightsOnScreen: [number, number][] = [];
-    for (const n of nodes) {
-      if (!n.live || n.alpha < 0.1 || camera.position.distanceTo(n.pos) > 13) continue;
-      proj.copy(n.pos).project(camera);
-      if (proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) continue;
-      lightsOnScreen.push([(proj.x * 0.5 + 0.5) * W, (-proj.y * 0.5 + 0.5) * H]);
-    }
-    for (const l of shown) {
-      const { sx, sy, w, h } = l;
-      // the four places, by name: under, over, right, left
-      const at: Record<string, [number, number]> = {
-        under: [sx - w / 2, sy + 9],
-        over: [sx - w / 2, sy - h - 9],
-        right: narrow ? [sx + 11, sy - h / 2] : [sx + 9, sy - 9],
-        left: narrow ? [sx - w - 11, sy - h / 2] : [sx - w - 9, sy - 9],
-      };
-      // preference: away from the cluster's centre first (the open side), else the screen's default
-      let order = narrow ? ['under', 'over', 'right', 'left'] : ['right', 'left', 'under', 'over'];
-      if (l.hub) {
-        proj.copy(l.hub).project(camera);
-        const flip = l.toward ? -1 : 1;
-        const dx = (sx - (proj.x * 0.5 + 0.5) * W) * flip;
-        const dy = (sy - (-proj.y * 0.5 + 0.5) * H) * flip;
-        const lr = dx > 0 ? 'right' : 'left';
-        const ud = dy > 0 ? 'under' : 'over';
-        const first = Math.abs(dx) > Math.abs(dy) ? [lr, ud] : [ud, lr];
-        order = [...first, ...order.filter((o) => !first.includes(o))];
+    // which layout each layer is in. Messaging has two (gathered, spread) and none while moving
+    // between them, when its names are faded out.
+    const layoutOf = (g: string) => (g !== 'messages' ? 'still' : gk > 0.9 ? 'gathered' : gk < 0.1 ? 'spread' : '');
+    for (const g of ['seats', 'messages', 'memory']) {
+      const group = labels.filter((l) => l.group === g);
+      const layout = layoutOf(g);
+      const seen = group.some((l) => l.a > 0);
+      // left the layer and every name has faded: the next visit solves afresh
+      if (!seen && group.every((l) => l.o < 0.01)) solvedAs.delete(g);
+      // solve only once the page is at rest (camera arrived, no scroll for a moment): solved while
+      // the camera is still travelling, names fit a layer that then grows under them
+      const atRest = Math.abs(depthTarget - depth) < 0.003 && now - lastScrollAt > 250;
+      if (seen && layout && atRest && solvedAs.get(g) !== layout) {
+        solveNames(group.filter((l) => l.on), W, H, narrow, EDGE);
+        for (const l of group) if (!l.on) l.hidden = true;
+        solvedAs.set(g, layout);
       }
-      // the side it used last frame comes first while it is still clear, so names don't hop
-      if (l.side) order = [l.side, ...order.filter((o) => o !== l.side)];
-      const sides = order.map((o) => at[o]);
-      const gm = l.el.classList.contains('gm');
-      const pm = l.el.classList.contains('pm');
-      let side = -1;
-      for (const k of [0, 1, 2, 3]) {
-        const x = clamp(sides[k][0], EDGE, W - w - EDGE);
-        const y = clamp(sides[k][1], EDGE, H - h - EDGE);
-        const free =
-          !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h) &&
-          !lightsOnScreen.some(([lx, ly]) => lx + LIGHT_R > x && lx - LIGHT_R < x + w && ly + LIGHT_R > y && ly - LIGHT_R < y + h);
-        if (gm || free) {
-          side = k;
-          l.x = x;
-          l.y = y;
-          break;
-        }
-      }
-      // a PM's name always shows too: if no side is clear it takes its first choice anyway
-      if (side < 0 && pm) {
-        side = 0;
-        l.x = clamp(sides[0][0], EDGE, W - w - EDGE);
-        l.y = clamp(sides[0][1], EDGE, H - h - EDGE);
-      }
-      if (side < 0) l.a = 0;
-      else {
-        l.side = order[side];
-        const pad = gm ? GM_PAD : pm ? 5 : 0;
-        placed.push({ x: l.x - pad, y: l.y - pad, w: w + pad * 2, h: h + pad * 2 });
-      }
-      if (l.dim) l.dim.target = l.a ? 1 : 0.3;
     }
     for (const l of labels) {
-      if (!l.a) {
+      const settled = layoutOf(l.group) !== '' && solvedAs.get(l.group) === layoutOf(l.group);
+      const target = settled && !l.hidden ? l.a : 0;
+      l.o += (target - l.o) * Math.min(1, dt * 5);
+      if (l.o < 0.01) {
         if (l.el.style.opacity !== '0') l.el.style.opacity = '0';
         continue;
       }
-      l.el.style.opacity = l.a.toFixed(2);
+      // rides with its light exactly: the edge margin was enforced when the side was chosen
+      // (the GM's and PMs' names, which always show, are the exception and stay held in)
+      const [x, y] = sideAt(l, narrow);
+      const held = l.el.classList.contains('gm') || l.el.classList.contains('pm');
+      l.x = held ? clamp(x, EDGE, W - l.w - EDGE) : x;
+      l.y = held ? clamp(y, EDGE, H - l.h - EDGE) : y;
+      l.el.style.opacity = l.o.toFixed(2);
       l.el.style.transform = `translate3d(${l.x.toFixed(1)}px, ${l.y.toFixed(1)}px, 0)`;
     }
 
@@ -1151,6 +1199,15 @@ export function mount(canvas: HTMLCanvasElement) {
       canvasW: canvas.getBoundingClientRect().width,
       camX: +camera.position.x.toFixed(3),
       gather: +gather.toFixed(2),
+      names: labels
+        .filter((l) => l.o > 0.05)
+        // offset of the name's anchor from its light: its centre when over or under, its inner edge
+        // when beside (so a second line changing length doesn't read as movement)
+        .map((l) => {
+          const ax = l.side === 'left' ? l.x + l.w : l.side === 'right' ? l.x : l.x + l.w / 2;
+          const ay = l.side === 'over' ? l.y + l.h : l.side === 'under' ? l.y : l.y + l.h / 2;
+          return { t: l.el.firstChild?.textContent, g: l.group, side: l.side, dx: Math.round(ax - l.sx), dy: Math.round(ay - l.sy) };
+        }),
       seats: centroid(seats.map((s) => s.node.pos)),
       messages: centroid(talkers.map((t) => t.node.pos)),
       memory: centroid([memSeat.pos, ...facts.map((f) => f.pos)]),
