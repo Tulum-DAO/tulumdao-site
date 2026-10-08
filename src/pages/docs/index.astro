@@ -14,7 +14,8 @@ const rendered = await Promise.all(docs.map(async (d) => ({ d, Content: (await r
 const blurbs: Record<string, string> = {
   overview: 'What is in the box, the two ways to run it, and how to contribute.',
   install: 'From nothing to a VPS, Tailscale and the dashboard in your browser, one seat, one card answered. About an hour the first time.',
-  'beginners-guide': 'Never used a terminal? Start here.',
+  'from-scratch': 'Never rented a server or made an ssh key? Start here: a Mac, a card and an email, to logged in on your own server.',
+  'beginners-guide': 'What a terminal is, one agent CLI, and your first commands.',
   costs: 'What a VPS and a CLI plan cost, and the no-cost option.',
   onboarding: 'Pair your own phone and browser with your gateway, and what each failure means.',
   upgrade: 'Move to a newer OrchestraOS: pull, rebuild, restart, and check it took.',
@@ -50,8 +51,8 @@ const tree = `https://github.com/${lock.repo}/tree/${lock.sha}`;
           <code>{lock.sha.slice(0, 7)}</code>, so it says what the code says.
         </p>
         <p class="start">
-          Never used a terminal or a server? Start with the <a href="#beginners-guide">beginner's guide</a>, then the
-          install.
+          Never used a terminal or a server? Start with <a href="#from-scratch">From scratch</a>: about 20 minutes
+          from a Mac with nothing to being logged in on your own server. Then the install.
         </p>
         <div class="quick"><Install novice={false} /></div>
         <h2 id="contents">Read in this order</h2>

@@ -1,7 +1,7 @@
 ---
 title: "Rotation"
 source: "docs/ROTATION.md"
-order: 8
+order: 9
 ---
 Rotation is how a seat survives running out of context. An **agent** is a *seat* with a
 *lineage*; each **generation** is one CLI session (Claude Code, Gemini CLI, or Codex).

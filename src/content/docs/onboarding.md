@@ -1,7 +1,7 @@
 ---
 title: "Connect your phone and browser"
 source: "docs/ONBOARDING.md"
-order: 4
+order: 5
 ---
 For someone who already has a gateway running and wants to reach it from a
 phone and from a browser, on their own network, with no baked-in token. Two
@@ -219,7 +219,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/43a07b0e39fe1cd8718e80e9bad412855cad304e/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/b25ce95ad4e7ea1923c7bd2ff941717a8f9f46e4/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -233,7 +233,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [`docs/tracks/01-device-pairing.md`](https://github.com/Tulum-DAO/orchestraos/blob/43a07b0e39fe1cd8718e80e9bad412855cad304e/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [`docs/tracks/01-device-pairing.md`](https://github.com/Tulum-DAO/orchestraos/blob/b25ce95ad4e7ea1923c7bd2ff941717a8f9f46e4/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.
