@@ -450,7 +450,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/2a482d501f7e96a42392834b936aa076a6d7ea20/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/df0909228f34925cd5edccc241bb5250a4c82c65/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -550,21 +550,46 @@ open `http://127.0.0.1:8891` while that ssh session stays open.
 
 ## 3. Your starter team
 
+**Hand this to your agent** (Claude, ChatGPT, Codex, Gemini or any other), if you'd rather
+have it guide you through this section. Copy the whole box:
+
+```text
+Help me with one step of installing OrchestraOS. Read this section and do it with me:
+https://github.com/Tulum-DAO/orchestraos/blob/main/docs/INSTALL.md#3-your-starter-team
+The commands in this section run on my server; I log in to it with ssh (ask me for the
+address and user if you need them).
+Rules:
+- If you can run commands on my computer, run them yourself and show me every output.
+  If you can't, give me one command at a time and wait for me to paste back what it printed.
+- Stop at every step marked [PERSON ONLY] (paying, signing in, any password or
+  passphrase prompt including sudo's, approving a device or an admin prompt) and let me
+  do it myself. Never do those for me, and never ask for my passwords.
+- Never delete, destroy, reset, overwrite or wipe anything. If a command asks
+  `Overwrite (y/n)?`, the answer is n.
+- We are done when `orchestra starter` ends with `starter team up: gm (T0) -> pm-first-project (T1) -> dev-first-project (T2)`. Show me that output; don't just tell me it worked.
+```
+
 One command starts three agents ("seats"), one at each level, each reporting to the one above:
 
 | seat | tier | what it does |
 |---|---|---|
 | `gm` | T0, the manager | the one you talk to; always on; hands work down |
 | `pm-first-project` | T1, a project manager | runs one project for gm; reports to `gm` |
-| `dev-first-project` | T2, a worker | does the hands-on work; reports to `pm-first-project` |
+| `dev-first-project` | T2, a worker | does the hands-on work, in its own folder (`~/.orchestra/projects/first-project/`); reports to `pm-first-project` |
 
 ```bash
 orchestra starter
 ```
 
-You should see three lines, one per seat as it comes up, then `starter team up: gm (T0) ->
-pm-first-project (T1) -> dev-first-project (T2)`. It takes a minute or two. The project manager
-and the worker say they are ready and then wait (they use no work until you give them some).
+You should see some output for each of the three seats as it starts, ending with
+`starter team up: gm (T0) -> pm-first-project (T1) -> dev-first-project (T2)`. It takes a
+minute or two. The three seats run on your AI plan. The project manager and the worker say they
+are ready and then wait; they do almost nothing until you give them work.
+
+If it stops instead: `refusing to spawn: no enabled runtime is installed AND logged in` means
+the agent CLI login in §0 was skipped; do that, then run `orchestra starter` again.
+`starter stopped at <name>: ...` names the seat that did not start; fix the error printed above
+it and run `orchestra starter` again (seats already running are skipped).
 Want a real name instead of `first-project`? `orchestra starter --project website` names them
 `pm-website` and `dev-website`. Running `orchestra starter` again is safe: seats that are already
 running are skipped, and one that stopped is started again.
