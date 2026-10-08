@@ -3,11 +3,11 @@ title: "Overview"
 source: "README.md"
 order: 0
 ---
-![OrchestraOS](https://raw.githubusercontent.com/Tulum-DAO/orchestraos/11961b186fee8783bc9cace072a186d83862f05e/docs/design/brand/readme-header.svg)
+![OrchestraOS](https://raw.githubusercontent.com/Tulum-DAO/orchestraos/9591d5a27375b770d733eeb15f3d9205fa712184/docs/design/brand/readme-header.svg)
 
 OrchestraOS, published by Tulum DAO: an open harness for running a fleet of coding agents as a team — agents that message each other, remember across restarts, rotate themselves before they run out of context, and put every real decision in front of the human on their phone.
 
-**This is not a finished product.** It runs one operator's fleet today, every day, and that setup is the reference install. We are opening it so people who want this to exist can build it with us. The first hackathon, Build-a-thon, ran on 2026-09-19 and 20; its tracks are still open ([`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/tracks/README.md)).
+**This is not a finished product.** It runs one operator's fleet today, every day, and that setup is the reference install. We are opening it so people who want this to exist can build it with us. The first hackathon, Build-a-thon, ran on 2026-09-19 and 20; its tracks are still open ([`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/tracks/README.md)).
 
 ## What is in the box
 
@@ -18,7 +18,7 @@ OrchestraOS, published by Tulum DAO: an open harness for running a fleet of codi
 - **Arturo.** The assistant. The main page, the new-chat page, and a button that is available on every other page and knows what you are looking at. Text today; voice through your own keys.
 - **Runtime catalog.** Probes which CLIs are installed and authenticated and offers their models, so the harness runs on whatever subscription you already have.
 
-**Before you start — log in first, before you clone.** You need one agent CLI already installed and **logged in** — Claude Code, Gemini (Antigravity `agy` CLI), or Codex, your choice. See [`docs/INSTALL.md`](/docs/install/) §0 for the exact commands, [`docs/COSTS.md`](/docs/costs/) for what each plan costs (including a no-cost option), and [`docs/BEGINNERS_GUIDE.md`](/docs/beginners-guide/) if this is your first time in a terminal at all. Do the login before anything else: a seat spawned against a CLI you have not logged in to does not tell you that — it retries, prints `Injection FAILED`, and exits, while the CLI's own sign-in screen waits unread in the seat's terminal.
+**Before you start — log in first, before you clone.** You need one agent CLI already installed and **logged in** — Claude Code, Gemini (Antigravity `agy` CLI), or Codex, your choice. See [`docs/INSTALL.md`](/docs/install/) §0 for the exact commands, [`docs/COSTS.md`](/docs/costs/) for what each plan costs (including a no-cost option), and [`docs/BEGINNERS_GUIDE.md`](/docs/beginners-guide/) if this is your first time in a terminal at all. Do the login before anything else: until one CLI is logged in, `orchestra spawn` refuses to start a seat.
 
 ## Two ways to run it
 
@@ -29,14 +29,14 @@ OrchestraOS, published by Tulum DAO: an open harness for running a fleet of codi
 ## More docs
 
 - [`docs/BEGINNERS_GUIDE.md`](/docs/beginners-guide/) — never used a terminal? Start here.
-- [`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/GATE.md) — the seven-step gate everyone completes first: command, expected output, and what to check if it fails, for each step.
+- [`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/GATE.md) — the seven-step gate everyone completes first: command, expected output, and what to check if it fails, for each step.
 - [`docs/ONBOARDING.md`](/docs/onboarding/) — connecting your own phone and browser to your gateway (no baked-in token): pairing, the handshake, what each failure means.
-- [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/PROMPTS.md) — copy-paste prompts for the same seven steps, plus the tracks.
-- [`docs/UPGRADE.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/UPGRADE.md) — **updating:** `orchestra upgrade` pulls the newest release, re-runs `init`, re-checks `doctor`; running seats keep their code until their next spawn or rotation. `orchestra doctor` and `orchestra up` tell you when a newer release exists.
+- [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/PROMPTS.md) — copy-paste prompts for the same seven steps, plus the tracks.
+- [`docs/UPGRADE.md`](/docs/upgrade/) — **updating:** `orchestra upgrade` pulls the newest release, re-runs `init`, re-checks `doctor`; then rebuild and restart by hand (the doc has the two lines; `upgrade` does not rebuild the API or dashboard yet); running seats keep their code until their next spawn or rotation. `orchestra doctor` and `orchestra up` tell you when a newer release exists.
 - [`docs/COSTS.md`](/docs/costs/) — what a VPS and a CLI plan actually cost, and the zero-key path.
-- [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/tracks/README.md) — the thirteen hackathon tracks, one doc each.
+- [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/tracks/README.md) — the thirteen hackathon tracks, one doc each.
 - [`docs/ARCHITECTURE.md`](/docs/architecture/) — the map. Read before touching rotation or approvals.
-- [`docs/MEMORY.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/MEMORY.md) — per-seat memory (index + one-fact files + baton) and the facts store Arturo recalls from; the copy-paste prompt for gate step 7.
+- [`docs/MEMORY.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/MEMORY.md) — per-seat memory (index + one-fact files + baton) and the facts store Arturo recalls from; the copy-paste prompt for gate step 7.
 
 ## Configuration
 
@@ -46,7 +46,7 @@ Copy `orchestra.example.toml` to `orchestra.toml` and fill in the data directory
 
 Thirteen tracks, each with its own doc: Problem, Design, files to touch, numbered
 steps, an acceptance test, and a start prompt you can paste straight into your own
-agent. See [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/tracks/README.md) for the full index. The big ones:
+agent. See [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/tracks/README.md) for the full index. The big ones:
 
 1. Device pairing, so the phone app logs in by scanning a code instead of a token baked into the build.
 2. Zero-key assistant brain on your own CLI runtime.
@@ -62,7 +62,7 @@ agent. See [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/bl
 12. Gauntlet mode: a critic loop that scores creative work against real references before it reaches you.
 13. Memory: a page that shows what each seat remembers, a budget on the index, and a pruner — the store exists today; nobody can see it.
 
-`good-first-issue` is real and small (see [`docs/HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/HACKATHON_ISSUES.md)). Start there
+`good-first-issue` is real and small (see [`docs/HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/HACKATHON_ISSUES.md)). Start there
 if you want to land something in an hour. New to the command line entirely? Start
 with [`docs/BEGINNERS_GUIDE.md`](/docs/beginners-guide/) instead — it walks the seven-step gate everyone
 completes before picking a track.

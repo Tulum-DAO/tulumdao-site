@@ -22,6 +22,7 @@ export const DOCS = [
   { src: 'docs/BEGINNERS_GUIDE.md', slug: 'beginners-guide', title: "Beginner's guide" },
   { src: 'docs/COSTS.md', slug: 'costs', title: 'What it costs' },
   { src: 'docs/ONBOARDING.md', slug: 'onboarding', title: 'Connect your phone and browser' },
+  { src: 'docs/UPGRADE.md', slug: 'upgrade', title: 'Upgrade' },
   { src: 'docs/REFERENCE_INSTALL.md', slug: 'reference-install', title: 'The reference install' },
   { src: 'docs/ARCHITECTURE.md', slug: 'architecture', title: 'Architecture' },
   { src: 'docs/ROTATION.md', slug: 'rotation', title: 'Rotation' },

@@ -26,8 +26,9 @@ This page is about the gateway (8890), which the phone app talks to.
 
 Do this before you do anything below — install and log in to one agent CLI
 (Claude Code, Gemini (Antigravity `agy` CLI), or Codex). [`docs/INSTALL.md`](/docs/install/) §0 has the exact
-commands. If you have no subscription to any of them, Gemini CLI's free tier
-needs no credit card — that's the zero-cost path onto this whole doc.
+commands. If you have no subscription to any of them, Google's free tier is the
+likely zero-cost path, but note the harness uses the Antigravity `agy` CLI, and the
+free-tier figures in [`docs/COSTS.md`](/docs/costs/) are Gemini CLI's, **unverified against `agy`**.
 
 Two things people get wrong here, stated up front so you don't have to guess
 mid-flow:
@@ -43,7 +44,7 @@ mid-flow:
 ## 1. Run your gateway
 
 ```bash
-orchestra up --detach && orchestra status
+orchestra up --detach && sleep 5 && orchestra status
 ```
 
 Confirm the `gateway` row has a live pid. Note the host you'll reach it at —
@@ -56,13 +57,39 @@ host, never share it outside people you're actually pairing.
 
 ## 2. Run `orchestra pair`
 
+`orchestra pair` needs two things it will not guess:
+
+- **The address the phone will use** (`--base-url`): the https gateway address from
+  step 4 below, e.g. `https://<machine>.<tailnet>.ts.net:8445`. If you pair a phone, do
+  step 4's `tailscale serve` first. Without it, pair stops with `I do not know this
+  gateway's public address`. You can set `ORCHESTRA_PUBLIC_URL` in your shell instead of
+  passing it each time; `[public] host` in `orchestra.toml` is **not** read here.
+- **What the device may do** (`--scopes`): required, with no default, so nobody gets
+  the power to answer on your behalf by accident. A comma-separated list of:
+
+  | scope | the device can |
+  |---|---|
+  | `read` | see approvals, agents and transcripts |
+  | `approve` | answer approvals and questionnaires: it acts as you |
+  | `message` | send a message to an agent, upload a file |
+  | `inject` | press keys in a live agent's terminal |
+  | `voice` | talk to Arturo (every call spends provider credit) |
+  | `admin` | file red-alert reports, post telemetry |
+
+  A phone that answers cards needs `read,approve`. Give it more only if you mean to.
+
 ```bash
-orchestra pair
+orchestra pair --base-url https://<machine>.<tailnet>.ts.net:8445 --scopes read,approve --label my-phone
 ```
 
-This prints a QR code **as text** in the terminal — no image viewer needed,
-so it works over a bare SSH session on a headless VPS — plus the raw pairing
-code underneath it, in case scanning isn't convenient. The code is
+`orchestra devices` lists paired devices; `orchestra devices --revoke <device id>`
+cuts one off (its token stops working on its next request).
+
+This prints the pairing code as one line to type or paste into the app (`{"code":...,
+"base_url":...}`). On a stock install that line is all you get: the terminal says
+`No QR encoder is installed on this machine`. To also get a scannable QR code drawn as
+text (works over a bare ssh session), install the `segno` package into the install's
+Python once, from your checkout: `.venv/bin/pip install segno`. The code is
 **short-lived and single-use**: it expires the moment it's exchanged, or after
 about 10 minutes, whichever comes first. Running `orchestra pair` again always
 mints a fresh one; an old code left on screen goes stale on its own.
@@ -192,7 +219,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -206,7 +233,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [`docs/tracks/01-device-pairing.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [`docs/tracks/01-device-pairing.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.

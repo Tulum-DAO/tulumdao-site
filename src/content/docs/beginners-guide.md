@@ -93,7 +93,7 @@ Later (even after restarting it), ask "what's my favorite color?" — it should
 answer correctly by reading back what it wrote, not by guessing. This is the
 same mechanism the full harness uses to survive [`docs/ARCHITECTURE.md`](/docs/architecture/)'s
 rotations — an agent replacing itself without forgetting anything. The exact
-files and paths this writes to are in [`docs/MEMORY.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/MEMORY.md), once it lands (it's
+files and paths this writes to are in [`docs/MEMORY.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/MEMORY.md) (it's
 not the same file as the handoff document a retiring generation writes — that
 one carries where it stopped, not what it remembers).
 
@@ -102,29 +102,30 @@ one carries where it stopped, not what it remembers).
 Everyone who wants to build on the harness — picking a track, adding a feature —
 completes these seven steps first. They are cumulative: each one builds on the
 last, and together they touch most of the files any track's doc will send you
-to, so you will recognize them when you get there. [`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/GATE.md) has the full
+to, so you will recognize them when you get there. [`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/GATE.md) has the full
 version of each step below — the exact command, what it should print, and
 where to look if it doesn't.
 
 1. **Install, doctor green, dashboard open.** [`docs/INSTALL.md`](/docs/install/) from the top
    through §2: a VPS with Tailscale, `orchestra init --yes`, `orchestra doctor` (every
-   row OK), `orchestra up`, the dashboard open in your browser over Tailscale.
+   row OK once your CLI is logged in; before that, `runtime:login` is the one missing
+   row), `orchestra up`, the dashboard open in your browser over Tailscale.
 2. **Always-on agent spawned, answers questions in terminal.** [`docs/INSTALL.md`](/docs/install/)
    §3: spawn one seat, confirm it is alive, ask it something in its own tmux
    pane and get a real answer.
-3. **Telegram bot connected, agent answers from phone.** See [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/PROMPTS.md)'s
+3. **Telegram bot connected, agent answers from phone.** See [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/PROMPTS.md)'s
    "Connect Telegram" prompt — set up the bot token as an environment variable
    (never paste it into a file or a chat), send yourself a message from your
    phone, get a reply.
-4. **Two seats exchange a message, both visible in Inbox.** [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/PROMPTS.md)'s
+4. **Two seats exchange a message, both visible in Inbox.** [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/PROMPTS.md)'s
    "Two-seat message" prompt: spawn a second seat, send one message between
    them, see it land in both the dashboard's Inbox and the command line.
 5. **One approval card answered from Telegram or dashboard.**
-   [`docs/INSTALL.md`](/docs/install/) §4 / [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/PROMPTS.md)'s "Answer a card" prompt: fire a
+   [`docs/INSTALL.md`](/docs/install/) §4 / [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/PROMPTS.md)'s "Answer a card" prompt: fire a
    card, answer it from your phone or the dashboard, watch the decision land
    back in the agent's terminal.
 6. **Manual rotation of the always-on agent completed, nothing lost.**
-   [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/PROMPTS.md)'s "Rotate" prompt: trigger one rotation by hand, read the
+   [`docs/PROMPTS.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/PROMPTS.md)'s "Rotate" prompt: trigger one rotation by hand, read the
    handoff document the old version wrote and the new version's proof it
    understood it.
 7. **One fact written, restart, agent recalls it.** The "Save one command"
@@ -132,7 +133,7 @@ where to look if it doesn't.
    conversation — confirm the memory survives.
 
 Once you have done all seven, you understand the whole loop well enough to pick
-a track. See [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/tracks/README.md) for the list, or [`docs/HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/HACKATHON_ISSUES.md)
+a track. See [`docs/tracks/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/tracks/README.md) for the list, or [`docs/HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/9591d5a27375b770d733eeb15f3d9205fa712184/docs/HACKATHON_ISSUES.md)
 for something smaller (`good-first-issue`) if you would rather land something in
 an hour than a weekend.
 
@@ -145,9 +146,7 @@ question you are about to ask.
 
 ## If you're still stuck
 
-Three places, in order: the in-app **Report** button (dashboard top bar) files
+Two places, in order: the in-app **Report** button (dashboard top bar) files
 a structured report of exactly what broke, so whoever helps you starts from
-real state instead of a description; the GitHub Discussions "Start here" post
-pins the same path you're reading now for anyone else who lands there with the
-same question; and — if you're at the event in person — the room, out loud,
-any time. Nobody expects you to debug this alone.
+real state instead of a description; then open an issue on the GitHub repo with
+what you ran and what it printed. Nobody expects you to debug this alone.
