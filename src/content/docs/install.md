@@ -4,7 +4,7 @@ source: "docs/INSTALL.md"
 order: 2
 ---
 > **Never rented a server, made an ssh key, or used Terminal?** Start with
-> [docs/FROM_SCRATCH.md](/docs/from-scratch/). It takes you from your Mac to logged in on your own server
+> [docs/FROM_SCRATCH.md](/docs/from-scratch/). It takes you from your computer (Mac, Windows or Linux) to logged in on your own server
 > in about 20 minutes, then sends you back here to §0.
 
 One machine, one CLI (claude OR gemini OR codex), no voice, no Telegram.
@@ -113,15 +113,19 @@ tailscale status                        # the VPS is listed, with a 100.x.y.z ad
 ```
 
 `sudo tailscale up` prints `To authenticate, visit:` and a link. Select the link, copy it
-(`Cmd+C` works in the Mac Terminal), and open it in your Mac's browser. Sign in or create a
+(`Cmd+C` on a Mac, `Ctrl+C` in Windows Terminal, `Ctrl+Shift+C` on Linux), and open it in
+your own computer's browser. Sign in or create a
 Tailscale account (it signs you in with an existing Google, Microsoft, GitHub or Apple account) and approve the
 device. The command on the server then finishes by itself. Remember which account you
-used: your Mac and phone must sign in with the same one.
+used: your computer and phone must sign in with the same one.
 
-On your own laptop and/or phone: install Tailscale and sign in **with the same account**.
-On a Mac: install **Tailscale** from the Mac App Store (or tailscale.com/download), open
-it, and click its icon in the menu bar at the top right of the screen to log in. On a
-phone: the **Tailscale** app from the App Store or Google Play. Run `tailscale status` on
+On your own computer and/or phone: install Tailscale and sign in **with the same account**.
+- **Mac:** **Tailscale** from the Mac App Store (or tailscale.com/download); open it and click
+  its icon in the menu bar, top right of the screen, to log in.
+- **Windows:** the installer from tailscale.com/download; after installing, click the
+  Tailscale icon in the taskbar's notification area (bottom right) to log in.
+- **Linux:** the commands at tailscale.com/download, then `sudo tailscale up`.
+- **Phone:** the **Tailscale** app from the App Store or Google Play. Run `tailscale status` on
 the VPS again: your device is now listed too.
 
 Check: on the VPS, `tailscale ip -4` prints its tailnet address (it starts with `100.`).
@@ -201,7 +205,7 @@ On the server, start Claude Code once:
 claude
 ```
 
-It shows a few screens. The server has no browser, so you sign in from your Mac:
+It shows a few screens. The server has no browser, so you sign in from your own computer's browser:
 
 1. **`Choose the text style that looks best with your terminal`**: a list of themes, with
    one marked `❯`. Press Enter to keep it (you can change it later with `/theme`).
@@ -209,9 +213,9 @@ It shows a few screens. The server has no browser, so you sign in from your Mac:
    `1. Claude account with subscription · Pro, Max, Team, or Enterprise`. Press Enter.
 3. **`Browser didn't open? Use the url below to sign in`**, then a very long link that wraps
    over several lines, then `Paste code here if prompted >`. With the mouse, select the
-   whole link, from `https://` to its last character on the last line, copy it (`Cmd+C`),
-   and open it in your Mac's browser. Sign in, and click to authorize Claude Code.
-4. The browser then shows a **code**. Copy it, go back to Terminal, paste it (`Cmd+V`) after
+   whole link, from `https://` to its last character on the last line, copy it, and open it in
+   your own computer's browser. Sign in, and click to authorize Claude Code.
+4. The browser then shows a **code**. Copy it, go back to your terminal, paste it after
    `Paste code here if prompted >`, and press Enter.
 5. A few more screens follow (a login confirmation and some notes). Press Enter on each.
    If it asks whether you trust the files in this folder, choose the option that says yes.
@@ -304,7 +308,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/907c45e15b679ddaad65dd277bb087f214d6a0f8/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/3dbe1a3f873d2127a612623b525d05b23e071d77/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -417,7 +421,7 @@ tmux attach -t gm                        # talk to it; detach with Ctrl-B D
 On a first install, the first two lines are all you need.
 
 **Talking to a seat.** Each seat runs in its own terminal session on the server, kept alive by
-tmux, so it keeps working when you close Terminal on your Mac. `tmux attach -t gm` shows you
+tmux, so it keeps working when you close the terminal on your own computer. `tmux attach -t gm` shows you
 the `gm` seat's screen: type to it like a chat and press Enter. To leave without stopping it,
 **detach**: press `Ctrl-B`, let go, then press `D`. You are back at your own prompt, and the
 seat keeps running. (Closing the Terminal window also leaves it running.) `tmux ls` lists the
