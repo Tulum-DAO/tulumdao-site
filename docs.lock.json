@@ -1,21 +1,21 @@
 {
   "repo": "Tulum-DAO/orchestraos",
-  "sha": "4252f0da2236f0d029359a4bd124515f24e7395b",
-  "committedAt": "2026-10-08T02:56:11-04:00",
+  "sha": "43a07b0e39fe1cd8718e80e9bad412855cad304e",
+  "committedAt": "2026-10-08T02:03:49-05:00",
   "install": [
     "git clone https://github.com/Tulum-DAO/orchestraos.git orchestraos && cd orchestraos",
     "make install"
   ],
-  "syncedAt": "2026-10-08T07:00:25.872Z",
+  "syncedAt": "2026-10-08T07:04:07.265Z",
   "files": {
-    "overview": "3cd72cd12dd19d8e471f80daf5765de54237de612bd0b9cff08e385f57b23827",
-    "install": "525bbd1e00724393eae8aabdeb6bce50ca227ba3336bd599161591a012fdd84b",
-    "beginners-guide": "2fc6b1eca13307d353aeb26c0cb15081ce06f0254043fe812ed2f667b1dc8257",
-    "costs": "f1263bf8f24fd6556f6e1821e54073feca07cd24732a46593978558cca9eba58",
-    "onboarding": "c150abc77973a03af249c3d5c13f09f42c07b38c3814fade395981a01b744c4a",
-    "upgrade": "f4ab70c2ca56927b07d3448ba35553d1f78b782d5b9bfebaad9c5bcbe13ab5ba",
-    "reference-install": "b064d25ad182cc3a0f9627f62759295515ce0a543ef675478d533b537f6abd0a",
-    "architecture": "3eb18f88d1f65f15b5d01357824b3be61d2b8a722e03d743525735d0c45d423c",
+    "overview": "880aabd8e749f6e5ba4bce66555809acd3e6f46a61076b546ce789afa8bb10ba",
+    "install": "e8881ae2ca7ed7764ebb7c8f2b6103f96e750a423d3e9a26975ad805d4b5ac00",
+    "beginners-guide": "628b20d023632216ccf2fe2890e97e6e64231f5f7753e80f41067246d351181a",
+    "costs": "6a208d861f8ddef89b89f56ef32b1666998f9ee2b9b7d1054e6d74f896eb7223",
+    "onboarding": "0f7f6da9b3f933ed960c71f977bf43ff2f1a071f7345f52cc30bb0fe1f6493e6",
+    "upgrade": "8ef7a17f0a0356ee86b086f05370926fb4d09dcd3327bb55d26f3ced2d1fc13b",
+    "reference-install": "4d3e1653576105d401801e517101ca4aba9a7fe1158af5bed61a804ef32aeff5",
+    "architecture": "cca7058ca4ff10dad5eb15fb1132574f9eb2bc22e6f461886d9065a5fdf5d6d4",
     "rotation": "09f8bac453f44c5ed0d93dabb9727265e3016a11c4d23e1acb53bfe386280d20"
   }
 }
