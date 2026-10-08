@@ -250,8 +250,6 @@ export function mount(canvas: HTMLCanvasElement) {
     sy: number;
     side: string; // which side of its light it sat on last frame
     dim: Node | null; // a seat whose light dims while its name has no room
-    hub: Vector3 | null; // the centre of its cluster: the name prefers the side facing away from it
-    toward: boolean; // ...or facing it (a PM's name sits in the open gap between its orbit and the GM)
     group: string; // the layer it belongs to; a layer's names are solved together
     hidden: boolean; // no room in this layout: faded out until the layout changes
     o: number; // opacity on screen, eased, so a name fades instead of popping
@@ -293,7 +291,7 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, hub: null, toward: false, group: labelGroup, hidden: false, o: 0, on: false, longest: '' };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, group: labelGroup, hidden: false, o: 0, on: false, longest: '' };
     labels.push(l);
     return l;
   };
@@ -357,11 +355,8 @@ export function mount(canvas: HTMLCanvasElement) {
       runtime: rt,
       role: i === 0 ? 'general manager' : undefined,
     });
-    if (i > 0) {
-      label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
-      label.hub = seats[0]?.node.pos ?? null;
-    }
-    label.longest = `${RUNTIMES[rt].name}, gen 10, ${HANDOFF}`;
+    if (i > 0) label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
+    label.longest = mobile ? `gen 10, ${HANDOFF}` : `${RUNTIMES[rt].name}, gen 10, ${HANDOFF}`;
     const l: Lineage = { node: n, rings: [], handoffAt: -100, gen: past + 1, label, rt: RUNTIMES[rt].name };
     for (let g = past - 1; g >= 0; g--) addRing(l, -100, ringRadius(g));
     seats.push(l);
@@ -400,8 +395,8 @@ export function mount(canvas: HTMLCanvasElement) {
   const TALK = 1 + PMS + PMS * PER_PM;
   // a phone screen is tall: the shape is stretched front to back (screen up and down) there
   const ZS = mobile ? 1.3 : 1;
-  const PM_R = mobile ? 1.2 : 1.75;
-  const WORKER_R = mobile ? 0.56 : 0.8;
+  const PM_R = mobile ? 1.32 : 1.75;
+  const WORKER_R = mobile ? 0.74 : 0.8;
   const orbitPos = (tk: Talker, out: Vector3) => {
     if (!tk.parent) return out.set(LX.messages, Y.messages, 0);
     orbitPos(tk.parent, out);
@@ -441,7 +436,7 @@ export function mount(canvas: HTMLCanvasElement) {
       hub: new Vector3(),
       phase: Math.random() * 6.28,
     };
-    if (label && role === 'worker') label.longest = mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`;
+    if (label && role === 'worker') label.longest = mobile ? 'busy' : `${tk.rt}, busy: mail waits`;
     orbitPos(tk, tk.hub);
     if (role !== 'gm') tk.hub.y += Math.sin(i * 1.7) * (role === 'pm' ? 0.12 : 0.22);
     talkers.push(tk);
@@ -465,13 +460,6 @@ export function mount(canvas: HTMLCanvasElement) {
       makeTalker(i, 'worker', pm, WORKER_R, a, TALKER_NAMES[(i - 1 - PMS) % TALKER_NAMES.length]);
     }
   });
-  // names face away from their own centre: a PM's away from the GM, a worker's away from its PM
-  // ...except a PM's, which faces the GM: its workers leave that side of the orbit open
-  for (const tk of talkers) {
-    if (!tk.label || !tk.parent) continue;
-    tk.label.hub = tk.parent.node.pos;
-    tk.label.toward = tk.role === 'pm';
-  }
   const workers = talkers.filter((t) => t.role === 'worker');
   let gather = 0; // 0 spread out, 1 gathered into the shape
   let gatherTarget = 0;
@@ -548,11 +536,8 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   FACT_LABELS.forEach((text, i) => {
     const f = facts[i * 3 + 1];
-    if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false }).hub = memSeat.pos;
+    if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false });
   });
-  // the seats' own lights: what a name may not cover (mail in flight is left out: it is gone in a
-  // moment, and solving names around it would tie the layout to chance)
-  const fixedLights: Node[] = [...seats.map((l) => l.node), ...talkers.map((t) => t.node), ...facts, memSeat];
   let memGen = 7;
   const memLabel = addLabel('dev-api', () => memSeat.pos, () => (memSeat.alpha < 0.1 ? 0.85 : memSeat.alpha), 'mem', { runtime: 'claude' });
   const lpos = new Float32Array(FACTS * 6);
@@ -702,16 +687,6 @@ export function mount(canvas: HTMLCanvasElement) {
       const r = el.getBoundingClientRect();
       if (r.bottom > 0 && r.top < H) placed.push({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 });
     }
-    // the seats' lights, its own included: the four sides keep clear of it, but a name pushed in
-    // from the screen edge may not land on it
-    const LIGHT_R = 7;
-    const lights: [number, number][] = [];
-    for (const n of fixedLights) {
-      if (!n.live || n.alpha < 0.1) continue;
-      proj.copy(n.pos).project(camera);
-      if (proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) continue;
-      lights.push([(proj.x * 0.5 + 0.5) * W, (-proj.y * 0.5 + 0.5) * H]);
-    }
     // the GM first, then the PMs, then the rest nearest-first
     const rank = (l: Label) => (l.el.classList.contains('gm') ? 2 : l.el.classList.contains('pm') ? 1 : 0);
     const order = [...group].sort((p, q) => rank(q) - rank(p) || p.d - q.d);
@@ -727,18 +702,9 @@ export function mount(canvas: HTMLCanvasElement) {
       }
       const wNow = l.w;
       l.w = w; // sideAt reads it: solve at the longest width
-      // preference: away from the cluster's centre first (the open side), else the screen's default
-      let sides = narrow ? ['under', 'over', 'right', 'left'] : ['right', 'left', 'under', 'over'];
-      if (l.hub) {
-        proj.copy(l.hub).project(camera);
-        const flip = l.toward ? -1 : 1;
-        const dx = (sx - (proj.x * 0.5 + 0.5) * W) * flip;
-        const dy = (sy - (-proj.y * 0.5 + 0.5) * H) * flip;
-        const lr = dx > 0 ? 'right' : 'left';
-        const ud = dy > 0 ? 'under' : 'over';
-        const first = Math.abs(dx) > Math.abs(dy) ? [lr, ud] : [ud, lr];
-        sides = [...first, ...sides.filter((o) => !first.includes(o))];
-      }
+      // every name has ONE place: centred just under its light on a phone, up and to the right on
+      // a wide screen. It never chooses another side; the only question is whether it shows.
+      const sides = [narrow ? 'under' : 'right'];
       const gm = rank(l) === 2;
       const pm = rank(l) === 1;
       let found = '';
@@ -749,11 +715,7 @@ export function mount(canvas: HTMLCanvasElement) {
         const y = clamp(y0, EDGE, H - h - EDGE);
         // a side only counts if the name fits there as it is: a name held in by the screen edge
         // would stop riding with its light and slide against it as the layer moves
-        const free =
-          x === x0 &&
-          y === y0 &&
-          !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h) &&
-          !lights.some(([lx, ly]) => lx + LIGHT_R > x && lx - LIGHT_R < x + w && ly + LIGHT_R > y && ly - LIGHT_R < y + h);
+        const free = x === x0 && y === y0 && !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h);
         if (gm || free) {
           found = side;
           break;
@@ -829,7 +791,9 @@ export function mount(canvas: HTMLCanvasElement) {
       // the core glows ochre while the successor answers the readback, then turns back to light
       const since = clock - l.handoffAt;
       l.node.color.copy(LIGHT).lerp(OCHRE, since < 2 ? smooth(0, 0.3, since) * (1 - smooth(1.2, 2, since)) : 0);
-      setSub(l.label, since < 1.8 ? `${l.rt}, gen ${l.gen}, ${HANDOFF}` : `${l.rt}, gen ${l.gen}`);
+      // a phone drops the runtime's name (its mark stays), so every name has room
+      const rtName = mobile ? '' : `${l.rt}, `;
+      setSub(l.label, since < 1.8 ? `${rtName}gen ${l.gen}, ${HANDOFF}` : `${rtName}gen ${l.gen}`);
       l.rings.forEach((ring, i) => {
         const age = clock - ring.born;
         ring.r += (ringRadius(i) - ring.r) * Math.min(1, dt * 3);
@@ -900,8 +864,11 @@ export function mount(canvas: HTMLCanvasElement) {
       tk.ring.visible = m.opacity > 0.01;
       // phones: the short form, so names fit beside a crowded hub
       // a PM's role goes on this line (short on a phone)
-      const role = tk.role === 'pm' ? (mobile ? 'PM, ' : 'project manager, ') : '';
-      if (tk.label) setSub(tk.label, tk.busy ? (mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`) : role + tk.rt);
+      // on a phone the runtime's name is dropped (its mark stays), so every name has room
+      const sub = mobile
+        ? tk.busy ? 'busy' : tk.role === 'pm' ? 'PM' : tk.role === 'gm' ? tk.rt : ''
+        : tk.busy ? `${tk.rt}, busy: mail waits` : (tk.role === 'pm' ? 'project manager, ' : '') + tk.rt;
+      if (tk.label) setSub(tk.label, sub);
     }
     for (let i = packets.length - 1; i >= 0; i--) {
       const pk = packets[i];
@@ -1101,11 +1068,11 @@ export function mount(canvas: HTMLCanvasElement) {
     renderer.render(scene, camera);
 
     // Labels follow their lights; they fade with distance so only the layer you are in is named.
-    // Each layer's names are solved ONCE per layout and then locked: which side of its light each
-    // name sits on, and which names have no room (those fade out and stay out). While the lights
-    // move, a name rides with its light on its locked side; it never hops. A layout is re-solved
-    // only when the layer's arrangement changes (messaging gathering or spreading) or the layer is
-    // entered afresh, and the names fade across that change rather than jump.
+    // Every name is pinned to its own light at one fixed offset (under it on a phone, up and to the
+    // right on a wide screen), in every state; it never moves for anything else, mail included.
+    // The only thing decided is which names show: once per layout, when the page is at rest, a
+    // name that would overlap another name (or run off screen) fades out and stays out until the
+    // layout changes (messaging gathering or spreading, or the layer entered afresh).
     const W = innerWidth;
     const H = innerHeight;
     const narrow = W <= 900;
