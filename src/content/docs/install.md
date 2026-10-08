@@ -458,7 +458,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/5cf1f92d6df766cdcf05b9827b1aa3498d5d41ec/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/5f9c0992da2885b76bdc1be1a9262d87b2c3b64c/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -603,7 +603,10 @@ Want a real name instead of `first-project`? `orchestra starter --project websit
 `pm-website` and `dev-website`. Running `orchestra starter` again is safe: seats that are already
 running are skipped, and one that stopped is started again.
 
-Then talk to gm:
+Then talk to gm. Run this at your server's own prompt, in the ssh session from your
+computer, never inside an agent's screen and never in the dashboard's agent page: typing in
+either of those already goes to the agent, and a `tmux attach` typed there takes over that
+agent's screen.
 
 ```bash
 tmux attach -t gm
@@ -615,6 +618,13 @@ the `gm` seat's screen: type to it like a chat and press Enter. To leave without
 **detach**: press `Ctrl-B`, let go, then press `D`. You are back at your own prompt, and the
 seat keeps running. (Closing the Terminal window also leaves it running.) `tmux ls` lists the
 sessions. You can also talk to seats from the dashboard in your browser.
+
+**If an agent's screen shows another tmux inside it** (two status bars at the bottom, or a
+different agent's screen where you expected this one): press `Ctrl-B`, then `Ctrl-B` again,
+then `D`. That closes the inner one and leaves your own view open; a single `Ctrl-B` then `D`
+only detaches your own view. If the screen then shows a plain `$` prompt instead of the agent,
+the agent itself has stopped: detach (`Ctrl-B`, then `D`), don't type commands at that prompt,
+and send a report with the dashboard's **Report** button (top bar).
 
 **Scrolling back.** While you are looking at an agent's screen in your terminal, turn the mouse
 wheel to scroll back through what it wrote. To get back to typing, press `q`.
@@ -658,7 +668,7 @@ show registered and live seats.
   `orchestra.toml`) the spawner never dispatches elsewhere.
 - The spawner pre-seeds Claude Code's workspace-trust bit and the bypass-permissions
   acceptance for `cwd` (`scripts/ensure_cwd_trusted.py`; honors `CLAUDE_CONFIG_DIR`), so the
-  seat does not stop at a first-run dialog. If you see one anyway, answer it once in `tmux attach`.
+  seat does not stop at a first-run dialog. If you see one anyway, answer it once in `tmux attach`, run at your server's prompt (see §3).
 
 Verify through the dashboard proxy (the same list the UI shows):
 
@@ -763,7 +773,8 @@ You should see three agents, each marked alive, with its tier on the card:
 - `dev-first-project`, **T2**: reports to the project manager.
 
 Click an agent to open its page: its screen, what it is doing, and a box to type to it. Typing
-there is the same as `tmux attach` on the server. The first visit can take a few seconds while
+there is the same as typing into `tmux attach` on the server, so type your messages there, never
+`tmux` commands. The first visit can take a few seconds while
 Tailscale issues the https certificate.
 
 ### If it does not load
