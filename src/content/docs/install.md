@@ -25,7 +25,7 @@ The path, in order:
 | 0. Prerequisites | the VPS | a normal sudo user, Tailscale, packages, a pinned agent CLI, logged in |
 | 1. Clone, init, doctor | the VPS | `orchestra doctor` all OK |
 | 2. Up | the VPS, then your browser | the supervisor running; the dashboard open at `https://<vps>.<tailnet>.ts.net` |
-| 3. Spawn one seat | the VPS or the dashboard | one live seat |
+| 3. Your starter team | the VPS | three live seats: gm (T0) → a project manager (T1) → a worker (T2) |
 | 4. Answer one card | the dashboard | the seat receives your answer |
 
 Connecting the iOS app to your gateway (pairing) is [docs/ONBOARDING.md](/docs/onboarding/), a
@@ -63,6 +63,11 @@ opened on it.
 
 ## 0. Prerequisites
 
+**How to run the command boxes in this guide:** paste **one line at a time**, press Enter, and
+wait for it to finish before the next. Some commands stop to ask a question or a password; a
+line pasted while they wait becomes the answer. Every line in a box is meant to be run, in
+order. Optional commands are never mixed in; they sit in their own section.
+
 ### Run as a normal user, not root
 
 **Hand this to your agent** (Claude, ChatGPT, Codex, Gemini or any other), if you'd rather
@@ -93,9 +98,16 @@ Every seat would fail at launch.
 If `whoami` prints `root`, create a normal user with sudo once, give it your ssh key, and log
 back in as that user. Everything after this point runs as that user.
 
+As root, once (the name "orchestra" is only an example). `adduser` stops to ask questions, so
+run it on its own and answer them before pasting anything else:
+
 ```bash
-# as root, once (the name "orchestra" is only an example)
 adduser orchestra                       # choose a password; the other questions can be left blank
+```
+
+Then the rest, one line at a time:
+
+```bash
 usermod -aG sudo orchestra
 mkdir -p /home/orchestra/.ssh
 cp ~/.ssh/authorized_keys /home/orchestra/.ssh/
@@ -160,7 +172,15 @@ On the VPS, as your normal user:
 
 ```bash
 curl -fsSL https://tailscale.com/install.sh | sh   # downloads and installs Tailscale; ends with "Installation complete!"
+```
+
+```bash
 sudo tailscale up                       # [PERSON ONLY] prints a login URL: open it in your browser and sign in
+```
+
+Wait until you have signed in and this command has finished, then:
+
+```bash
 sudo tailscale set --operator=$USER     # lets your user run `tailscale serve` without sudo (step 2); prints nothing
 tailscale status                        # the VPS is listed, with a 100.x.y.z address
 ```
@@ -430,7 +450,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/af66efa49e86c2a19ee9b4bfc873a28c99b1212d/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/2a482d501f7e96a42392834b936aa076a6d7ea20/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -528,19 +548,32 @@ but its terminal fails to connect, and `<data>/logs/dashboard.log` shows
 No Tailscale? From your laptop, `ssh -L 8891:127.0.0.1:8891 <user>@<server>` and then
 open `http://127.0.0.1:8891` while that ssh session stays open.
 
-## 3. Spawn one seat
+## 3. Your starter team
 
-The one-command way: `orchestra spawn` registers the seat in the data-dir registry (if it is
-new) and launches it in tmux with the install env carried into the pane.
+One command starts three agents ("seats"), one at each level, each reporting to the one above:
+
+| seat | tier | what it does |
+|---|---|---|
+| `gm` | T0, the manager | the one you talk to; always on; hands work down |
+| `pm-first-project` | T1, a project manager | runs one project for gm; reports to `gm` |
+| `dev-first-project` | T2, a worker | does the hands-on work; reports to `pm-first-project` |
 
 ```bash
-orchestra spawn gm --gm                  # the General Manager: prompts/gm.md, tier T0, always-on
-orchestra spawn hello --task "Say hello, then park."   # a worker seat (prompts/hello.md if present)
-orchestra agent create dev-x --template dev --parent pm-y --set PROJECT=demo   # advanced, skip on a first install: fill the role template (refuses an unfilled {TOKEN}), record the parent, validate runtime/model, spawn, verify ALIVE
-tmux attach -t gm                        # talk to it; detach with Ctrl-B D
+orchestra starter
 ```
 
-On a first install, the first two lines are all you need.
+You should see three lines, one per seat as it comes up, then `starter team up: gm (T0) ->
+pm-first-project (T1) -> dev-first-project (T2)`. It takes a minute or two. The project manager
+and the worker say they are ready and then wait (they use no work until you give them some).
+Want a real name instead of `first-project`? `orchestra starter --project website` names them
+`pm-website` and `dev-website`. Running `orchestra starter` again is safe: seats that are already
+running are skipped, and one that stopped is started again.
+
+Then talk to gm:
+
+```bash
+tmux attach -t gm
+```
 
 **Talking to a seat.** Each seat runs in its own terminal session on the server, kept alive by
 tmux, so it keeps working when you close the terminal on your own computer. `tmux attach -t gm` shows you
@@ -549,8 +582,26 @@ the `gm` seat's screen: type to it like a chat and press Enter. To leave without
 seat keeps running. (Closing the Terminal window also leaves it running.) `tmux ls` lists the
 sessions. You can also talk to seats from the dashboard in your browser.
 
-The new seat appears in the dashboard's Agents list in your browser within about 15 seconds.
+**Scrolling back in a seat.** The mouse wheel scrolls a seat's screen through its earlier
+output; press `q` to get back to typing. From the keyboard: press `Ctrl-B`, let go, then `[`,
+and use the arrow keys or `PgUp`/`PgDn` (on a Mac laptop, `fn` with the up or down arrow);
+`q` leaves.
 
+**If the input box shows `History 1/...`** instead (you pressed the up arrow, or the seat was
+started before mouse support), it is offering to re-send an earlier prompt. Press `Esc` to
+clear it. Never press Enter on it: that sends the old prompt to the seat again. For a seat
+that is already running, `tmux set -t <seat> mouse on` turns the wheel on.
+
+**Selecting text in a seat** to copy it: a plain drag may not select. Instead:
+
+- **Windows Terminal, or Linux:** hold `Shift` while you drag.
+- **iTerm2 on a Mac:** hold `Option` while you drag.
+- **The Mac's Terminal app:** it has no drag key for this. Untick **View → Allow Mouse
+  Reporting**, select and copy, then tick it again.
+
+The three seats appear in the dashboard's Agents list in your browser within about 15 seconds.
+
+One seat at a time, later: `orchestra spawn <seat>` registers and launches a single seat.
 Options: `--runtime claude|gemini|codex` (default: first of `[runtimes] enabled`), `--model`,
 `--tier`, `--prompt path/relative/to/checkout`. An existing registry row is kept as-is.
 
@@ -580,9 +631,19 @@ Verify through the dashboard proxy (the same list the UI shows):
 curl -s http://127.0.0.1:8891/api/agents | python3 -m json.tool | grep -E '"id"|"alive"|"state"'
 ```
 
-The `hello` row appears immediately; `alive`/`state` follow within ~15 s from the
+The `gm`, `pm-first-project` and `dev-first-project` rows appear immediately; `alive`/`state` follow within ~15 s from the
 status detector. Only registered seats are listed — tmux is host-global, see "Sharing a
 host" below.
+
+### Later: more seats (skip on a first install)
+
+`orchestra agent create` fills a role template (it refuses an unfilled `{TOKEN}`), records the
+seat's parent, checks the runtime and model, spawns it and checks it is alive. The parent should
+be a seat that already exists. For example, with an existing `gm`:
+
+```bash
+orchestra agent create dev-x --template dev --parent gm --set PROJECT=demo
+```
 
 ## 4. Answer one approval card from the dashboard
 
@@ -590,7 +651,7 @@ From a shell (or let the seat run it):
 
 ```bash
 source scripts/orchestra-env.sh      # already done in §3 if you are in the same shell; harmless to repeat
-python3 scripts/approval.py request "Ship the hello change?" --from hello --worker-kind pane --options approve,deny
+python3 scripts/approval.py request "Ship the first change?" --from dev-first-project --worker-kind pane --options approve,deny
 # -> prints the card id, e.g. apr_1a2b3c4d_567
 ```
 
@@ -610,10 +671,10 @@ What happens next, and how to see it:
 1. The answer is recorded in `<data>/state/tasks.db` (`python3 scripts/approval.py get <card id>`
    shows `status: answered`).
 2. Within a minute the `approval_resume` beat (see the `orchestra up` table) delivers it:
-   because the card came `--from hello --worker-kind pane`, the decision is typed into the
-   `hello` tmux pane as a message and a durable row is written for the seat
-   (`python3 msg_store.py inbox --agent hello`). `approval.py get` then shows
-   `status: resumed`; `tmux capture-pane -p -t hello | tail -20` shows the delivered
+   because the card came `--from dev-first-project --worker-kind pane`, the decision is typed into the
+   `dev-first-project` tmux pane as a message and a durable row is written for the seat
+   (`python3 msg_store.py inbox --agent dev-first-project`). `approval.py get` then shows
+   `status: resumed`; `tmux capture-pane -p -t dev-first-project | tail -20` shows the delivered
    decision; `<data>/logs/approval_resume.log` has the delivery line.
 3. `GET /api/approvals` keeps the card out of `pending` from the moment it is answered.
 
@@ -624,14 +685,24 @@ itself: the seat named in `--from` is the one that receives the answer.
 
 A seat near its context ceiling banks a handoff (its prompt knows the format:
 `<data>/docs/HANDOFF_<seat>-next.md` with a `## canary_questions` block anchored in its own
-state). Then:
+state). First check, which changes nothing:
 
 ```bash
 orchestra rotate gm --dry-run            # preconditions only
-orchestra rotate gm                      # spawn successor -> it authors a readback -> strict grade -> promote
-orchestra rotate hello --synthesize      # a seat that never banked: minimal baton (sid, ports, last mail ids)
-orchestra rotate gm --resume             # a held attempt whose successor pane is still up
 ```
+
+Then rotate:
+
+```bash
+orchestra rotate gm                      # spawn successor -> it authors a readback -> strict grade -> promote
+```
+
+Two other forms, each for one situation only. Run one only if its situation applies:
+
+- `orchestra rotate <seat> --synthesize`: the seat never banked a handoff; a minimal baton is
+  made for it (sid, ports, last mail ids).
+- `orchestra rotate <seat> --resume`: an earlier attempt is held and its successor pane is
+  still up.
 
 What "lossless" means here: the successor answers the canary questions from the handoff and
 the repo alone; a generic readback HOLDs (predecessor keeps the seat, nothing is renamed). On
