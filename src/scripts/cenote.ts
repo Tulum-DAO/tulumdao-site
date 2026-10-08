@@ -68,7 +68,7 @@ const pickKind = (): MailKind => {
 
 // example names only; nothing here names a real seat
 const SEAT_NAMES = ['gm', 'pm-web', 'dev-api', 'dev-ui', 'reviewer', 'docs', 'qa', 'release', 'research', 'infra', 'design', 'pm-mobile', 'dev-auth', 'ops', 'tests', 'scout', 'writer', 'security'];
-const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'pm-mobile', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics', 'release', 'qa', 'docs', 'review', 'infra', 'research'];
+const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'dev-ios', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics', 'release', 'qa', 'docs', 'review', 'infra', 'research'];
 // which CLI each seat runs on: the general manager is Claude; the rest mix the three runtimes the
 // OrchestraOS README supports
 const RUNTIME_CYCLE: Runtime[] = ['claude', 'codex', 'claude', 'gemini'];
@@ -95,7 +95,7 @@ export function mount(canvas: HTMLCanvasElement) {
   const shift = innerWidth > 900 ? 1 : 0;
   // narrow screens: clusters a little smaller so a layer fits the width of a portrait screen
   const K = innerWidth > 900 ? 1 : 0.72;
-  const LX = { seats: 2.25 * shift, messages: -1.85 * shift, memory: 0.9 * shift };
+  const LX = { seats: 2.25 * shift, messages: -2.1 * shift, memory: 0.9 * shift };
   let renderer: WebGLRenderer;
   try {
     // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
@@ -251,6 +251,7 @@ export function mount(canvas: HTMLCanvasElement) {
     side: string; // which side of its light it sat on last frame
     dim: Node | null; // a seat whose light dims while its name has no room
     hub: Vector3 | null; // the centre of its cluster: the name prefers the side facing away from it
+    toward: boolean; // ...or facing it (a PM's name sits in the open gap between its orbit and the GM)
   };
   const labels: Label[] = [];
   const addLabel = (
@@ -286,7 +287,7 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, hub: null };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, hub: null, toward: false };
     labels.push(l);
     return l;
   };
@@ -358,8 +359,11 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   // messages: a field of named seats handing each other work. Some are busy; mail for a busy seat
   // waits beside it and is delivered when its turn ends, so nobody is interrupted mid-task.
-  // Talker 0 is the general manager. While this layer is on screen the others gather around it and
-  // the mail runs hub and spoke, to and from the GM; scroll on and they spread back out.
+  // While this layer is on screen the seats gather into the fleet's shape: the GM at the centre,
+  // project managers round it, and each PM's workers in its orbit. Mail follows that shape (worker
+  // and PM most, PM and GM less; an escalation climbs worker -> PM -> GM). Scroll on and they spread
+  // back out and mail each other directly.
+  type Role = 'gm' | 'pm' | 'worker';
   type Talker = {
     node: Node;
     busy: boolean;
@@ -367,51 +371,99 @@ export function mount(canvas: HTMLCanvasElement) {
     ring: Line;
     label: Label | null;
     rt: string;
+    role: Role;
+    parent: Talker | null; // a worker's PM, a PM's GM
+    // place in the shape, as polar coordinates round its parent (the GM's own is the layer centre).
+    // Kept as radius + angle so the orbits can be set turning later without a rewrite.
+    orbitR: number;
+    orbitA: number;
     home: Vector3; // where it sits when spread out
-    hub: Vector3; // its place around the GM
+    hub: Vector3; // its place in the shape
     phase: number;
   };
   const talkers: Talker[] = [];
-  const TALK = mobile ? 19 : 29;
-  const talkHome = [[0, 0] as [number, number], ...spread(TALK - 1, mobile ? 2.1 : 2.9, mobile ? 2.6 : 2.8, mobile ? 0.9 : 0.95, [[0, 0]], 11)];
-  // around the GM: an inner ring of 7 and an outer ring with the rest
-  const INNER = 7;
-  const hubAt = (k: number): [number, number] => {
-    const inner = k < INNER;
-    const m = inner ? INNER : TALK - 1 - INNER;
-    const j = inner ? k : k - INNER;
-    const a = (j / m) * Math.PI * 2 + (inner ? 0 : Math.PI / m);
-    const r = inner ? (mobile ? 0.72 : 0.9) : mobile ? 1.3 : 1.55;
-    return [Math.cos(a) * r, Math.sin(a) * r * (mobile ? 1.15 : 1)];
+  const PM_NAMES = ['pm-web', 'pm-mobile', 'pm-data', 'pm-infra'];
+  const PMS = 4;
+  const PER_PM = mobile ? 4 : 6;
+  const TALK = 1 + PMS + PMS * PER_PM;
+  // a phone screen is tall: the shape is stretched front to back (screen up and down) there
+  const ZS = mobile ? 1.3 : 1;
+  const PM_R = mobile ? 1.2 : 1.75;
+  const WORKER_R = mobile ? 0.56 : 0.8;
+  const orbitPos = (tk: Talker, out: Vector3) => {
+    if (!tk.parent) return out.set(LX.messages, Y.messages, 0);
+    orbitPos(tk.parent, out);
+    return out.set(out.x + Math.cos(tk.orbitA) * tk.orbitR, out.y, out.z + Math.sin(tk.orbitA) * tk.orbitR * ZS);
   };
-  for (let i = 0; i < TALK; i++) {
-    const gm = i === 0;
+  const talkHome = [[0, 0] as [number, number], ...spread(TALK - 1, mobile ? 2.1 : 2.9, mobile ? 2.6 : 2.8, mobile ? 0.9 : 0.95, [[0, 0]], 11)];
+  let worker = 0;
+  const makeTalker = (i: number, role: Role, parent: Talker | null, orbitR: number, orbitA: number, name: string) => {
     const [hx, hz] = talkHome[i];
-    const home = new Vector3(LX.messages + hx, Y.messages + (gm ? 0 : (Math.sin(i * 1.7) * 0.9)), hz);
-    const [gx, gz] = gm ? [0, 0] : hubAt(i - 1);
-    const hub = new Vector3(LX.messages + gx, Y.messages + (gm ? 0 : Math.sin(i * 1.7) * 0.25), gz);
-    const n = spawn(home, gm ? LIGHT : MAYA, gm ? 30 : 20);
-    if (!n) continue;
+    const home = new Vector3(LX.messages + hx, Y.messages + (role === 'gm' ? 0 : Math.sin(i * 1.7) * 0.9), hz);
+    const n = spawn(home, role === 'worker' ? MAYA : LIGHT, role === 'gm' ? 30 : role === 'pm' ? 25 : 19);
+    if (!n) return null;
     n.drift = 0; // talkers bob from their own phase, set each frame (they also move)
     const ring = new Line(circle, new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false }));
     ring.scale.setScalar(0.32);
     scene.add(ring);
-    // on a phone every other seat is named, so the names don't crowd the field; the GM always is
-    // named seats are every other one on a phone, so the runtime steps every two seats to keep the
-    // named ones a mix of all three
-    const rt = gm ? 'claude' : RUNTIME_CYCLE[((i - 1) >> 1) % RUNTIME_CYCLE.length];
-    const label = gm
-      ? addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: 'general manager' })
-      : !mobile || i % 2 === 1
-        ? addLabel(TALKER_NAMES[(i - 1) % TALKER_NAMES.length], () => n.pos, () => n.alpha, 'talker', { runtime: rt })
-        : null;
-    talkers.push({ node: n, busy: !gm && Math.random() < 0.2, flipAt: Math.random() * 6, ring, label, rt: RUNTIMES[rt].name, home, hub, phase: Math.random() * 6.28 });
+    // the GM is Claude; PMs and workers mix the three runtimes
+    const rt: Runtime = role === 'gm' ? 'claude' : role === 'pm' ? RUNTIME_CYCLE[i % RUNTIME_CYCLE.length] : RUNTIME_CYCLE[worker++ % RUNTIME_CYCLE.length];
+    const label =
+      role === 'gm'
+        ? addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: 'general manager' })
+        : role === 'pm'
+          ? addLabel(name, () => n.pos, () => n.alpha, 'pm', { runtime: rt, role: mobile ? undefined : 'project manager' })
+          : addLabel(name, () => n.pos, () => n.alpha, 'talker', { runtime: rt });
+    const tk: Talker = {
+      node: n,
+      busy: role === 'worker' && Math.random() < 0.2,
+      flipAt: Math.random() * 6,
+      ring,
+      label,
+      rt: RUNTIMES[rt].name,
+      role,
+      parent,
+      orbitR,
+      orbitA,
+      home,
+      hub: new Vector3(),
+      phase: Math.random() * 6.28,
+    };
+    orbitPos(tk, tk.hub);
+    if (role !== 'gm') tk.hub.y += Math.sin(i * 1.7) * (role === 'pm' ? 0.12 : 0.22);
+    talkers.push(tk);
+    return tk;
+  };
+  const gmTalker = makeTalker(0, 'gm', null, 0, 0, 'GM')!;
+  const pms: Talker[] = [];
+  for (let p = 0; p < PMS; p++) {
+    // PMs on the diagonals, so the four orbits sit in the four corners of a portrait screen
+    const a = Math.PI / 4 + (p / PMS) * Math.PI * 2;
+    const pm = makeTalker(1 + p, 'pm', gmTalker, PM_R, a, PM_NAMES[p % PM_NAMES.length]);
+    if (pm) pms.push(pm);
   }
-  const gmTalker = talkers[0];
-  for (const tk of talkers) if (tk.label && tk !== gmTalker) tk.label.hub = gmTalker.node.pos;
-  let gather = 0; // 0 spread out, 1 gathered round the GM
+  pms.forEach((pm, p) => {
+    for (let j = 0; j < PER_PM; j++) {
+      // round the PM, starting from the side facing away from the GM. With an even count the
+      // offset leaves the side facing the GM open, so the GM -> PM spoke runs clear.
+      const off = PER_PM % 2 === 0 ? Math.PI / PER_PM : 0;
+      const a = pm.orbitA + off + (j / PER_PM) * Math.PI * 2;
+      const i = 1 + PMS + p * PER_PM + j;
+      makeTalker(i, 'worker', pm, WORKER_R, a, TALKER_NAMES[(i - 1 - PMS) % TALKER_NAMES.length]);
+    }
+  });
+  // names face away from their own centre: a PM's away from the GM, a worker's away from its PM
+  // ...except a PM's, which faces the GM: its workers leave that side of the orbit open
+  for (const tk of talkers) {
+    if (!tk.label || !tk.parent) continue;
+    tk.label.hub = tk.parent.node.pos;
+    tk.label.toward = tk.role === 'pm';
+  }
+  const workers = talkers.filter((t) => t.role === 'worker');
+  let gather = 0; // 0 spread out, 1 gathered into the shape
   let gatherTarget = 0;
-  // spokes: faint lines from the GM to every agent round it, drawn while they are gathered
+  // spokes: faint lines from each agent's parent to it (GM -> PMs, PM -> its workers), and a faint
+  // orbit ring round each PM's workers, drawn while they are gathered
   const kpos = new Float32Array(TALK * 6);
   const kcol = new Float32Array(TALK * 8);
   const kgeo = new BufferGeometry();
@@ -420,6 +472,12 @@ export function mount(canvas: HTMLCanvasElement) {
   const spokes = new LineSegments(kgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false }));
   spokes.frustumCulled = false;
   scene.add(spokes);
+  const orbitRings = pms.map(() => {
+    const line = new Line(circle, new LineBasicMaterial({ color: MAYA, transparent: true, opacity: 0, depthWrite: false, fog: false }));
+    line.scale.set(WORKER_R, 1, WORKER_R * ZS);
+    scene.add(line);
+    return line;
+  });
   // fly: rides the line from one orb centre to the other. wait: the receiver is busy, so it circles
   // beside it. land: the receiver is free again, so it flies into the receiver's centre. done: it
   // has been delivered and fades out inside the receiver.
@@ -435,6 +493,7 @@ export function mount(canvas: HTMLCanvasElement) {
     landFrom: Vector3;
     ang: number; // where on the orbit it is circling
     reply: boolean;
+    forward: Talker | null; // an escalation: on delivery, the receiver passes it up to this seat
   };
   const ORBIT = 0.45;
   const dest = new Vector3();
@@ -449,13 +508,13 @@ export function mount(canvas: HTMLCanvasElement) {
     return out.set(c.x + (dx / len) * ORBIT, c.y + 0.1, c.z + (dz / len) * ORBIT);
   };
   const packets: Packet[] = [];
-  const send = (from: Talker, to: Talker, reply: boolean) => {
+  const send = (from: Talker, to: Talker, reply: boolean, kindIs?: MailKind, forward: Talker | null = null) => {
     if (packets.length >= MAXP) return;
-    const kind: MailKind = reply ? 'reply' : pickKind();
+    const kind: MailKind = reply ? 'reply' : (kindIs ?? pickKind());
     const n = spawn(from.node.pos, MAIL[kind], 22);
     if (!n) return;
     const dur = 0.9 + from.node.pos.distanceTo(to.node.pos) * 0.12;
-    packets.push({ node: n, from, to, state: 'fly', kind, t: 0, dur, waited: 0, landFrom: new Vector3(), ang: 0, reply });
+    packets.push({ node: n, from, to, state: 'fly', kind, t: 0, dur, waited: 0, landFrom: new Vector3(), ang: 0, reply, forward });
   };
   // approvals: dim seats around the card that rises
   const askers: Node[] = [];
@@ -537,6 +596,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let apPanelTop = Infinity; // the approvals panel's top edge on screen, in px (narrow layout)
   const apPanel = document.querySelector<HTMLElement>('[data-layer="approvals"] .panel');
   const memPanel = document.querySelector<HTMLElement>('[data-layer="memory"] .panel');
+  const panels = [...document.querySelectorAll<HTMLElement>('[data-layer] .panel')];
   let lastScrollAt = 0;
   const readScroll = () => {
     lastScrollAt = performance.now();
@@ -679,8 +739,7 @@ export function mount(canvas: HTMLCanvasElement) {
         ring.mat.opacity = bg * (fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled);
       });
     }
-    // messages: gathered round the GM, the mail runs hub and spoke (an agent reports to the GM, or
-    // the GM hands an agent work); spread out, agents mail each other directly
+    // messages: gathered into the shape, mail follows it; spread out, agents mail each other directly
     gather += (gatherTarget - gather) * Math.min(1, dt * 1.6);
     const gk = gather * gather * (3 - 2 * gather);
     for (const tk of talkers) {
@@ -688,35 +747,51 @@ export function mount(canvas: HTMLCanvasElement) {
       tk.node.pos.y += Math.sin(clock * 0.7 + tk.phase) * 0.11;
     }
     {
-      const g = gmTalker.node.pos;
-      const near = smooth(15, 9, camera.position.distanceTo(g)) * gk;
+      const near = smooth(15, 9, camera.position.distanceTo(gmTalker.node.pos)) * gk;
       let k = 0;
       for (const tk of talkers) {
-        if (tk === gmTalker) continue;
+        if (!tk.parent) continue;
+        const g = tk.parent.node.pos;
         const p = tk.node.pos;
+        // GM -> PM spokes a little stronger than PM -> worker
+        const a = tk.role === 'pm' ? 0.4 : 0.26;
         kpos.set([g.x, g.y, g.z, p.x, p.y, p.z], k * 6);
-        kcol.set([LIGHT.r, LIGHT.g, LIGHT.b, 0.32 * near, MAYA.r, MAYA.g, MAYA.b, 0.12 * near], k * 8);
+        kcol.set([LIGHT.r, LIGHT.g, LIGHT.b, a * near, MAYA.r, MAYA.g, MAYA.b, a * 0.4 * near], k * 8);
         k++;
       }
       kgeo.setDrawRange(0, k * 2);
       kgeo.attributes.position.needsUpdate = true;
       kgeo.attributes.color.needsUpdate = true;
       spokes.visible = near > 0.01;
+      pms.forEach((pm, p) => {
+        const ring = orbitRings[p];
+        ring.position.copy(pm.node.pos);
+        (ring.material as LineBasicMaterial).opacity = 0.22 * near;
+        ring.visible = near > 0.01;
+      });
     }
     if (clock > nextMessage && talkers.length > 1) {
       nextMessage = clock + 0.22 + Math.random() * 0.3;
-      const others = talkers.length - 1;
-      const a = talkers[1 + Math.floor(Math.random() * others)];
       if (gather > 0.5) {
-        if (Math.random() < 0.5) send(a, gmTalker, false);
-        else send(gmTalker, a, false);
+        // most mail is between a worker and its PM; less between a PM and the GM; an escalation
+        // goes worker -> PM, and the PM passes it up to the GM
+        const r = Math.random();
+        const w = workers[Math.floor(Math.random() * workers.length)];
+        const pm = pms[Math.floor(Math.random() * pms.length)];
+        if (r < 0.34) send(w.parent!, w, false, 'task');
+        else if (r < 0.62) send(w, w.parent!, false, 'task_complete');
+        else if (r < 0.76) send(gmTalker, pm, false, 'task');
+        else if (r < 0.9) send(pm, gmTalker, false, 'task_complete');
+        else send(w, w.parent!, false, 'escalate', gmTalker);
       } else {
+        const others = talkers.length - 1;
+        const a = talkers[1 + Math.floor(Math.random() * others)];
         const b = talkers[1 + Math.floor(Math.random() * others)];
         if (a !== b) send(a, b, false);
       }
     }
     for (const tk of talkers) {
-      if (clock > tk.flipAt && tk !== gmTalker) {
+      if (clock > tk.flipAt && tk.role === 'worker') {
         tk.busy = !tk.busy && Math.random() < 0.35;
         tk.flipAt = clock + (tk.busy ? 2.5 + Math.random() * 3 : 1.5 + Math.random() * 4);
       }
@@ -725,7 +800,8 @@ export function mount(canvas: HTMLCanvasElement) {
       tk.ring.position.copy(tk.node.pos);
       tk.ring.visible = m.opacity > 0.01;
       // phones: the short form, so names fit beside a crowded hub
-      if (tk.label) setSub(tk.label, tk.busy ? (mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`) : tk.rt);
+      // (on a phone a PM's role goes on this line, short; its name line stays short too)
+      if (tk.label) setSub(tk.label, tk.busy ? (mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`) : tk.role === 'pm' && mobile ? `PM, ${tk.rt}` : tk.rt);
     }
     for (let i = packets.length - 1; i >= 0; i--) {
       const pk = packets[i];
@@ -771,7 +847,9 @@ export function mount(canvas: HTMLCanvasElement) {
           // delivered: the receiver flares, and often answers
           pk.node.target = 0;
           pk.to.node.alpha = 1.6;
-          if (!pk.reply && Math.random() < 0.55) send(pk.to, pk.from, true);
+          // an escalation is passed up the line instead of answered
+          if (pk.forward) send(pk.to, pk.forward, false, 'escalate');
+          else if (!pk.reply && Math.random() < 0.55) send(pk.to, pk.from, true);
         }
         // fade out inside the receiver, following it as it floats. Let go above the pool's 0.02
         // reclaim threshold, so this packet never holds a node the pool has handed to a new one.
@@ -946,13 +1024,19 @@ export function mount(canvas: HTMLCanvasElement) {
       l.sy = (-proj.y * 0.5 + 0.5) * H;
       shown.push(l);
     }
-    // the general manager's name always wins; the rest are placed nearest-first
-    shown.sort((p, q) => Number(q.el.classList.contains('gm')) - Number(p.el.classList.contains('gm')) || p.d - q.d);
+    // the GM first, then the PMs, then the rest nearest-first
+    const rank = (l: Label) => (l.el.classList.contains('gm') ? 2 : l.el.classList.contains('pm') ? 1 : 0);
+    shown.sort((p, q) => rank(q) - rank(p) || p.d - q.d);
     // Each name tries the sides of its light in turn (the side it used last frame first, so names
     // don't hop) and takes the first that is clear. Wide screens prefer up and to the right; phones
     // prefer centred just under the light, so names don't pull every layer's weight to the right.
     // The GM's name is placed first, always shown, and keeps clear space round it.
     const placed: { x: number; y: number; w: number; h: number }[] = [];
+    // the text panels on screen are taken already: no name may slide under one
+    for (const el of panels) {
+      const r = el.getBoundingClientRect();
+      if (r.bottom > 0 && r.top < H) placed.push({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 });
+    }
     const GM_PAD = 10;
     const EDGE = 16; // every name stays this far inside the screen
     // lights and mail in flight are obstacles too: a name may not cover one. Its own light counts:
@@ -978,8 +1062,9 @@ export function mount(canvas: HTMLCanvasElement) {
       let order = narrow ? ['under', 'over', 'right', 'left'] : ['right', 'left', 'under', 'over'];
       if (l.hub) {
         proj.copy(l.hub).project(camera);
-        const dx = sx - (proj.x * 0.5 + 0.5) * W;
-        const dy = sy - (-proj.y * 0.5 + 0.5) * H;
+        const flip = l.toward ? -1 : 1;
+        const dx = (sx - (proj.x * 0.5 + 0.5) * W) * flip;
+        const dy = (sy - (-proj.y * 0.5 + 0.5) * H) * flip;
         const lr = dx > 0 ? 'right' : 'left';
         const ud = dy > 0 ? 'under' : 'over';
         const first = Math.abs(dx) > Math.abs(dy) ? [lr, ud] : [ud, lr];
@@ -989,6 +1074,7 @@ export function mount(canvas: HTMLCanvasElement) {
       if (l.side) order = [l.side, ...order.filter((o) => o !== l.side)];
       const sides = order.map((o) => at[o]);
       const gm = l.el.classList.contains('gm');
+      const pm = l.el.classList.contains('pm');
       let side = -1;
       for (const k of [0, 1, 2, 3]) {
         const x = clamp(sides[k][0], EDGE, W - w - EDGE);
@@ -1003,10 +1089,17 @@ export function mount(canvas: HTMLCanvasElement) {
           break;
         }
       }
+      // a PM's name always shows too: if no side is clear it takes its first choice anyway
+      if (side < 0 && pm) {
+        side = 0;
+        l.x = clamp(sides[0][0], EDGE, W - w - EDGE);
+        l.y = clamp(sides[0][1], EDGE, H - h - EDGE);
+      }
       if (side < 0) l.a = 0;
       else {
         l.side = order[side];
-        placed.push(gm ? { x: l.x - GM_PAD, y: l.y - GM_PAD, w: w + GM_PAD * 2, h: h + GM_PAD * 2 } : { x: l.x, y: l.y, w, h });
+        const pad = gm ? GM_PAD : pm ? 5 : 0;
+        placed.push({ x: l.x - pad, y: l.y - pad, w: w + pad * 2, h: h + pad * 2 });
       }
       if (l.dim) l.dim.target = l.a ? 1 : 0.3;
     }
