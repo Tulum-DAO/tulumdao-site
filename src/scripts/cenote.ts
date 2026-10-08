@@ -5,7 +5,8 @@
 //   -18  seats and generations: each seat is a light with tree rings, one ring per past generation;
 //        a handoff grows a new ring that flashes ochre (the readback) and then settles
 //   -28  messages: packets fly between named seats and often get a reply; a message to a busy
-//        seat waits beside it and is delivered when its turn ends
+//        seat waits beside it and is delivered when its turn ends. While this layer is on screen
+//        the seats gather round the GM and the mail runs hub and spoke, to and from it
 //   -38  memory: a seat at the centre of what it remembers; it restarts, its light goes out, the
 //        facts stay lit, and the next generation re-links to every one of them
 // Seats carry HTML name labels (example names) projected from 3D every frame.
@@ -66,8 +67,8 @@ const pickKind = (): MailKind => {
 };
 
 // example names only; nothing here names a real seat
-const SEAT_NAMES = ['gm', 'pm-web', 'dev-api', 'dev-ui', 'reviewer', 'docs', 'qa', 'release', 'research', 'infra', 'design'];
-const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'pm-mobile', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics'];
+const SEAT_NAMES = ['gm', 'pm-web', 'dev-api', 'dev-ui', 'reviewer', 'docs', 'qa', 'release', 'research', 'infra', 'design', 'pm-mobile', 'dev-auth', 'ops', 'tests', 'scout', 'writer', 'security'];
+const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'pm-mobile', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics', 'release', 'qa', 'docs', 'review', 'infra', 'research'];
 // which CLI each seat runs on: the general manager is Claude; the rest mix the three runtimes the
 // OrchestraOS README supports
 const RUNTIME_CYCLE: Runtime[] = ['claude', 'codex', 'claude', 'gemini'];
@@ -94,7 +95,7 @@ export function mount(canvas: HTMLCanvasElement) {
   const shift = innerWidth > 900 ? 1 : 0;
   // narrow screens: clusters a little smaller so a layer fits the width of a portrait screen
   const K = innerWidth > 900 ? 1 : 0.72;
-  const LX = { seats: 1.5 * shift, messages: -1.1 * shift, memory: 0.9 * shift };
+  const LX = { seats: 2.25 * shift, messages: -1.85 * shift, memory: 0.9 * shift };
   let renderer: WebGLRenderer;
   try {
     // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
@@ -285,8 +286,9 @@ export function mount(canvas: HTMLCanvasElement) {
 
   // seats and generations. A seat is a light; every generation it has been through is a ring around
   // it, newest innermost, fading as it ages outward, like the rings of a tree.
-  const SEATS = mobile ? 8 : 11;
-  const MAX_RINGS = 6;
+  const SEATS = mobile ? 13 : 18;
+  // fewer rings on a phone: each ring is a draw call, and wide rings would touch their neighbours
+  const MAX_RINGS = mobile ? 4 : 6;
   const circle = new BufferGeometry();
   {
     const SEG = 64;
@@ -314,13 +316,13 @@ export function mount(canvas: HTMLCanvasElement) {
     }
   };
   const seats: Lineage[] = [];
+  // seat 0 is the general manager, at the centre; the others are spread across the layer with
+  // room between them. A phone screen is tall and narrow, so there the spread is taller than wide.
+  const seatAt = [[0, 0] as [number, number], ...spread(SEATS - 1, mobile ? 2.05 : 2.9, 2.5, mobile ? 1.05 : 1.25, [[0, 0]], 7)];
   for (let i = 0; i < SEATS; i++) {
-    // seat 0 is the general manager, at the centre; the others sit in two close rows around it
-    const k = i - 1;
-    const a = (k / (SEATS - 1)) * Math.PI * 2;
-    const r = i === 0 ? 0 : (1.6 + (k % 2) * 1.05) * K;
-    const y = i === 0 ? Y.seats : Y.seats + Math.sin(i * 2.1) * 0.8;
-    const n = spawn(new Vector3(LX.seats + Math.cos(a) * r, y, Math.sin(a) * r), LIGHT, i === 0 ? 30 : 24);
+    const [sx, sz] = seatAt[i];
+    const y = i === 0 ? Y.seats : Y.seats + Math.sin(i * 2.1) * 0.6;
+    const n = spawn(new Vector3(LX.seats + sx, y, sz), LIGHT, i === 0 ? 30 : 24);
     if (!n) continue;
     // a history: every seat has already been through a few generations
     const past = 1 + Math.floor(Math.random() * 4);
@@ -335,22 +337,67 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   // messages: a field of named seats handing each other work. Some are busy; mail for a busy seat
   // waits beside it and is delivered when its turn ends, so nobody is interrupted mid-task.
-  type Talker = { node: Node; busy: boolean; flipAt: number; ring: Line; label: Label | null; rt: string };
+  // Talker 0 is the general manager. While this layer is on screen the others gather around it and
+  // the mail runs hub and spoke, to and from the GM; scroll on and they spread back out.
+  type Talker = {
+    node: Node;
+    busy: boolean;
+    flipAt: number;
+    ring: Line;
+    label: Label | null;
+    rt: string;
+    home: Vector3; // where it sits when spread out
+    hub: Vector3; // its place around the GM
+    phase: number;
+  };
   const talkers: Talker[] = [];
-  const TALK = mobile ? 12 : 22;
+  const TALK = mobile ? 19 : 29;
+  const talkHome = [[0, 0] as [number, number], ...spread(TALK - 1, mobile ? 2.1 : 2.9, mobile ? 2.6 : 2.8, mobile ? 0.9 : 0.95, [[0, 0]], 11)];
+  // around the GM: an inner ring of 7 and an outer ring with the rest
+  const INNER = 7;
+  const hubAt = (k: number): [number, number] => {
+    const inner = k < INNER;
+    const m = inner ? INNER : TALK - 1 - INNER;
+    const j = inner ? k : k - INNER;
+    const a = (j / m) * Math.PI * 2 + (inner ? 0 : Math.PI / m);
+    const r = inner ? (mobile ? 0.72 : 0.9) : mobile ? 1.3 : 1.55;
+    return [Math.cos(a) * r, Math.sin(a) * r * (mobile ? 1.15 : 1)];
+  };
   for (let i = 0; i < TALK; i++) {
-    const a = (i / TALK) * Math.PI * 2 + Math.random() * 0.4;
-    const r = (0.6 + Math.sqrt(Math.random()) * 2.7) * K;
-    const n = spawn(new Vector3(LX.messages + Math.cos(a) * r, Y.messages + (Math.random() - 0.5) * 2.2, Math.sin(a) * r), MAYA, 20);
+    const gm = i === 0;
+    const [hx, hz] = talkHome[i];
+    const home = new Vector3(LX.messages + hx, Y.messages + (gm ? 0 : (Math.sin(i * 1.7) * 0.9)), hz);
+    const [gx, gz] = gm ? [0, 0] : hubAt(i - 1);
+    const hub = new Vector3(LX.messages + gx, Y.messages + (gm ? 0 : Math.sin(i * 1.7) * 0.25), gz);
+    const n = spawn(home, gm ? LIGHT : MAYA, gm ? 30 : 20);
     if (!n) continue;
+    n.drift = 0; // talkers bob from their own phase, set each frame (they also move)
     const ring = new Line(circle, new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false }));
     ring.scale.setScalar(0.32);
     scene.add(ring);
-    // on a phone every other seat is named, so the names don't crowd the field
-    const rt = runtimeFor(i + 1);
-    const label = !mobile || i % 2 === 0 ? addLabel(TALKER_NAMES[i % TALKER_NAMES.length], () => n.pos, () => n.alpha, 'talker', { runtime: rt }) : null;
-    talkers.push({ node: n, busy: Math.random() < 0.2, flipAt: Math.random() * 6, ring, label, rt: RUNTIMES[rt].name });
+    // on a phone every other seat is named, so the names don't crowd the field; the GM always is
+    // named seats are every other one on a phone, so the runtime steps every two seats to keep the
+    // named ones a mix of all three
+    const rt = gm ? 'claude' : RUNTIME_CYCLE[((i - 1) >> 1) % RUNTIME_CYCLE.length];
+    const label = gm
+      ? addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: 'general manager' })
+      : !mobile || i % 2 === 1
+        ? addLabel(TALKER_NAMES[(i - 1) % TALKER_NAMES.length], () => n.pos, () => n.alpha, 'talker', { runtime: rt })
+        : null;
+    talkers.push({ node: n, busy: !gm && Math.random() < 0.2, flipAt: Math.random() * 6, ring, label, rt: RUNTIMES[rt].name, home, hub, phase: Math.random() * 6.28 });
   }
+  const gmTalker = talkers[0];
+  let gather = 0; // 0 spread out, 1 gathered round the GM
+  let gatherTarget = 0;
+  // spokes: faint lines from the GM to every agent round it, drawn while they are gathered
+  const kpos = new Float32Array(TALK * 6);
+  const kcol = new Float32Array(TALK * 8);
+  const kgeo = new BufferGeometry();
+  kgeo.setAttribute('position', new BufferAttribute(kpos, 3));
+  kgeo.setAttribute('color', new BufferAttribute(kcol, 4));
+  const spokes = new LineSegments(kgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false }));
+  spokes.frustumCulled = false;
+  scene.add(spokes);
   // fly: rides the line from one orb centre to the other. wait: the receiver is busy, so it circles
   // beside it. land: the receiver is free again, so it flies into the receiver's centre. done: it
   // has been delivered and fades out inside the receiver.
@@ -495,6 +542,12 @@ export function mount(canvas: HTMLCanvasElement) {
       approvalsT = clamp(1 - (r.top + r.height * 0.35) / innerHeight, 0, 1);
     }
     if (apPanel) apPanelTop = apPanel.getBoundingClientRect().top;
+    // gathered round the GM while the messaging section is near the middle of the screen
+    const msg = sections.find((s) => s.dataset.layer === 'messages');
+    if (msg) {
+      const r = msg.getBoundingClientRect();
+      gatherTarget = smooth(0.8, 0.3, Math.abs(r.top + r.height / 2 - mid) / innerHeight);
+    }
     const floor = sections.find((s) => s.classList.contains('paths'));
     if (floor) floorT = smooth(0.95, 0.5, floor.getBoundingClientRect().top / innerHeight);
   };
@@ -505,6 +558,9 @@ export function mount(canvas: HTMLCanvasElement) {
   addEventListener(
     'pointermove',
     (e) => {
+      // the lean follows a mouse only: on a phone every touch is a pointer move, and leaning toward
+      // the thumb pushed whole layers off centre
+      if (e.pointerType !== 'mouse') return;
       px = e.clientX / innerWidth - 0.5;
       py = e.clientY / innerHeight - 0.5;
     },
@@ -538,6 +594,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let clock = 0;
   let raf = 0;
   const minFrame = mobile ? 1000 / 31 : 0;
+  const snap = location.search.includes('snap');
   let painted = false;
   let stopped = false;
   // frame-rate guard: if a weak GPU can't hold ~20fps, give the visitor the static page back
@@ -557,7 +614,8 @@ export function mount(canvas: HTMLCanvasElement) {
       stop();
       return;
     }
-    const dt = Math.min(dtRaw / 1000, 0.05);
+    // ?cenote&snap (screenshots on a slow software renderer): let a slow frame cover real time
+    const dt = Math.min(dtRaw / 1000, snap ? 0.3 : 0.05);
     clock += dt;
 
     // camera follows the scroll with a little inertia, and leans toward the pointer
@@ -597,15 +655,44 @@ export function mount(canvas: HTMLCanvasElement) {
         ring.mat.opacity = fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled;
       });
     }
-    // messages: a steady loop of sends across the whole field
+    // messages: gathered round the GM, the mail runs hub and spoke (an agent reports to the GM, or
+    // the GM hands an agent work); spread out, agents mail each other directly
+    gather += (gatherTarget - gather) * Math.min(1, dt * 1.6);
+    const gk = gather * gather * (3 - 2 * gather);
+    for (const tk of talkers) {
+      tk.node.pos.lerpVectors(tk.home, tk.hub, gk);
+      tk.node.pos.y += Math.sin(clock * 0.7 + tk.phase) * 0.11;
+    }
+    {
+      const g = gmTalker.node.pos;
+      const near = smooth(15, 9, camera.position.distanceTo(g)) * gk;
+      let k = 0;
+      for (const tk of talkers) {
+        if (tk === gmTalker) continue;
+        const p = tk.node.pos;
+        kpos.set([g.x, g.y, g.z, p.x, p.y, p.z], k * 6);
+        kcol.set([LIGHT.r, LIGHT.g, LIGHT.b, 0.32 * near, MAYA.r, MAYA.g, MAYA.b, 0.12 * near], k * 8);
+        k++;
+      }
+      kgeo.setDrawRange(0, k * 2);
+      kgeo.attributes.position.needsUpdate = true;
+      kgeo.attributes.color.needsUpdate = true;
+      spokes.visible = near > 0.01;
+    }
     if (clock > nextMessage && talkers.length > 1) {
       nextMessage = clock + 0.22 + Math.random() * 0.3;
-      const a = talkers[Math.floor(Math.random() * talkers.length)];
-      const b = talkers[Math.floor(Math.random() * talkers.length)];
-      if (a !== b) send(a, b, false);
+      const others = talkers.length - 1;
+      const a = talkers[1 + Math.floor(Math.random() * others)];
+      if (gather > 0.5) {
+        if (Math.random() < 0.5) send(a, gmTalker, false);
+        else send(gmTalker, a, false);
+      } else {
+        const b = talkers[1 + Math.floor(Math.random() * others)];
+        if (a !== b) send(a, b, false);
+      }
     }
     for (const tk of talkers) {
-      if (clock > tk.flipAt) {
+      if (clock > tk.flipAt && tk !== gmTalker) {
         tk.busy = !tk.busy && Math.random() < 0.35;
         tk.flipAt = clock + (tk.busy ? 2.5 + Math.random() * 3 : 1.5 + Math.random() * 4);
       }
@@ -815,6 +902,7 @@ export function mount(canvas: HTMLCanvasElement) {
     // tight cluster never turns into overlapping text.
     const W = innerWidth;
     const H = innerHeight;
+    const narrow = W <= 900;
     const shown: Label[] = [];
     for (const l of labels) {
       const p = l.at();
@@ -825,12 +913,16 @@ export function mount(canvas: HTMLCanvasElement) {
         l.a = 0;
         continue;
       }
-      l.x = (proj.x * 0.5 + 0.5) * W + 9;
-      l.y = (-proj.y * 0.5 + 0.5) * H - 9;
       if (!l.w) {
         l.w = l.el.offsetWidth || 90;
         l.h = l.el.offsetHeight || 28;
       }
+      const sx = (proj.x * 0.5 + 0.5) * W;
+      const sy = (-proj.y * 0.5 + 0.5) * H;
+      // wide screens: the name sits up and to the right of its light. Phones: centred just under
+      // it, so names don't pull every layer's weight to the right of the screen
+      l.x = narrow ? clamp(sx - l.w / 2, 4, W - l.w - 4) : sx + 9;
+      l.y = narrow ? sy + 9 : sy - 9;
       shown.push(l);
     }
     // the general manager's name always wins; the rest are placed nearest-first
@@ -856,6 +948,43 @@ export function mount(canvas: HTMLCanvasElement) {
     }
   };
   raf = requestAnimationFrame(tick);
+
+  // ?cenote only (screenshots and tests): each layer's on-screen centroid, in CSS px
+  if (location.search.includes('cenote')) {
+    const centroid = (ps: Vector3[]) => {
+      let x = 0;
+      let y = 0;
+      let x0 = Infinity;
+      let x1 = -Infinity;
+      let y0 = Infinity;
+      let y1 = -Infinity;
+      let gap = Infinity; // closest two lights on screen, px
+      const sp = ps.map((p) => {
+        proj.copy(p).project(camera);
+        return [(proj.x * 0.5 + 0.5) * innerWidth, (-proj.y * 0.5 + 0.5) * innerHeight];
+      });
+      sp.forEach(([sx, sy], i) => {
+        x += sx;
+        y += sy;
+        x0 = Math.min(x0, sx);
+        x1 = Math.max(x1, sx);
+        y0 = Math.min(y0, sy);
+        y1 = Math.max(y1, sy);
+        for (let j = i + 1; j < sp.length; j++) gap = Math.min(gap, Math.hypot(sx - sp[j][0], sy - sp[j][1]));
+      });
+      const r = Math.round;
+      return { x: r(x / ps.length), y: r(y / ps.length), n: ps.length, box: [r(x0), r(y0), r(x1), r(y1)], gap: r(gap) };
+    };
+    (window as unknown as { __cenote: unknown }).__cenote = () => ({
+      vw: innerWidth,
+      canvasW: canvas.getBoundingClientRect().width,
+      camX: +camera.position.x.toFixed(3),
+      gather: +gather.toFixed(2),
+      seats: centroid(seats.map((s) => s.node.pos)),
+      messages: centroid(talkers.map((t) => t.node.pos)),
+      memory: centroid([memSeat.pos, ...facts.map((f) => f.pos)]),
+    });
+  }
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const stop = () => {
@@ -916,6 +1045,34 @@ function dot() {
   g.fillStyle = grad;
   g.fillRect(0, 0, 32, 32);
   return new CanvasTexture(c);
+}
+
+// n points spread over an ellipse (radii rx, rz) with at least `gap` between any two, around the
+// points in `keep` (which are not returned). Seeded, so a layer looks the same on every visit.
+function spread(n: number, rx: number, rz: number, gap: number, keep: [number, number][], seed: number): [number, number][] {
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const pts: [number, number][] = [...keep];
+  let g = gap;
+  // if the ellipse can't hold them all at this gap, give a little and keep going
+  for (let tries = 0; pts.length < n + keep.length; tries++) {
+    if (tries > 0 && tries % 400 === 0) g *= 0.93;
+    const a = rand() * Math.PI * 2;
+    const r = Math.sqrt(rand());
+    const x = Math.cos(a) * r * rx;
+    const z = Math.sin(a) * r * rz;
+    if (pts.every(([px, pz]) => Math.hypot(px - x, pz - z) >= g)) pts.push([x, z]);
+  }
+  // centre the new points' weight sideways, so a layer never leans left or right of its anchor
+  const out = pts.slice(keep.length);
+  const mx = out.reduce((a, [x]) => a + x, 0) / out.length;
+  return out.map(([x, z]) => [x - mx, z]);
 }
 
 function lerp(a: number, b: number, t: number) {

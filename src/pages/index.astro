@@ -251,6 +251,15 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     gap: 4px;
     margin-top: 1px;
   }
+  /* phones: each name is centred under its light (src/scripts/cenote.ts places it) */
+  @media (max-width: 900px) {
+    #cenote-labels :global(.cl) {
+      text-align: center;
+    }
+    #cenote-labels :global(.cl small) {
+      justify-content: center;
+    }
+  }
   #cenote-labels :global(.cl .rt) {
     display: inline-flex;
     filter: drop-shadow(0 1px 2px rgba(4, 20, 20, 0.7));
