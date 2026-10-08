@@ -11,7 +11,7 @@ order: 2
 > copy it into the AI you already use. Steps marked **[PERSON ONLY]** (paying, signing in,
 > passwords, approving a device) are yours to do; the agent stops there.
 
-One machine, one CLI (claude OR gemini OR codex), no voice, no Telegram.
+One machine, one CLI (claude OR gemini OR codex), no voice key, no Telegram.
 Starting from nothing, you end with: a VPS, Tailscale on it and on your own
 laptop or phone, `orchestra up` running, the dashboard open in your browser over
 https, an agent CLI logged in, and one seat spawned. Budget about an hour the
@@ -525,7 +525,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/bf73045dd393228ed48db149e380358468f813e2/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/6fa51781d44e6c98fb25ab43b03c693d6b8beee6/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
