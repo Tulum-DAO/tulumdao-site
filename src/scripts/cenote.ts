@@ -7,10 +7,11 @@
 //   -28  messages: packets fly between named seats and often get a reply; a message to a busy
 //        seat waits beside it and is delivered when its turn ends. While this layer is on screen
 //        the seats gather round the GM and the mail runs hub and spoke, to and from it
-//   -38  memory: a seat inside a glass bubble of working context that fills as it works; now and
-//        then a fragment is written down and sinks into one of the stones below. The context fills,
-//        the bubble pops and everything loose in it is gone; the stones stay, and the next
-//        generation grows a fresh bubble and pulls each stone's memory back up into it
+//   -38  memory: a seat keeps its own records. Work streams past it; now and then it files one item
+//        as a card in a drawer (user, feedback, project, reference) and adds its line to the index.
+//        It merges duplicates and deletes what stopped being true; a feedback card becomes a ring
+//        that turns away the action it warns about. A restart is quiet: the next generation reads
+//        the index and opens only the drawers it needs
 // Seats carry HTML name labels (example names) projected from 3D every frame.
 //   -49  approvals: one ochre card rises toward the surface, toward you
 import {
@@ -76,7 +77,6 @@ const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'dev-ios', 'desi
 // OrchestraOS README supports
 const RUNTIME_CYCLE: Runtime[] = ['claude', 'codex', 'claude', 'gemini'];
 const runtimeFor = (i: number): Runtime => (i === 0 ? 'claude' : RUNTIME_CYCLE[i % RUNTIME_CYCLE.length]);
-const FACT_LABELS = ['tests: make test', 'deploy from main only', 'keys live in env', 'ask before deleting data', 'small commits'];
 
 type Node = {
   pos: Vector3;
@@ -148,7 +148,7 @@ export function mount(canvas: HTMLCanvasElement) {
   scene.add(new Mesh(shaft, new MeshLambertMaterial({ vertexColors: true, side: BackSide, flatShading: true })));
 
   // ---- the lights: one pooled Points object for every seat and pulse
-  const MAX = 200;
+  const MAX = 240;
   const nodes: Node[] = Array.from({ length: MAX }, () => ({
     pos: new Vector3(),
     color: new Color(),
@@ -530,107 +530,175 @@ export function mount(canvas: HTMLCanvasElement) {
     if (n) askers.push(n);
   }
 
-  // memory that survives a restart. The seat works inside a glass bubble: its context, small
-  // fragments that pile up as it works, with a gauge filling round it. Now and then one fragment is
-  // WRITTEN DOWN: it turns sand and sinks into one of the stones below. When the context is full
-  // the bubble pops: every loose fragment scatters and is gone, and the light goes out. The stones
-  // stay. The next generation grows a fresh bubble and each stone's memory rises back into it.
+  // memory: a seat keeps its own records. A stream of work flows past it, everything it reads and
+  // does; most of it flows on and is gone. Now and then the seat catches one item and files it as a
+  // card in one of four drawers (user, feedback, project, reference), and adds a line for it to its
+  // index, MEMORY.md, in the same step. It tends them too: two duplicates merge, a card that stopped
+  // being true is deleted. A feedback memory becomes how the seat behaves: a ring round it that
+  // turns away the action the feedback warns about. A restart is quiet: the light dims, and the next
+  // generation reads the index first and opens only the drawers its task needs. The drawers and the
+  // index never went anywhere. (OrchestraOS docs/MEMORY.md: one-fact files, four types, an index.)
   labelGroup = 'memory';
-  const MEM_C = new Vector3(LX.memory, Y.memory, -0.4); // the seat, at the bubble's centre
-  const BUBBLE_R = mobile ? 0.95 : 1.2;
-  const memSeat = spawn(MEM_C, LIGHT, 30)!;
+  const MEM_C = new Vector3(LX.memory, Y.memory, -0.2); // the seat
   const HIDE = 0.001; // an owned light is hidden this way, never with 0 (0 hands it back to the pool)
-  // the bubble: a glass sphere that glows at its rim
-  const bubbleMat = new ShaderMaterial({
-    transparent: true,
-    depthWrite: false,
-    blending: AdditiveBlending,
-    uniforms: { color: { value: MAYA.clone() }, alpha: { value: 0 } },
-    vertexShader: /* glsl */ `
-      varying vec3 vN; varying vec3 vV;
-      void main() {
-        vec4 mv = modelViewMatrix * vec4(position, 1.0);
-        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz);
-        gl_Position = projectionMatrix * mv;
-      }`,
-    fragmentShader: /* glsl */ `
-      uniform vec3 color; uniform float alpha; varying vec3 vN; varying vec3 vV;
-      void main() {
-        float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
-        // mostly rim: glass you see through, not a disc
-        gl_FragColor = vec4(color * (0.08 + rim), (0.015 + rim * 0.85) * alpha);
-      }`,
-  });
-  const bubble = new Mesh(new SphereGeometry(1, mobile ? 24 : 36, mobile ? 16 : 24), bubbleMat);
-  bubble.position.copy(MEM_C);
-  scene.add(bubble);
-  // the context gauge: an ochre arc round the bubble that fills as the seat works
-  const GAUGE_SEG = 96;
-  const gaugeGeo = new BufferGeometry();
-  {
-    const pts = new Float32Array((GAUGE_SEG + 1) * 3);
-    for (let i = 0; i <= GAUGE_SEG; i++) {
-      // from the top of the bubble (far side, top of the screen), clockwise
-      const t = -Math.PI / 2 + (i / GAUGE_SEG) * Math.PI * 2;
-      pts.set([Math.cos(t) * BUBBLE_R * 1.16, 0, Math.sin(t) * BUBBLE_R * 1.16], i * 3);
+  const RED = new Color('#e8604c');
+  const memSeat = spawn(MEM_C, LIGHT, 30)!;
+  memSeat.drift = 0;
+  let memGen = 7;
+  const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' });
+  memLabel.longest = mobile ? 'gen 10, opened 2 of 11' : 'Claude, gen 10, opened 2 of 11';
+  // cards and the index sheet lie flat on the ledge; the camera looks down at them
+  const flat = (m: Mesh) => {
+    m.rotation.x = -Math.PI / 2;
+    m.frustumCulled = false;
+    scene.add(m);
+    return m;
+  };
+  // the index: a sheet above the seat (far side, top of the screen), one line per memory
+  const IDX = new Vector3(MEM_C.x, MEM_C.y - 0.2, MEM_C.z - (mobile ? 1.6 : 1.8));
+  const idxCanvas = document.createElement('canvas');
+  idxCanvas.width = 128;
+  idxCanvas.height = 160;
+  const idxTex = new CanvasTexture(idxCanvas);
+  idxTex.colorSpace = SRGBColorSpace;
+  const idxMat = new MeshBasicMaterial({ map: idxTex, transparent: true, opacity: 0, depthWrite: false, fog: false, side: DoubleSide });
+  const idxSheet = flat(new Mesh(new PlaneGeometry(0.5, 0.62), idxMat));
+  idxSheet.position.copy(IDX);
+  // its name sits under the sheet on a phone; on a wide screen, where names sit up and to the right
+  // of their anchor, the anchor is the sheet's right edge so the name clears the sheet
+  const idxAnchor = IDX.clone().add(mobile ? new Vector3(0, 0, 0.33) : new Vector3(0.27, 0, 0.12));
+  const idxLabel = addLabel('MEMORY.md', () => idxAnchor, () => 0.9, 'fact');
+  idxLabel.longest = 'index, 12 lines';
+  let idxFresh = -1; // which line just changed (drawn ochre), -1 for none
+  let idxFlash = 0;
+  const drawIndex = (n: number) => {
+    const g = idxCanvas.getContext('2d')!;
+    g.clearRect(0, 0, 128, 160);
+    g.fillStyle = '#f3e6c4';
+    g.beginPath();
+    g.roundRect(2, 2, 124, 156, 8);
+    g.fill();
+    g.fillStyle = '#0b4f52';
+    g.fillRect(14, 14, 64, 9); // the heading
+    for (let i = 0; i < Math.min(n, 12); i++) {
+      g.fillStyle = i === idxFresh ? '#e2a94f' : 'rgba(11, 79, 82, 0.55)';
+      g.fillRect(14, 34 + i * 10, 64 + ((i * 37) % 36), 4);
     }
-    gaugeGeo.setAttribute('position', new BufferAttribute(pts, 3));
-  }
-  const gaugeMat = new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false, fog: false });
-  const gauge = new Line(gaugeGeo, gaugeMat);
-  gauge.position.copy(MEM_C);
-  gauge.frustumCulled = false;
-  scene.add(gauge);
-  // the stones: what has been written down, on a ledge in front of the bubble (lower on screen),
-  // in two staggered rows so their names have room
-  type Stone = { node: Node; at: Vector3 };
-  const stones: Stone[] = FACT_LABELS.map((text, i) => {
-    const n = FACT_LABELS.length;
-    const th = (i / (n - 1) - 0.5) * (mobile ? 1.9 : 2.2); // spread across the front
-    const r = BUBBLE_R + (i % 2 ? 1.25 : 0.7) * (mobile ? 1 : 1.15);
-    const at = new Vector3(MEM_C.x + Math.sin(th) * r * (mobile ? 1.05 : 1.25), MEM_C.y - 0.35, MEM_C.z + Math.cos(th) * r);
-    const node = spawn(at, SAND, 18, 0.8)!;
-    node.drift = 0; // the stones hold still: they are the part that persists
-    // a steady name: the stones brighten only as the camera nears, their names shouldn't wait
-    addLabel(text, () => node.pos, () => 0.85, 'fact', { sub: false });
-    return { node, at };
+    idxTex.needsUpdate = true;
+    setSub(idxLabel, `index, ${n} lines`);
+  };
+  // the drawers: a pile of cards each, on a ledge in front of the seat (lower on screen)
+  type Card = { mesh: Mesh; mat: MeshBasicMaterial; slot: number; dying: number; born: number };
+  type Drawer = { name: string; node: Node; at: Vector3; cards: Card[]; label: Label; adds: string[]; nAdd: number; flare: number; base: string; until: number };
+  // second lines stay short (17 characters at most), so two names fit side by side on a phone
+  const DRAWERS: [string, string, string[]][] = [
+    ['user', 'plain English', ['+ cards, not chat', '+ short replies']],
+    ['feedback', 'never force-push', ['+ small commits', '+ ask first']],
+    ['project', 'staging is live', ['+ launch date set', '+ pixel shipped']],
+    ['reference', 'dashboard URL', ['+ ticket tracker', '+ runbook link']],
+  ];
+  // a 2x2 grid in front of the seat (lower on screen): feedback and project, the two a new
+  // generation opens, in the row nearest it; user and reference behind
+  const GRID: [number, number][] = [[-1, 1], [-1, 0], [1, 0], [1, 1]];
+  const START = [2, 3, 3, 3];
+  const cardGeo = new PlaneGeometry(0.34, 0.22);
+  const slotAt = (d: Drawer, k: number, out: Vector3) => out.set(d.at.x, d.at.y + 0.05 + k * 0.035, d.at.z - 0.16 - k * 0.075);
+  const addCard = (d: Drawer, born: number) => {
+    const mat = new MeshBasicMaterial({ color: SAND.clone(), transparent: true, opacity: 0, depthWrite: false, fog: false, side: DoubleSide });
+    const mesh = flat(new Mesh(cardGeo, mat));
+    const slot = d.cards.filter((c) => !c.dying).length;
+    slotAt(d, slot, mesh.position);
+    d.cards.push({ mesh, mat, slot, dying: 0, born });
+  };
+  const liveCards = (d: Drawer) => d.cards.filter((c) => !c.dying);
+  const drawers: Drawer[] = DRAWERS.map(([name, first, adds], i) => {
+    const [gx, gz] = GRID[i];
+    const at = new Vector3(MEM_C.x + gx * (mobile ? 1.0 : 1.3), MEM_C.y - 0.3, MEM_C.z + (mobile ? 1.1 : 1.2) + gz * (mobile ? 1.35 : 1.3));
+    const node = spawn(at, SAND, 16, 0.5)!;
+    node.drift = 0;
+    const label = addLabel(name, () => node.pos, () => 0.9, 'fact');
+    label.longest = '+ cards, not chat';
+    setSub(label, first);
+    const d: Drawer = { name, node, at, cards: [], label, adds, nAdd: 0, flare: 0, base: first, until: 0 };
+    for (let k = 0; k < START[i]; k++) addCard(d, -10);
+    return d;
   });
-  // the context: loose fragments inside the bubble. A fragment is hidden, drifting, sinking into a
-  // stone (written down), rising from a stone (recalled), or scattering (the bubble popped).
-  type Frag = { node: Node; off: Vector3; vel: Vector3; state: 'off' | 'drift' | 'sink' | 'rise' | 'burst'; t: number; from: Vector3; stone: Stone | null; recalled: boolean };
-  const FRAGS = mobile ? 18 : 26;
-  const frags: Frag[] = [];
-  for (let i = 0; i < FRAGS + stones.length; i++) {
-    const node = spawn(MEM_C, MAYA, 11, HIDE);
+  const cardCount = () => drawers.reduce((s, d) => s + liveCards(d).length, 0);
+  drawIndex(cardCount());
+  // the stream: what the seat sees and does, flowing past just above it and on out of the layer
+  const STREAM = mobile ? 16 : 24;
+  const SX = mobile ? 3.2 : 4.6; // half its length
+  type Bit = { node: Node; x: number; ph: number; v: number; state: 'flow' | 'catch' | 'file'; t: number; from: Vector3; to: Drawer | null; merge: boolean };
+  const bits: Bit[] = [];
+  for (let i = 0; i < STREAM; i++) {
+    const node = spawn(MEM_C, MAYA, 10, HIDE);
     if (!node) break;
     node.drift = 0;
-    frags.push({ node, off: new Vector3(), vel: new Vector3(), state: 'off', t: 0, from: new Vector3(), stone: null, recalled: false });
+    bits.push({ node, x: MEM_C.x - SX + (i / STREAM) * SX * 2, ph: Math.random() * 6.28, v: 0.55 + Math.random() * 0.35, state: 'flow', t: 0, from: new Vector3(), to: null, merge: false });
   }
-  const inBubble = (out: Vector3) => {
-    // a random point well inside the bubble
-    do out.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
-    while (out.lengthSq() > 1);
-    return out.multiplyScalar(BUBBLE_R * 0.72);
-  };
-  let memGen = 7;
-  const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' }); // steady; its line says what is happening
-  memLabel.longest = 'Claude, gen 10, context 100%';
-  // recall threads: a line from each stone to the seat while its memory rises
-  const lpos = new Float32Array(stones.length * 6);
-  const lcol = new Float32Array(stones.length * 8);
+  const streamAt = (b: Bit, out: Vector3) =>
+    out.set(b.x, MEM_C.y + 0.3 + Math.sin(clock * 0.9 + b.ph) * 0.08, MEM_C.z - 0.85 + Math.sin(b.x * 1.3 + b.ph) * 0.14);
+  // recall: a light rises from each drawer the new generation opens
+  const RECALL = [1, 2]; // feedback, and project (its task)
+  const risers = RECALL.map(() => {
+    const n = spawn(MEM_C, SAND, 14, HIDE)!;
+    n.drift = 0;
+    return { node: n, t: -1 };
+  });
+  // the rule: a dotted ochre arc shielding the seat from the stream, from the feedback memory
+  const RING_N = mobile ? 11 : 14;
+  const RING_R = mobile ? 0.5 : 0.56;
+  const ring: Node[] = [];
+  for (let i = 0; i < RING_N; i++) {
+    const n = spawn(MEM_C, OCHRE, 7, HIDE);
+    if (!n) break;
+    n.drift = 0;
+    ring.push(n);
+  }
+  let ringR = 0; // eased radius
+  let ringFlare = 0;
+  // the attempt the rule turns away: a force-push, red, coming down the stream
+  const attempt = spawn(MEM_C, RED, 15, HIDE)!;
+  attempt.drift = 0;
+  const atFrom = new Vector3();
+  const atHit = new Vector3();
+  // threads: index -> seat (0), drawer -> seat (1-4), drawer -> index (5-8); each flashes and fades
+  const SEG_N = 1 + drawers.length * 2;
+  const segA: Vector3[] = [];
+  const segB: Vector3[] = [];
+  const segF = new Float32Array(SEG_N);
+  segA.push(idxAnchor);
+  segB.push(MEM_C);
+  for (const d of drawers) {
+    segA.push(d.at);
+    segB.push(MEM_C);
+  }
+  for (const d of drawers) {
+    segA.push(d.at);
+    segB.push(IDX);
+  }
+  const lpos = new Float32Array(SEG_N * 6);
+  const lcol = new Float32Array(SEG_N * 8);
   const lgeo = new BufferGeometry();
   lgeo.setAttribute('position', new BufferAttribute(lpos, 3));
   lgeo.setAttribute('color', new BufferAttribute(lcol, 4));
   const memLines = new LineSegments(lgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false }));
   memLines.frustumCulled = false;
   scene.add(memLines);
-  // the loop, in seconds: a new generation grows its bubble and recalls (0 - 2.2), works and fills
-  // its context, writing three fragments down (2.2 - 6.8), the bubble pops (6.8 - 7.6), a beat of
-  // dark with only the stones lit (7.6 - 9)
-  const MEM_CYCLE = 9;
-  const M = { recallEnd: 2.2, workEnd: 6.8, popEnd: 7.6, writes: [3.3, 4.5, 5.7] };
+  // the loop, in seconds: boot (read the index, open two drawers, the rule forms) 0 - 2.4; work,
+  // with two catches filed, the force-push turned away, a merge and a delete, 2.4 - 12; a quiet
+  // restart 12 - 13.6
+  const MEM_CYCLE = 13.6;
+  const M = { read: 0.15, recall: [0.9, 1.35], catches: [3.0, 5.1], attempt: 6.6, merge: 9.0, del: 10.5, down: 12 };
   let memPh = 0;
   let memLast = -1;
+  let memSay = ''; // what the seat is doing, shown on its name's second line
+  let memSayUntil = 0;
+  let ringOn = false;
+  let idxFreshUntil = 0;
+  let atState: '' | 'come' | 'strike' | 'bounce' = '';
+  let atT = 0;
+  const atDir = new Vector3();
 
   // a little sediment drifting down, for depth
   const SED = mobile ? 160 : 360;
@@ -1032,156 +1100,275 @@ export function mount(canvas: HTMLCanvasElement) {
       }
     }
 
-    // memory: recall, work (context fills, three fragments written down), pop, dark, repeat
+    // memory: boot (read the index, open two drawers, the rule forms), work (catch and file, turn the
+    // force-push away, merge two duplicates, delete a stale card), a quiet restart, repeat
     {
+      const was = memLast;
       memPh = clock % MEM_CYCLE;
-      const wrapped = memPh < memLast;
+      const wrapped = memPh < was;
       memLast = memPh;
+      // did the loop pass t this frame?
+      const crossed = (t: number) => (wrapped ? t <= memPh : was < t && t <= memPh);
       // only visible when you are down in this layer; from above it would read as a hub in the others
       const near = smooth(15, 10, camera.position.distanceTo(MEM_C));
       const vis = Math.max(near, 0.05);
+      const down = memPh >= M.down;
       if (wrapped) {
-        // a new generation: everything loose from the last one is already gone
         memGen++;
-        for (const f of frags) {
-          f.state = 'off';
-          f.node.target = HIDE;
-          f.node.alpha = 0;
-        }
+        ringOn = false;
+        ringR = 0;
+        memSayUntil = 0;
       }
-      const recallT = memPh < M.recallEnd;
-      const working = memPh >= M.recallEnd && memPh < M.workEnd;
-      const popping = memPh >= M.workEnd && memPh < M.popEnd;
-      const dark = memPh >= M.popEnd;
-      // the seat
-      memSeat.target = popping || dark ? 0.03 : vis;
-      // the bubble grows at the start, sits through the work, bursts outward at the pop
-      const grow = smooth(0, 0.8, memPh);
-      const burst = popping ? smooth(M.workEnd, M.popEnd, memPh) : dark ? 1 : 0;
-      bubble.scale.setScalar(BUBBLE_R * (0.15 + 0.85 * grow) * (1 + burst * 0.5));
-      bubbleMat.uniforms.alpha.value = near * grow * (1 - burst) * (popping ? 1 + 2 * (1 - burst) : 1);
-      bubble.visible = bubbleMat.uniforms.alpha.value > 0.005;
-      // the gauge: how full the context is
-      const fill = working ? lerp(0.12, 1, smooth(M.recallEnd, M.workEnd, memPh)) : recallT ? 0.12 * smooth(0.6, 1.6, memPh) : popping ? 1 : 0;
-      gaugeGeo.setDrawRange(0, 1 + Math.round(GAUGE_SEG * fill));
-      gaugeMat.opacity = 0.85 * near * (popping ? 1 - burst : dark ? 0 : 1);
-      gauge.visible = gaugeMat.opacity > 0.01 && fill > 0;
+      const say = (text: string, secs: number) => {
+        memSay = text;
+        memSayUntil = clock + secs;
+      };
+      // the seat: dims for the restart, and comes back as the next generation reads its index
+      memSeat.target = (down ? 0.12 : 0.15 + 0.85 * smooth(0.2, 0.9, memPh)) * vis;
+      const rtName = mobile ? '' : 'Claude, ';
       setSub(
         memLabel,
-        popping || dark
-          ? 'Claude, restarting'
-          : recallT
-            ? `Claude, gen ${memGen}, recalling`
-            : `Claude, gen ${memGen}, context ${Math.round(fill * 100)}%`,
+        down
+          ? `${rtName}gen ${memGen}, restarting`
+          : memPh < M.recall[0]
+            ? `${rtName}gen ${memGen}, reading index`
+            : memPh < 2.4
+              ? `${rtName}gen ${memGen}, opened 2 of ${cardCount()}`
+              : clock < memSayUntil
+                ? memSay
+                : `${rtName}gen ${memGen}`,
       );
-      // recall: one fragment rises from each stone into the bubble, in turn, and stays there (sand)
-      stones.forEach((st, i) => {
-        const at = 0.35 + i * 0.32;
-        const f = frags[FRAGS + i];
-        if (f && recallT && memPh >= at && f.state === 'off') {
-          f.state = 'rise';
-          f.t = 0;
-          f.from.copy(st.at);
-          inBubble(f.off);
-          f.recalled = true;
-          f.node.color.copy(SAND);
-          f.node.target = vis;
-          f.node.alpha = vis;
-          st.node.alpha = 1.6; // the stone flares as it is read
+      for (let i = 0; i < SEG_N; i++) segF[i] = Math.max(0, segF[i] - dt * 1.3);
+      if (crossed(M.read)) {
+        segF[0] = 1;
+        idxFlash = 1;
+      }
+      // recall: the new generation opens only the drawers its task needs
+      RECALL.forEach((di, k) => {
+        const r = risers[k];
+        const d = drawers[di];
+        if (crossed(M.recall[k])) {
+          r.t = 0;
+          r.node.pos.copy(d.at);
+          r.node.alpha = vis;
+          d.flare = 1;
+          segF[1 + di] = 1;
         }
-        // its thread, while it rises
-        const a = recallT ? smooth(at - 0.1, at + 0.1, memPh) * (1 - smooth(at + 0.5, at + 0.9, memPh)) : 0;
-        lpos.set([st.at.x, st.at.y, st.at.z, MEM_C.x, MEM_C.y, MEM_C.z], i * 6);
-        lcol.set([SAND.r, SAND.g, SAND.b, a * 0.7 * near, SAND.r, SAND.g, SAND.b, a * 0.2 * near], i * 8);
-        // the stones never go out; they glow brighter while the seat is down
-        st.node.target = (popping || dark ? 1 : 0.8) * vis;
+        if (r.t < 0) return;
+        r.t = Math.min(1, r.t + dt / 0.6);
+        const e = r.t * r.t * (3 - 2 * r.t);
+        r.node.pos.copy(d.at).lerp(MEM_C, e);
+        r.node.pos.y += Math.sin(e * Math.PI) * 0.35;
+        r.node.target = Math.max(HIDE, vis * (1 - smooth(0.85, 1, r.t)));
+        if (r.t >= 1) {
+          r.t = -1;
+          r.node.target = HIDE;
+          r.node.alpha = 0;
+          memSeat.alpha = Math.min(1.4, memSeat.alpha + 0.4);
+          if (di === 1) ringOn = true; // the feedback memory is read: the rule is in force
+        }
       });
+      // the rule: grows out when the feedback memory is read, fades with the generation
+      if (down) ringOn = false;
+      ringR += ((ringOn ? RING_R : ringR) - ringR) * Math.min(1, dt * 3);
+      ringFlare = Math.max(0, ringFlare - dt * 1.4);
+      ring.forEach((n, i) => {
+        // a shield: an arc on the side the stream comes from, clear of the seat's name under it
+        const a = Math.PI * (1.08 + 0.84 * (i / (ring.length - 1)));
+        n.pos.set(MEM_C.x + Math.cos(a) * ringR, MEM_C.y, MEM_C.z + Math.sin(a) * ringR);
+        n.size = 7 + 7 * ringFlare;
+        n.color.copy(OCHRE).lerp(LIGHT, ringFlare * 0.5);
+        n.target = ringOn ? vis * (0.7 + 0.6 * ringFlare) : HIDE;
+      });
+      // catching: twice a loop the seat takes one item out of the stream and files it, in the
+      // drawer that has the fewest cards (an example; a real seat files by what the fact is)
+      const byCount = (dir: 1 | -1) =>
+        drawers
+          .map((d, i) => ({ d, n: liveCards(d).length, k: (i + memGen) % drawers.length }))
+          .sort((p, q) => dir * (p.n - q.n) || p.k - q.k)[0];
+      for (const t of M.catches) {
+        if (!crossed(t) || down) continue;
+        const d = byCount(1).d;
+        const near0 = bits.filter((b) => b.state === 'flow' && b.x < MEM_C.x - 0.2 && b.x > MEM_C.x - 1.8).sort((p, q) => q.x - p.x)[0];
+        const b = near0 ?? bits.filter((x) => x.state === 'flow').sort((p, q) => Math.abs(p.x - MEM_C.x) - Math.abs(q.x - MEM_C.x))[0];
+        if (!b) continue;
+        b.state = 'catch';
+        b.t = 0;
+        b.from.copy(b.node.pos);
+        b.to = d;
+        say(`saving to ${d.name}`, 2);
+      }
+      // tending: two duplicates merge into one, and a card that stopped being true is deleted, both
+      // in the fullest drawer
+      if (crossed(M.merge) && !down) {
+        const { d, n } = byCount(-1);
+        if (n >= 3) {
+          const live = liveCards(d);
+          const top = live[live.length - 1];
+          top.dying = clock;
+          top.slot = live.length - 2; // slides onto the card under it as it goes
+          d.flare = 1;
+          segF[5 + drawers.indexOf(d)] = 1;
+          d.until = clock + 2.5;
+          setSub(d.label, 'merged duplicates');
+          say('merging duplicates', 2);
+          idxFresh = -1;
+          drawIndex(cardCount());
+          idxFlash = 1;
+        }
+      }
+      if (crossed(M.del) && !down) {
+        const { d, n } = byCount(-1);
+        if (n >= 2) {
+          const live = liveCards(d);
+          live[live.length - 1].dying = clock;
+          d.flare = 1;
+          segF[5 + drawers.indexOf(d)] = 1;
+          d.until = clock + 2.5;
+          setSub(d.label, 'deleted: not true');
+          say('deleting a stale memory', 2);
+          idxFresh = -1;
+          drawIndex(cardCount());
+          idxFlash = 1;
+        }
+      }
+      // the stream, and the items caught out of it
+      for (const b of bits) {
+        if (b.state === 'flow') {
+          b.x += b.v * dt;
+          if (b.x > MEM_C.x + SX) b.x -= SX * 2;
+          streamAt(b, b.node.pos);
+          b.node.target = Math.max(HIDE, 0.5 * vis * smooth(SX, SX * 0.55, Math.abs(b.x - MEM_C.x)));
+        } else if (b.state === 'catch') {
+          // pulled in to the seat
+          b.t = Math.min(1, b.t + dt / 0.45);
+          const e = b.t * b.t * (3 - 2 * b.t);
+          b.node.pos.copy(b.from).lerp(MEM_C, e);
+          b.node.color.copy(MAYA).lerp(SAND, e);
+          b.node.target = vis;
+          if (b.t >= 1) {
+            b.state = 'file';
+            b.t = 0;
+            b.node.size = 14;
+            segF[1 + drawers.indexOf(b.to!)] = 1;
+          }
+        } else {
+          // out to its drawer, landing on top of the pile
+          const d = b.to!;
+          b.t = Math.min(1, b.t + dt / 0.85);
+          const e = b.t * b.t * (3 - 2 * b.t);
+          slotAt(d, liveCards(d).length, dest);
+          b.node.pos.copy(MEM_C).lerp(dest, e);
+          b.node.pos.y += Math.sin(e * Math.PI) * 0.3;
+          if (b.t >= 1) {
+            addCard(d, clock);
+            d.flare = 1;
+            segF[5 + drawers.indexOf(d)] = 1; // its line goes into the index in the same step
+            d.base = d.adds[d.nAdd++ % d.adds.length];
+            d.until = clock + 2.5;
+            setSub(d.label, d.base);
+            idxFresh = cardCount() - 1;
+            idxFreshUntil = clock + 1.6;
+            drawIndex(cardCount());
+            idxFlash = 1;
+            b.state = 'flow';
+            b.x = MEM_C.x - SX;
+            b.node.color.copy(MAYA);
+            b.node.size = 10;
+            b.node.alpha = 0;
+            b.to = null;
+          }
+        }
+      }
+      if (idxFresh >= 0 && clock > idxFreshUntil) {
+        idxFresh = -1;
+        drawIndex(cardCount());
+      }
+      // the force-push: comes down the stream, heads for the seat, and the rule turns it away
+      if (crossed(M.attempt) && !down) {
+        atState = 'come';
+        atT = 0;
+        attempt.alpha = 0;
+        say('asked to force-push', 1.7);
+      }
+      if (atState === 'come') {
+        atT = Math.min(1, atT + dt / 1.3);
+        dest.set(lerp(MEM_C.x - 2.2, MEM_C.x - 0.7, atT), 0, 0);
+        attempt.pos.set(dest.x, MEM_C.y + 0.3, MEM_C.z - 0.85 + Math.sin(dest.x * 1.3) * 0.14);
+        attempt.target = vis;
+        if (atT >= 1) {
+          atState = 'strike';
+          atT = 0;
+          atFrom.copy(attempt.pos);
+          atDir.copy(atFrom).sub(MEM_C).setY(0).normalize();
+          atHit.copy(MEM_C).addScaledVector(atDir, (ringOn ? ringR : RING_R) + 0.05);
+        }
+      } else if (atState === 'strike') {
+        atT = Math.min(1, atT + dt / 0.4);
+        attempt.pos.copy(atFrom).lerp(atHit, atT * atT);
+        if (atT >= 1) {
+          atState = 'bounce';
+          atT = 0;
+          ringFlare = 1;
+          drawers[1].flare = 1;
+          segF[2] = 1; // the feedback drawer is the reason
+          say('declined: force-push', 2.4);
+        }
+      } else if (atState === 'bounce') {
+        atT = Math.min(1, atT + dt / 0.9);
+        attempt.pos.copy(atHit).addScaledVector(atDir, easeOut(atT) * 0.9);
+        attempt.target = Math.max(HIDE, vis * (1 - atT));
+        if (atT >= 1) {
+          atState = '';
+          attempt.target = HIDE;
+          attempt.alpha = 0;
+        }
+      }
+      // the drawers and their cards
+      for (const d of drawers) {
+        d.flare = Math.max(0, d.flare - dt * 1.2);
+        // an event's line (merged, deleted) stands for a moment, then the drawer shows its newest card
+        if (d.until && clock > d.until) {
+          d.until = 0;
+          setSub(d.label, d.base.replace(/^\+ /, ''));
+        }
+        d.node.target = (0.45 + 0.55 * d.flare) * vis;
+        let slot = 0;
+        for (let i = d.cards.length - 1; i >= 0; i--) {
+          const cd = d.cards[i];
+          if (cd.dying && clock - cd.dying > 0.7) {
+            scene.remove(cd.mesh);
+            cd.mat.dispose();
+            d.cards.splice(i, 1);
+          }
+        }
+        const live = liveCards(d);
+        for (const cd of d.cards) {
+          if (!cd.dying) cd.slot = slot++;
+          slotAt(d, cd.slot, dest);
+          if (cd.dying && cd.slot >= live.length) dest.y += (clock - cd.dying) * 0.4; // deleted: lifts away
+          cd.mesh.position.lerp(dest, Math.min(1, dt * 6));
+          const top = !cd.dying && cd === live[live.length - 1];
+          const fade = cd.dying ? 1 - smooth(0, 0.7, clock - cd.dying) : smooth(0, 0.25, clock - cd.born);
+          cd.mat.opacity = 0.85 * near * fade;
+          cd.mat.color.copy(SAND).lerp(LIGHT, top ? d.flare * 0.8 : 0);
+        }
+      }
+      // the index sheet
+      idxFlash = Math.max(0, idxFlash - dt * 1.5);
+      idxMat.opacity = 0.92 * near;
+      idxSheet.scale.setScalar(1 + idxFlash * 0.06);
+      // threads
+      for (let i = 0; i < SEG_N; i++) {
+        const a = segA[i];
+        const b = segB[i];
+        const al = segF[i] * near;
+        lpos.set([a.x, a.y, a.z, b.x, b.y, b.z], i * 6);
+        lcol.set([SAND.r, SAND.g, SAND.b, al * 0.7, SAND.r, SAND.g, SAND.b, al * 0.25], i * 8);
+      }
       lgeo.attributes.position.needsUpdate = true;
       lgeo.attributes.color.needsUpdate = true;
-      // work: the context fills, a fragment at a time
-      if (working) {
-        const want = Math.floor(smooth(M.recallEnd, M.workEnd - 0.4, memPh) * FRAGS);
-        let live = frags.slice(0, FRAGS).filter((f) => f.state !== 'off').length;
-        for (const f of frags.slice(0, FRAGS)) {
-          if (live >= want) break;
-          if (f.state !== 'off') continue;
-          f.state = 'drift';
-          inBubble(f.off);
-          f.vel.set(Math.random() - 0.5, (Math.random() - 0.5) * 0.4, Math.random() - 0.5).multiplyScalar(0.35);
-          f.recalled = false;
-          f.node.size = 11;
-          f.node.color.copy(MAYA);
-          f.node.target = vis;
-          live++;
-        }
-        // writing it down: at set moments one drifting fragment turns sand and sinks into a stone
-        for (const w of M.writes) {
-          if (memPh >= w && memPh - dt < w) {
-            const f = frags.slice(0, FRAGS).find((x) => x.state === 'drift');
-            if (f) {
-              f.state = 'sink';
-              f.t = 0;
-              f.from.copy(f.node.pos);
-              f.stone = stones[Math.floor(Math.random() * stones.length)];
-              f.node.color.copy(SAND);
-              f.node.size = 17; // a written fragment reads a little larger on its way down
-            }
-          }
-        }
-      }
-      // the pop: every loose fragment, recalled ones included, flies out and is gone
-      if (popping) {
-        for (const f of frags) {
-          if (f.state === 'drift' || f.state === 'rise') {
-            f.state = 'burst';
-            f.vel.copy(f.off).normalize().multiplyScalar(2.2 + Math.random() * 1.5);
-          }
-        }
-      }
-      for (const f of frags) {
-        if (f.state === 'drift') {
-          f.off.addScaledVector(f.vel, dt);
-          // stay inside the glass: bounce off it
-          if (f.off.length() > BUBBLE_R * 0.8) {
-            f.vel.reflect(f.off.clone().normalize()).multiplyScalar(0.9);
-            f.off.setLength(BUBBLE_R * 0.8);
-          }
-          f.node.pos.copy(MEM_C).add(f.off);
-          f.node.target = vis;
-        } else if (f.state === 'rise') {
-          // from its stone up into the bubble, then it stays there as recalled context
-          f.t = Math.min(1, f.t + dt / 0.7);
-          const k = f.t * f.t * (3 - 2 * f.t);
-          f.node.pos.copy(f.from).lerp(dest.copy(MEM_C).add(f.off), k);
-          if (f.t >= 1) {
-            f.state = 'drift';
-            f.vel.set(Math.random() - 0.5, (Math.random() - 0.5) * 0.4, Math.random() - 0.5).multiplyScalar(0.2);
-          }
-        } else if (f.state === 'sink') {
-          // out through the bottom of the bubble and into its stone, which flares as it takes it
-          f.t = Math.min(1, f.t + dt / 0.9);
-          const k = f.t * f.t * (3 - 2 * f.t);
-          f.node.pos.copy(f.from).lerp(f.stone!.at, k);
-          if (f.t >= 1) {
-            f.state = 'off';
-            f.node.target = HIDE;
-            f.node.alpha = 0;
-            f.stone!.node.alpha = 1.6;
-          }
-        } else if (f.state === 'burst') {
-          // flies outward and fades over the whole pop, so you see it scatter
-          f.off.addScaledVector(f.vel, dt);
-          f.node.pos.copy(MEM_C).add(f.off);
-          f.node.alpha = f.node.target = Math.max(HIDE, vis * (1 - burst));
-          if (burst >= 1) {
-            f.state = 'off';
-            f.node.target = HIDE;
-            f.node.alpha = 0;
-          }
-        }
-      }
     }
-
     // nodes: drift, fade, recycle
     for (let i = 0; i < MAX; i++) {
       const n = nodes[i];
@@ -1403,7 +1590,7 @@ export function mount(canvas: HTMLCanvasElement) {
       canvasW: canvas.getBoundingClientRect().width,
       camX: +camera.position.x.toFixed(3),
       gather: +gather.toFixed(2),
-      mem: { ph: +memPh.toFixed(2), gen: memGen, frags: frags.filter((f) => f.state !== 'off').length },
+      mem: { ph: +memPh.toFixed(2), gen: memGen, cards: cardCount(), ring: +ringR.toFixed(2), live: nodes.filter((n) => n.live).length },
       hiddenWhy: labels.filter((l) => l.hidden).map((l) => `${l.group}:${l.el.firstChild?.textContent} ${l.why} at ${Math.round(l.sx)},${Math.round(l.sy)}`),
       names: labels
         .filter((l) => l.o > 0.05)
@@ -1416,7 +1603,7 @@ export function mount(canvas: HTMLCanvasElement) {
         }),
       seats: centroid(seats.map((s) => s.node.pos)),
       messages: centroid(talkers.map((t) => t.node.pos)),
-      memory: centroid([memSeat.pos, ...stones.map((st) => st.node.pos)]),
+      memory: centroid([memSeat.pos, idxAnchor, ...drawers.map((d) => d.node.pos)]),
     });
   }
 
