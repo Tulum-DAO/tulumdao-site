@@ -9,9 +9,10 @@
 //        the seats gather round the GM and the mail runs hub and spoke, to and from it
 //   -38  memory: a seat keeps its own records. Work streams past it; now and then it files one item
 //        as a card in a drawer (user, feedback, project, reference) and adds its line to the index.
-//        It merges duplicates and deletes what stopped being true; a feedback card becomes a ring
-//        that turns away the action it warns about. A restart is quiet: the next generation reads
-//        the index and opens only the drawers it needs
+//        It merges duplicates and deletes what stopped being true; a feedback card becomes an arc
+//        that turns away the action it warns about. A gauge fills as it works; at 80% the seat
+//        rotates in place: it writes its handoff, a new ring grows on it, the readback flashes
+//        ochre, and the new generation reads the index and opens only the drawers it needs
 // Seats carry HTML name labels (example names) projected from 3D every frame.
 //   -49  approvals: one ochre card rises toward the surface, toward you
 import {
@@ -534,10 +535,12 @@ export function mount(canvas: HTMLCanvasElement) {
   // does; most of it flows on and is gone. Now and then the seat catches one item and files it as a
   // card in one of four drawers (user, feedback, project, reference), and adds a line for it to its
   // index, MEMORY.md, in the same step. It tends them too: two duplicates merge, a card that stopped
-  // being true is deleted. A feedback memory becomes how the seat behaves: a ring round it that
-  // turns away the action the feedback warns about. A restart is quiet: the light dims, and the next
-  // generation reads the index first and opens only the drawers its task needs. The drawers and the
-  // index never went anywhere. (OrchestraOS docs/MEMORY.md: one-fact files, four types, an index.)
+  // being true is deleted. A feedback memory becomes how the seat behaves: an arc in front of it that
+  // turns away the action the feedback warns about. Its context gauge fills as it works, and at 80%
+  // it rotates by itself, in place: it writes its handoff, the next generation boots in the same
+  // seat (a new ring, as in the seats layer), proves it read the handoff (the ochre readback), reads
+  // the index first and opens only the drawers its task needs. The seat never goes out, and the
+  // drawers and the index are untouched. (OrchestraOS docs/MEMORY.md and docs/ROTATION.md.)
   labelGroup = 'memory';
   const MEM_C = new Vector3(LX.memory, Y.memory, -0.2); // the seat
   const HIDE = 0.001; // an owned light is hidden this way, never with 0 (0 hands it back to the pool)
@@ -546,7 +549,7 @@ export function mount(canvas: HTMLCanvasElement) {
   memSeat.drift = 0;
   let memGen = 7;
   const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' });
-  memLabel.longest = mobile ? 'gen 10, opened 2 of 11' : 'Claude, gen 10, opened 2 of 11';
+  memLabel.longest = mobile ? 'gen 10, read the handoff' : 'Claude, gen 10, read the handoff';
   // cards and the index sheet lie flat on the ledge; the camera looks down at them
   const flat = (m: Mesh) => {
     m.rotation.x = -Math.PI / 2;
@@ -555,7 +558,7 @@ export function mount(canvas: HTMLCanvasElement) {
     return m;
   };
   // the index: a sheet above the seat (far side, top of the screen), one line per memory
-  const IDX = new Vector3(MEM_C.x, MEM_C.y - 0.2, MEM_C.z - (mobile ? 1.6 : 1.8));
+  const IDX = new Vector3(MEM_C.x, MEM_C.y - 0.2, MEM_C.z - (mobile ? 1.85 : 2.05));
   const idxCanvas = document.createElement('canvas');
   idxCanvas.width = 128;
   idxCanvas.height = 160;
@@ -637,7 +640,7 @@ export function mount(canvas: HTMLCanvasElement) {
     bits.push({ node, x: MEM_C.x - SX + (i / STREAM) * SX * 2, ph: Math.random() * 6.28, v: 0.55 + Math.random() * 0.35, state: 'flow', t: 0, from: new Vector3(), to: null, merge: false });
   }
   const streamAt = (b: Bit, out: Vector3) =>
-    out.set(b.x, MEM_C.y + 0.3 + Math.sin(clock * 0.9 + b.ph) * 0.08, MEM_C.z - 0.85 + Math.sin(b.x * 1.3 + b.ph) * 0.14);
+    out.set(b.x, MEM_C.y + 0.3 + Math.sin(clock * 0.9 + b.ph) * 0.08, MEM_C.z - 1.0 + Math.sin(b.x * 1.3 + b.ph) * 0.14);
   // recall: a light rises from each drawer the new generation opens
   const RECALL = [1, 2]; // feedback, and project (its task)
   const risers = RECALL.map(() => {
@@ -647,7 +650,7 @@ export function mount(canvas: HTMLCanvasElement) {
   });
   // the rule: a dotted ochre arc shielding the seat from the stream, from the feedback memory
   const RING_N = mobile ? 11 : 14;
-  const RING_R = mobile ? 0.5 : 0.56;
+  const RING_R = mobile ? 0.62 : 0.68;
   const ring: Node[] = [];
   for (let i = 0; i < RING_N; i++) {
     const n = spawn(MEM_C, OCHRE, 7, HIDE);
@@ -655,7 +658,7 @@ export function mount(canvas: HTMLCanvasElement) {
     n.drift = 0;
     ring.push(n);
   }
-  let ringR = 0; // eased radius
+  let ringR = RING_R; // eased radius
   let ringFlare = 0;
   // the attempt the rule turns away: a force-push, red, coming down the stream
   const attempt = spawn(MEM_C, RED, 15, HIDE)!;
@@ -685,20 +688,60 @@ export function mount(canvas: HTMLCanvasElement) {
   const memLines = new LineSegments(lgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false }));
   memLines.frustumCulled = false;
   scene.add(memLines);
-  // the loop, in seconds: boot (read the index, open two drawers, the rule forms) 0 - 2.4; work,
-  // with two catches filed, the force-push turned away, a merge and a delete, 2.4 - 12; a quiet
-  // restart 12 - 13.6
-  const MEM_CYCLE = 13.6;
-  const M = { read: 0.15, recall: [0.9, 1.35], catches: [3.0, 5.1], attempt: 6.6, merge: 9.0, del: 10.5, down: 12 };
+  // the loop, in seconds: the rotation lands (new ring, readback) 0 - 1.3; the new generation reads
+  // the index and opens two drawers 1.3 - 3.2; work, with two catches filed, the force-push turned
+  // away, a merge and a delete, while the gauge fills to 80% at 11.6; the handoff is written 11.6 -
+  // 13, and the loop wraps into the next rotation
+  const MEM_CYCLE = 13;
+  const M = { read: 1.3, recall: [1.7, 2.1], catches: [3.6, 5.6], attempt: 7.0, merge: 9.2, del: 10.4, full: 11.6 };
   let memPh = 0;
   let memLast = -1;
   let memSay = ''; // what the seat is doing, shown on its name's second line
   let memSayUntil = 0;
-  let ringOn = false;
+  let ringOn = true; // the seat has read its feedback memory long before you arrive
   let idxFreshUntil = 0;
   let atState: '' | 'come' | 'strike' | 'bounce' = '';
   let atT = 0;
   const atDir = new Vector3();
+  // the context gauge: an ochre arc round the seat that fills as it works; at 80% the seat rotates
+  const GAUGE_SEG = 96;
+  const GAUGE_R = mobile ? 0.42 : 0.46;
+  const gaugeGeo = new BufferGeometry();
+  {
+    const pts = new Float32Array((GAUGE_SEG + 1) * 3);
+    for (let i = 0; i <= GAUGE_SEG; i++) {
+      // from the top of the seat (far side, top of the screen), clockwise
+      const t = -Math.PI / 2 + (i / GAUGE_SEG) * Math.PI * 2;
+      pts.set([Math.cos(t) * GAUGE_R, 0, Math.sin(t) * GAUGE_R], i * 3);
+    }
+    gaugeGeo.setAttribute('position', new BufferAttribute(pts, 3));
+  }
+  const gaugeMat = new LineBasicMaterial({ color: OCHRE.clone(), transparent: true, opacity: 0, depthWrite: false, fog: false });
+  const gauge = new Line(gaugeGeo, gaugeMat);
+  gauge.position.copy(MEM_C);
+  gauge.frustumCulled = false;
+  scene.add(gauge);
+  // its generations: a ring on the seat for each, newest innermost, as in the seats layer
+  type MemRing = { line: Line; mat: LineBasicMaterial; born: number };
+  const memRings: MemRing[] = [];
+  const MEM_RINGS = 4;
+  const memRingR = (i: number) => 0.16 + i * 0.06;
+  const addMemRing = (born: number) => {
+    const mat = new LineBasicMaterial({ color: MAYA.clone(), transparent: true, opacity: 0, depthWrite: false, fog: false });
+    const line = new Line(circle, mat);
+    line.position.copy(MEM_C);
+    line.scale.setScalar(born < 0 ? memRingR(memRings.length) : 0.05);
+    line.frustumCulled = false;
+    scene.add(line);
+    memRings.unshift({ line, mat, born });
+    if (memRings.length > MEM_RINGS) {
+      const gone = memRings.pop()!;
+      scene.remove(gone.line);
+      gone.mat.dispose();
+    }
+  };
+  for (let i = 0; i < MEM_RINGS; i++) addMemRing(-100 + i); // its history: rings already there
+  let rotatedAt = -100;
 
   // a little sediment drifting down, for depth
   const SED = mobile ? 160 : 360;
@@ -1100,8 +1143,9 @@ export function mount(canvas: HTMLCanvasElement) {
       }
     }
 
-    // memory: boot (read the index, open two drawers, the rule forms), work (catch and file, turn the
-    // force-push away, merge two duplicates, delete a stale card), a quiet restart, repeat
+    // memory: the rotation lands (new ring, readback), the new generation reads the index and opens
+    // two drawers, work (catch and file, turn the force-push away, merge two duplicates, delete a
+    // stale card) while the gauge fills, and at 80% the handoff is written and it rotates again
     {
       const was = memLast;
       memPh = clock % MEM_CYCLE;
@@ -1112,31 +1156,56 @@ export function mount(canvas: HTMLCanvasElement) {
       // only visible when you are down in this layer; from above it would read as a hub in the others
       const near = smooth(15, 10, camera.position.distanceTo(MEM_C));
       const vis = Math.max(near, 0.05);
-      const down = memPh >= M.down;
+      const full = memPh >= M.full;
       if (wrapped) {
+        // the rotation: the next generation boots in the same seat, with a new ring
         memGen++;
-        ringOn = false;
-        ringR = 0;
+        addMemRing(clock);
+        rotatedAt = clock;
         memSayUntil = 0;
       }
       const say = (text: string, secs: number) => {
         memSay = text;
         memSayUntil = clock + secs;
       };
-      // the seat: dims for the restart, and comes back as the next generation reads its index
-      memSeat.target = (down ? 0.12 : 0.15 + 0.85 * smooth(0.2, 0.9, memPh)) * vis;
+      // the seat never goes out. Its core glows ochre while the new generation answers the readback
+      // (as in the seats layer), and warms to sand while the old one writes its handoff
+      const since = clock - rotatedAt;
+      memSeat.target = vis;
+      memSeat.color
+        .copy(LIGHT)
+        .lerp(OCHRE, since < 2 ? smooth(0, 0.3, since) * (1 - smooth(1.2, 2, since)) : 0)
+        .lerp(SAND, full ? 0.7 * smooth(M.full, M.full + 0.4, memPh) : 0);
+      // the gauge: eases from 80% back down as the new generation takes over, then fills as it works
+      const fill = memPh < 1.2 ? lerp(0.8, 0.12, smooth(0, 1.2, memPh)) : lerp(0.12, 0.8, clamp((memPh - 1.2) / (M.full - 1.2), 0, 1));
+      gaugeGeo.setDrawRange(0, 1 + Math.round(GAUGE_SEG * fill));
+      gaugeMat.opacity = 0.85 * near;
+      gaugeMat.color.copy(OCHRE).lerp(LIGHT, full ? 0.25 + 0.25 * Math.sin(clock * 9) : 0);
+      gauge.visible = near > 0.01;
+      // its rings: the newest grows out of the core and flashes ochre with the readback
+      memRings.forEach((r, i) => {
+        r.line.scale.setScalar(r.line.scale.x + (memRingR(i) - r.line.scale.x) * Math.min(1, dt * 3));
+        r.mat.opacity = near * (i === 0 ? 0.9 : 0.6 - i * 0.12);
+        r.mat.color.copy(MAYA).lerp(OCHRE, i === 0 && since < 2 ? 1 - smooth(1.2, 2, since) : 0);
+      });
       const rtName = mobile ? '' : 'Claude, ';
       setSub(
         memLabel,
-        down
-          ? `${rtName}gen ${memGen}, restarting`
-          : memPh < M.recall[0]
-            ? `${rtName}gen ${memGen}, reading index`
-            : memPh < 2.4
-              ? `${rtName}gen ${memGen}, opened 2 of ${cardCount()}`
-              : clock < memSayUntil
-                ? memSay
-                : `${rtName}gen ${memGen}`,
+        since < 0.8 && memGen > 7
+          ? `${rtName}gen ${memGen - 1} → gen ${memGen}`
+          : memPh < M.read
+            ? `${rtName}gen ${memGen}, read the handoff`
+            : memPh < M.recall[0]
+              ? `${rtName}gen ${memGen}, reading index`
+              : memPh < 3.2
+                ? `${rtName}gen ${memGen}, opened 2 of ${cardCount()}`
+                : full
+                  ? memPh < M.full + 0.8
+                    ? `${rtName}80%: writing handoff`
+                    : `${rtName}80%: rotating`
+                  : clock < memSayUntil
+                    ? memSay
+                    : `${rtName}gen ${memGen}, context ${Math.round(fill * 100)}%`,
       );
       for (let i = 0; i < SEG_N; i++) segF[i] = Math.max(0, segF[i] - dt * 1.3);
       if (crossed(M.read)) {
@@ -1165,11 +1234,10 @@ export function mount(canvas: HTMLCanvasElement) {
           r.node.target = HIDE;
           r.node.alpha = 0;
           memSeat.alpha = Math.min(1.4, memSeat.alpha + 0.4);
-          if (di === 1) ringOn = true; // the feedback memory is read: the rule is in force
+          if (di === 1) ringFlare = Math.max(ringFlare, 0.6); // the feedback memory, read again: the rule holds
         }
       });
-      // the rule: grows out when the feedback memory is read, fades with the generation
-      if (down) ringOn = false;
+      // the rule: held through every rotation, because every generation reads the feedback memory
       ringR += ((ringOn ? RING_R : ringR) - ringR) * Math.min(1, dt * 3);
       ringFlare = Math.max(0, ringFlare - dt * 1.4);
       ring.forEach((n, i) => {
@@ -1187,7 +1255,7 @@ export function mount(canvas: HTMLCanvasElement) {
           .map((d, i) => ({ d, n: liveCards(d).length, k: (i + memGen) % drawers.length }))
           .sort((p, q) => dir * (p.n - q.n) || p.k - q.k)[0];
       for (const t of M.catches) {
-        if (!crossed(t) || down) continue;
+        if (!crossed(t) || full) continue;
         const d = byCount(1).d;
         const near0 = bits.filter((b) => b.state === 'flow' && b.x < MEM_C.x - 0.2 && b.x > MEM_C.x - 1.8).sort((p, q) => q.x - p.x)[0];
         const b = near0 ?? bits.filter((x) => x.state === 'flow').sort((p, q) => Math.abs(p.x - MEM_C.x) - Math.abs(q.x - MEM_C.x))[0];
@@ -1200,7 +1268,7 @@ export function mount(canvas: HTMLCanvasElement) {
       }
       // tending: two duplicates merge into one, and a card that stopped being true is deleted, both
       // in the fullest drawer
-      if (crossed(M.merge) && !down) {
+      if (crossed(M.merge) && !full) {
         const { d, n } = byCount(-1);
         if (n >= 3) {
           const live = liveCards(d);
@@ -1217,7 +1285,7 @@ export function mount(canvas: HTMLCanvasElement) {
           idxFlash = 1;
         }
       }
-      if (crossed(M.del) && !down) {
+      if (crossed(M.del) && !full) {
         const { d, n } = byCount(-1);
         if (n >= 2) {
           const live = liveCards(d);
@@ -1285,7 +1353,7 @@ export function mount(canvas: HTMLCanvasElement) {
         drawIndex(cardCount());
       }
       // the force-push: comes down the stream, heads for the seat, and the rule turns it away
-      if (crossed(M.attempt) && !down) {
+      if (crossed(M.attempt) && !full) {
         atState = 'come';
         atT = 0;
         attempt.alpha = 0;
@@ -1294,7 +1362,7 @@ export function mount(canvas: HTMLCanvasElement) {
       if (atState === 'come') {
         atT = Math.min(1, atT + dt / 1.3);
         dest.set(lerp(MEM_C.x - 2.2, MEM_C.x - 0.7, atT), 0, 0);
-        attempt.pos.set(dest.x, MEM_C.y + 0.3, MEM_C.z - 0.85 + Math.sin(dest.x * 1.3) * 0.14);
+        attempt.pos.set(dest.x, MEM_C.y + 0.3, MEM_C.z - 1.0 + Math.sin(dest.x * 1.3) * 0.14);
         attempt.target = vis;
         if (atT >= 1) {
           atState = 'strike';
@@ -1590,7 +1658,7 @@ export function mount(canvas: HTMLCanvasElement) {
       canvasW: canvas.getBoundingClientRect().width,
       camX: +camera.position.x.toFixed(3),
       gather: +gather.toFixed(2),
-      mem: { ph: +memPh.toFixed(2), gen: memGen, cards: cardCount(), ring: +ringR.toFixed(2), live: nodes.filter((n) => n.live).length },
+      mem: { ph: +memPh.toFixed(2), gen: memGen, cards: cardCount(), rings: memRings.length, sub: memLabel.last, live: nodes.filter((n) => n.live).length },
       hiddenWhy: labels.filter((l) => l.hidden).map((l) => `${l.group}:${l.el.firstChild?.textContent} ${l.why} at ${Math.round(l.sx)},${Math.round(l.sy)}`),
       names: labels
         .filter((l) => l.o > 0.05)
