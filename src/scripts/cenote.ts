@@ -9,7 +9,7 @@
 //        the seats gather round the GM and the mail runs hub and spoke, to and from it
 //   -38  memory: a seat keeps its own records. Work streams past it; now and then it files one item
 //        as a card in a drawer (user, feedback, project, reference) and adds its line to the index.
-//        It merges duplicates and removes what is out of date; its feedback memory is a steady ochre
+//        It merges duplicates and keeps cards up to date; its feedback memory is a steady ochre
 //        arc, the rules it works by. A gauge fills as it works; at 80% the seat rotates in place, as
 //        routine: it writes its handoff, a new ring grows on it, the readback glows ochre, and the
 //        new generation reads the index, opens the drawers it needs and carries straight on
@@ -534,8 +534,8 @@ export function mount(canvas: HTMLCanvasElement) {
   // memory: a seat keeps its own records. A stream of work flows past it, everything it reads and
   // does; most of it flows on and is gone. Now and then the seat catches one item and files it as a
   // card in one of four drawers (user, feedback, project, reference), and adds a line for it to its
-  // index, MEMORY.md, in the same step. It tends them too: two duplicates merge, a card that is out of
-  // date is removed. Its feedback memory is how it works: a steady ochre arc, the rules it keeps.
+  // index, MEMORY.md, in the same step. It tends them too: two duplicates merge, a card is brought up
+  // to date. Its feedback memory is how it works: a steady ochre arc, the rules it keeps.
   // Calm on purpose: rotation is routine, never a failure. Its context gauge fills as it works, and
   // at 80% it rotates by itself, in place: it writes its handoff, the next generation boots in the same
   // seat (a new ring, as in the seats layer), proves it read the handoff (the ochre readback), reads
@@ -603,6 +603,7 @@ export function mount(canvas: HTMLCanvasElement) {
   // generation opens, in the row nearest it; user and reference behind
   const GRID: [number, number][] = [[-1, 1], [-1, 0], [1, 0], [1, 1]];
   const START = [2, 3, 3, 3];
+  const UPDATES = ['updated: tone', 'updated: commits', 'updated: launch', 'updated: links'];
   const cardGeo = new PlaneGeometry(0.34, 0.22);
   const slotAt = (d: Drawer, k: number, out: Vector3) => out.set(d.at.x, d.at.y + 0.05 + k * 0.035, d.at.z - 0.16 - k * 0.075);
   const addCard = (d: Drawer, born: number) => {
@@ -683,11 +684,11 @@ export function mount(canvas: HTMLCanvasElement) {
   memLines.frustumCulled = false;
   scene.add(memLines);
   // the loop, in seconds: the rotation lands (new ring, readback) 0 - 1.3; the new generation reads
-  // the index and opens two drawers 1.3 - 3.2; work, with two catches filed, a merge and an outdated
-  // card removed, while the gauge fills to 80% at 11.6; the handoff is written 11.6 - 13, and the
+  // the index and opens two drawers 1.3 - 3.2; work, with two catches filed, two merges and one card
+  // brought up to date, while the gauge fills to 80% at 11.6; the handoff is written 11.6 - 13, and the
   // loop wraps into the next rotation
   const MEM_CYCLE = 13;
-  const M = { read: 1.3, recall: [1.7, 2.1], catches: [3.8, 6.4], merge: 8.6, del: 10.2, full: 11.6 };
+  const M = { read: 1.3, recall: [1.7, 2.1], catches: [3.8, 6.4], merges: [5.2, 9.0], update: 10.2, full: 11.6 };
   let memPh = 0;
   let memLast = -1;
   let memSay = ''; // what the seat is doing, shown on its name's second line
@@ -697,21 +698,27 @@ export function mount(canvas: HTMLCanvasElement) {
   // the context gauge: an ochre arc round the seat that fills as it works; at 80% the seat rotates
   const GAUGE_SEG = 96;
   const GAUGE_R = mobile ? 0.42 : 0.46;
-  const gaugeGeo = new BufferGeometry();
-  {
+  // three concentric strokes (WebGL draws every line 1px wide), so the arc reads as a band and its
+  // drop from 80% back to 12% at a rotation is plain on a phone
+  const gaugeGeos = [-0.012, 0, 0.012].map((dr) => {
+    const geo = new BufferGeometry();
     const pts = new Float32Array((GAUGE_SEG + 1) * 3);
     for (let i = 0; i <= GAUGE_SEG; i++) {
       // from the top of the seat (far side, top of the screen), clockwise
       const t = -Math.PI / 2 + (i / GAUGE_SEG) * Math.PI * 2;
-      pts.set([Math.cos(t) * GAUGE_R, 0, Math.sin(t) * GAUGE_R], i * 3);
+      pts.set([Math.cos(t) * (GAUGE_R + dr), 0, Math.sin(t) * (GAUGE_R + dr)], i * 3);
     }
-    gaugeGeo.setAttribute('position', new BufferAttribute(pts, 3));
-  }
+    geo.setAttribute('position', new BufferAttribute(pts, 3));
+    return geo;
+  });
   const gaugeMat = new LineBasicMaterial({ color: OCHRE.clone(), transparent: true, opacity: 0, depthWrite: false, fog: false });
-  const gauge = new Line(gaugeGeo, gaugeMat);
-  gauge.position.copy(MEM_C);
-  gauge.frustumCulled = false;
-  scene.add(gauge);
+  const gauges = gaugeGeos.map((geo) => {
+    const g = new Line(geo, gaugeMat);
+    g.position.copy(MEM_C);
+    g.frustumCulled = false;
+    scene.add(g);
+    return g;
+  });
   // its generations: a ring on the seat for each, newest innermost, as in the seats layer
   type MemRing = { line: Line; mat: LineBasicMaterial; born: number };
   const memRings: MemRing[] = [];
@@ -1135,7 +1142,7 @@ export function mount(canvas: HTMLCanvasElement) {
     }
 
     // memory: the rotation lands (new ring, readback), the new generation reads the index and opens
-    // two drawers, work (catch and file, merge two duplicates, remove an outdated card) while the
+    // two drawers, work (catch and file, merge duplicates, bring a card up to date) while the
     // gauge fills, and at 80% the handoff is written and it rotates again, as routine
     {
       const was = memLast;
@@ -1168,10 +1175,11 @@ export function mount(canvas: HTMLCanvasElement) {
         .lerp(OCHRE, since < 2 ? smooth(0, 0.3, since) * (1 - smooth(1.2, 2, since)) : 0)
         .lerp(SAND, full ? 0.7 * smooth(M.full, M.full + 0.4, memPh) : 0);
       // the gauge: eases from 80% back down as the new generation takes over, then fills as it works
-      const fill = memPh < 1.2 ? lerp(0.8, 0.12, smooth(0, 1.2, memPh)) : lerp(0.12, 0.8, clamp((memPh - 1.2) / (M.full - 1.2), 0, 1));
-      gaugeGeo.setDrawRange(0, 1 + Math.round(GAUGE_SEG * fill));
-      gaugeMat.opacity = 0.85 * near;
-      gauge.visible = near > 0.01;
+      // (back to 12% within the first 0.6 s, so the reset is plain while the readback still glows)
+      const fill = memPh < 0.6 ? lerp(0.8, 0.12, smooth(0, 0.6, memPh)) : lerp(0.12, 0.8, clamp((memPh - 0.6) / (M.full - 0.6), 0, 1));
+      for (const geo of gaugeGeos) geo.setDrawRange(0, 1 + Math.round(GAUGE_SEG * fill));
+      gaugeMat.opacity = 0.95 * near;
+      for (const g of gauges) g.visible = near > 0.01;
       // its rings: the newest grows out of the core and flashes ochre with the readback
       memRings.forEach((r, i) => {
         r.line.scale.setScalar(r.line.scale.x + (memRingR(i) - r.line.scale.x) * Math.min(1, dt * 3));
@@ -1256,39 +1264,34 @@ export function mount(canvas: HTMLCanvasElement) {
         b.to = d;
         say(`saving to ${d.name}`, 2);
       }
-      // tending: two duplicates merge into one, and an outdated card is removed, both in the
-      // fullest drawer
-      if (crossed(M.merge) && !full) {
+      // tending, twice a loop: two duplicates in the fullest drawer merge into one (filed two, merged
+      // two: the piles hold steady)
+      for (const t of M.merges) {
+        if (!crossed(t) || full) continue;
         const { d, n } = byCount(-1);
-        if (n >= 3) {
-          const live = liveCards(d);
-          const top = live[live.length - 1];
-          top.dying = clock;
-          top.slot = live.length - 2; // slides onto the card under it as it goes
-          d.flare = 1;
-          segF[5 + drawers.indexOf(d)] = 1;
-          d.until = clock + 2.5;
-          setSub(d.label, 'merged duplicates');
-          say('merging duplicates', 2);
-          idxFresh = -1;
-          drawIndex(cardCount());
-          idxFlash = 1;
-        }
+        if (n < 3) continue;
+        const live = liveCards(d);
+        const top = live[live.length - 1];
+        top.dying = clock;
+        top.slot = live.length - 2; // slides onto the card under it as it goes
+        d.flare = 1;
+        segF[5 + drawers.indexOf(d)] = 1;
+        d.until = clock + 2.5;
+        setSub(d.label, 'merged duplicates');
+        say('tidying the index', 2);
+        idxFresh = -1;
+        drawIndex(cardCount());
+        idxFlash = 1;
       }
-      if (crossed(M.del) && !full) {
-        const { d, n } = byCount(-1);
-        if (n >= 2) {
-          const live = liveCards(d);
-          live[live.length - 1].dying = clock;
-          d.flare = 1;
-          segF[5 + drawers.indexOf(d)] = 1;
-          d.until = clock + 2.5;
-          setSub(d.label, 'removed: outdated');
-          say('removing an outdated one', 2);
-          idxFresh = -1;
-          drawIndex(cardCount());
-          idxFlash = 1;
-        }
+      // keeping one current: a card is brought up to date in place (it glows; nothing is lost)
+      if (crossed(M.update) && !full) {
+        const d = drawers[memGen % drawers.length];
+        d.flare = 1;
+        segF[5 + drawers.indexOf(d)] = 1;
+        d.until = clock + 2.5;
+        setSub(d.label, UPDATES[drawers.indexOf(d)]);
+        say('updating a memory', 2);
+        idxFlash = 1;
       }
       // the stream, and the items caught out of it
       for (const b of bits) {
@@ -1345,7 +1348,7 @@ export function mount(canvas: HTMLCanvasElement) {
       // the drawers and their cards
       for (const d of drawers) {
         d.flare = Math.max(0, d.flare - dt * 1.2);
-        // an event's line (merged, deleted) stands for a moment, then the drawer shows its newest card
+        // an event's line (merged, updated) stands for a moment, then the drawer shows its newest card
         if (d.until && clock > d.until) {
           d.until = 0;
           setSub(d.label, d.base.replace(/^\+ /, ''));
@@ -1364,7 +1367,6 @@ export function mount(canvas: HTMLCanvasElement) {
         for (const cd of d.cards) {
           if (!cd.dying) cd.slot = slot++;
           slotAt(d, cd.slot, dest);
-          if (cd.dying && cd.slot >= live.length) dest.y += (clock - cd.dying) * 0.4; // deleted: lifts away
           cd.mesh.position.lerp(dest, Math.min(1, dt * 6));
           const top = !cd.dying && cd === live[live.length - 1];
           const fade = cd.dying ? 1 - smooth(0, 0.7, clock - cd.dying) : smooth(0, 0.25, clock - cd.born);
