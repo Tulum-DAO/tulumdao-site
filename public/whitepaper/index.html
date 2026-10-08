@@ -124,10 +124,10 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 <h1>The Self-Tended <span>Fleet</span></h1>
 <p>How to organise and manage your own fleet of AI agents. An <b>autonomy maturity model</b> for operators: five phases, six habits, seven footings and ten practices for building a fleet that runs without you watching.</p>
 <a class="btn primary" href="#s1">Start reading</a>
-<a class="btn ghost" href="Tulum-DAO-The-Self-Tended-Fleet-DRAFT.pdf" download>Download PDF</a>
-<div class="meta" style="margin-top:28px">DRAFT 0.7 · OCTOBER 2026 · CC BY 4.0</div>
+<a class="btn ghost" href="Tulum-DAO-The-Self-Tended-Fleet-2026.10-DRAFT.pdf" download>Download PDF</a>
+<div class="meta" style="margin-top:28px">DRAFT 0.8 · EDITION 2026.10 · CC BY 4.0</div>
 </div></header>
-<nav class="toc"><details><summary>Contents</summary><ol><li><a href="#s1">Summary</a></li><li><a href="#s2">Ten-minute self-check</a></li><li><a href="#s3">Why speed is not the bottleneck</a></li><li><a href="#s4">The Self-Tended Fleet</a></li><li><a href="#s5">How the model is built</a></li><li><a href="#s6">Strand one: the seven Footings</a></li><li><a href="#s7">Strand two: the ten Practices</a></li><li><a href="#s8">Strand three: Stewardship</a></li><li><a href="#s9">The five Phases</a></li><li><a href="#s10">Scoring: three rules instead of points</a></li><li><a href="#s11">The Tend cycle</a></li><li><a href="#s12">Rolling it out: Seed, Grove, Commons</a></li><li><a href="#s13">A working reference: OrchestraOS</a></li><li><a href="#s14">What this model cannot do</a></li><li><a href="#s15">Start this week</a></li><li><a href="#s16">Run your fleet with other operators</a></li><li><a href="#s17">Appendix: the full checklist</a></li><li><a href="#s18">Appendix: the Fleet audit prompt</a></li><li><a href="#s19">Evidence Ledger</a></li><li><a href="#s20">Inspired by, and further reading</a></li><li><a href="#s21">License</a></li></ol></details></nav>
+<nav class="toc"><details><summary>Contents</summary><ol><li><a href="#s1">Summary</a></li><li><a href="#s2">Ten-minute self-check</a></li><li><a href="#s3">Why speed is not the bottleneck</a></li><li><a href="#s4">The Self-Tended Fleet</a></li><li><a href="#s5">How the model is built</a></li><li><a href="#s6">Strand one: the seven Footings</a></li><li><a href="#s7">Strand two: the ten Practices</a></li><li><a href="#s8">Strand three: Stewardship</a></li><li><a href="#s9">The five Phases</a></li><li><a href="#s10">Scoring: three rules instead of points</a></li><li><a href="#s11">The Tend cycle</a></li><li><a href="#s12">Rolling it out: Seed, Grove, Commons</a></li><li><a href="#s13">A working reference: OrchestraOS</a></li><li><a href="#s14">What this model cannot do</a></li><li><a href="#s15">Start this week</a></li><li><a href="#s16">Run your fleet with other operators</a></li><li><a href="#s17">Appendix: the full checklist</a></li><li><a href="#s18">Appendix: the Fleet audit prompt</a></li><li><a href="#s19">Evidence Ledger</a></li><li><a href="#s20">Editions and changes</a></li><li><a href="#s21">Inspired by, and further reading</a></li><li><a href="#s22">License</a></li></ol></details></nav>
 <main><section id="s1" class="sec "><div class="kicker"><span class="num">01</span><span class="bar"></span></div><h1>Summary</h1><p>Most people who start running AI coding agents get a faster typist. Few get a team that keeps working while they sleep, hands work cleanly from one agent to the next, proves what it did, and asks a human only the questions a human should answer. The difference is not the model. It is everything around the model.</p>
 <p>This paper sets out the <strong>Self-Tended Fleet Model</strong>: a way to organise and manage your own fleet of AI agents, measure how much of your work can safely run without you watching, and raise that share step by step. It is written for operators: anyone running more than one agent, from a solo builder with three seats to a small studio running dozens. The method is open. Run the checks on your own fleet, argue with them, and share better ones.</p>
 <p>The model has four parts:</p>
@@ -449,7 +449,7 @@ footer { text-align:center; font-size:13px; color:#6B7A77; padding:0 24px 48px; 
 </ol>
 <p>We do not publish target percentages for each rung. The right shape depends on the work and the risk. What matters is that every kind of action has a rung, the rung is written down, and moving an action to a lower rung is itself a visible decision. Agents are better at gathering facts than at judgment calls, and they rarely choose to stop on their own <em>(E14, E15, E19, E20)</em>.</p></section>
 <section id="s13" class="sec "><div class="kicker"><span class="num">13</span><span class="bar"></span></div><h1>A working reference: OrchestraOS</h1><p>Tulum DAO also publishes <strong>OrchestraOS</strong>, an open-source harness (Apache-2.0) for running a fleet of coding agents as a team. It is where many of the ideas in this paper were learned, and it is one place to try them. We describe it here as a reference, not as a requirement. The model is tool-neutral; any stack that passes the checks counts.</p>
-<p>What OrchestraOS provides today, according to its public documentation:</p>
+<p>What OrchestraOS provides as of edition 2026.10, according to its public documentation (product status moves faster than the model, so read this table as dated):</p>
 <div class="tablewrap"><table>
 <thead>
 <tr>
@@ -754,14 +754,51 @@ Start with the context questions now.
 <p>"More than 70% of organizations now use three or more models, and the share using more than six models nearly doubled."</p>
 </blockquote>
 <p>Datadog, <em>State of AI Engineering 2026</em>, p.3. Based on production telemetry from Datadog's own customers, with data through March 2026. Licensed CC BY-ND 4.0. Vendor source.</p></section>
-<section id="s20" class="sec "><div class="kicker"><span class="num">20</span><span class="bar"></span></div><h1>Inspired by, and further reading</h1><p>This paper was prompted by Factory's white paper <em>Software Factory: An Autonomy Maturity Model for the Enterprise</em> (factory.ai, 2026), which frames AI-driven software delivery as an operating-model change, scores repositories against binary signals across five levels, and proposes the share of repositories above a production floor as a headline metric for leadership. We found that framing useful and recommend reading it. The Self-Tended Fleet Model is our own: a different structure (three strands, the weakest-footing rule, expiring evidence, the decision ladder, continuity and asking as first-class practices) written for individual operators running their own fleets rather than for enterprise procurement. Any errors are ours.</p>
+<section id="s20" class="sec "><div class="kicker"><span class="num">20</span><span class="bar"></span></div><h1>Editions and changes</h1><p><em>The Self-Tended Fleet</em> is a living document. It applies its own Rule 2 to itself.</p>
+<ul>
+<li><strong>The core text stays fixed between editions.</strong> The Phases, Footings, Practices, Stewardship habits, scoring rules and the decision ladder are the model. They change only when the model changes, and every such change is listed below.</li>
+<li><strong>The Evidence Ledger expires.</strong> Each entry carries the date it was checked and a re-check date. On the re-check date, every entry is verified again against its source, replaced by a newer source, or retired. A retired entry keeps its number, so pointers in older editions never point at a different claim.</li>
+<li><strong>Each edition is a dated snapshot.</strong> Editions are named by year and month (2026.10). The PDF carries its edition in the file name, so a copy you saved can always be matched to what it said. Cite the edition, not just the title.</li>
+</ul>
+<p>Change log:</p>
+<div class="tablewrap"><table>
+<thead>
+<tr>
+<th>Edition</th>
+<th>What changed</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2026.10 (Draft 0.8)</td>
+<td>Published as a living document: editions, this section, the OrchestraOS reference dated to the edition</td>
+</tr>
+<tr>
+<td>Draft 0.7</td>
+<td>Ten-minute self-check asks about the AI you work with today, not a fleet you already run</td>
+</tr>
+<tr>
+<td>Draft 0.6</td>
+<td>Maturity levels renamed from Steps to Phases</td>
+</tr>
+<tr>
+<td>Draft 0.5</td>
+<td>Fleet audit prompt added and tested</td>
+</tr>
+<tr>
+<td>Draft 0.4</td>
+<td>Statistics moved out of the main text into the dated Evidence Ledger</td>
+</tr>
+</tbody>
+</table></div></section>
+<section id="s21" class="sec "><div class="kicker"><span class="num">21</span><span class="bar"></span></div><h1>Inspired by, and further reading</h1><p>This paper was prompted by Factory's white paper <em>Software Factory: An Autonomy Maturity Model for the Enterprise</em> (factory.ai, 2026), which frames AI-driven software delivery as an operating-model change, scores repositories against binary signals across five levels, and proposes the share of repositories above a production floor as a headline metric for leadership. We found that framing useful and recommend reading it. The Self-Tended Fleet Model is our own: a different structure (three strands, the weakest-footing rule, expiring evidence, the decision ladder, continuity and asking as first-class practices) written for individual operators running their own fleets rather than for enterprise procurement. Any errors are ours.</p>
 <p>Also relevant:</p>
 <ul>
 <li>Gene M. Amdahl, "Validity of the single processor approach to achieving large scale computing capabilities" (1967), the classic argument that speeding up one part of a process is limited by the parts you did not speed up.</li>
 <li>The Capability Maturity Model (Software Engineering Institute, Carnegie Mellon), the origin of staged maturity levels in software.</li>
 <li>OrchestraOS, published by Tulum DAO: github.com/Tulum-DAO/orchestraos.</li>
 </ul></section>
-<section id="s21" class="sec "><div class="kicker"><span class="num">21</span><span class="bar"></span></div><h1>License</h1><p>© 2026 Tulum DAO. <em>The Self-Tended Fleet</em> is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). You may share and adapt it for any purpose, including commercially, as long as you give appropriate credit to Tulum DAO, link to the license (creativecommons.org/licenses/by/4.0), and indicate if changes were made.</p>
+<section id="s22" class="sec "><div class="kicker"><span class="num">22</span><span class="bar"></span></div><h1>License</h1><p>© 2026 Tulum DAO. <em>The Self-Tended Fleet</em> is licensed under the Creative Commons Attribution 4.0 International License (CC BY 4.0). You may share and adapt it for any purpose, including commercially, as long as you give appropriate credit to Tulum DAO, link to the license (creativecommons.org/licenses/by/4.0), and indicate if changes were made.</p>
 <p>Quoted material from other works remains under its original terms.</p></section></main>
 <footer>© 2026 Tulum DAO · CC BY 4.0 · Draft for review, not for distribution</footer>
 <script>
