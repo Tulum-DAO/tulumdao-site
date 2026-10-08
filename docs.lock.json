@@ -1,22 +1,22 @@
 {
   "repo": "Tulum-DAO/orchestraos",
-  "sha": "00676f45f31fe441f275cd58b8e2381b0644682e",
-  "committedAt": "2026-10-08T04:41:41-04:00",
+  "sha": "9fb818f29e89919f1559d920ad8b80aecd93059c",
+  "committedAt": "2026-10-08T04:49:01-04:00",
   "install": [
     "git clone https://github.com/Tulum-DAO/orchestraos.git orchestraos && cd orchestraos",
     "make install"
   ],
-  "syncedAt": "2026-10-08T08:42:48.521Z",
+  "syncedAt": "2026-10-08T08:49:10.373Z",
   "files": {
-    "from-scratch": "a040edd1810ed4a0ce13977c12cf5fb5f2eb2baedaacd788900de4e191e03ed1",
-    "beginners-guide": "477690ea663af5dfbc9d961fc56b0a2f5b2632edfcc12c4751352c6f0b3bebfe",
-    "install": "0e5692ff410cb0582da8bc895ff8c8bfe0d680574106bf63f077f5b884536391",
-    "overview": "d12929917020c6cca90756836da33f896d3c9ad437a306f7e465aa80e23b4d6f",
-    "costs": "917b78800693656d98964791ba007c96cff21572d90311d9f97bc9424b61e531",
-    "onboarding": "100e08ed96200c4fcf24a4136c2acc81c20c8049271f11ea077360b02a7f8cd4",
-    "upgrade": "9c0d26da015f3f48915fdcec8421fbe8ebd7f4a8bddce1f0dd77df55fb419c2f",
-    "reference-install": "7ece3a143cc53c8afd44e8b5eb08be10b5e1a4bd0d6412525d4917a59e1eff0a",
-    "architecture": "3aecd583d98db22db8a65e4522b34b55580acf901755237d4a2cdf3b32573033",
+    "from-scratch": "b9692b6b980607d20854c54c0459b05d2ad393bcdd20241dee09f01c91f8a36a",
+    "beginners-guide": "5ee0532d06625858830407691a9a132550622d63b36beed80558f2699bd839bc",
+    "install": "0edbfdc83e54d16cf6abb0f876a059d652f2150382c46ba25da63e6186b6ad5e",
+    "overview": "b87783fb527cde2b10bc3c26bfaccc200f4fd1891152894736bafd59479c8d00",
+    "costs": "a4816a02c87164fc33cca1af24fc6746464372be50893f3467324b4749a84419",
+    "onboarding": "7363a00014ec8e5234b039d452bea68ca71bb693c4781ef20559baf8f9e91233",
+    "upgrade": "fcbbfa36532c512411e28518925d6a1ecc5e113479c89505001b8e9e0f569bdf",
+    "reference-install": "2892362c629e6daefe312d580078a7ff588ecab057a9550a43753ef2659e1fda",
+    "architecture": "30c70bf17fc1b61749b8f72ef8ca00aa036af6fdb96dc4844e5628f1b38ab960",
     "rotation": "d1ffc6e55b022da5f98defbf81fff955b56206c83eaa9509c39e6d99b29e26c6"
   }
 }
