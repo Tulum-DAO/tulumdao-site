@@ -255,6 +255,9 @@ export function mount(canvas: HTMLCanvasElement) {
     o: number; // opacity on screen, eased, so a name fades instead of popping
     on: boolean; // its light is on screen this frame
     longest: string; // the longest its second line gets (busy, mid-handoff): room is kept for it
+    target: () => Vector3; // where its light will be once the layer settles (visibility is solved there)
+    f: number; // 0..1, eased: only for a name joining or leaving when the layout switches
+    why: string; // why the last solve hid it (for ?cenote tests)
   };
   let labelGroup = 'seats'; // the layer being built; addLabel tags each name with it
   const labels: Label[] = [];
@@ -291,7 +294,8 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, group: labelGroup, hidden: false, o: 0, on: false, longest: '' };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, group: labelGroup, hidden: false, o: 0, on: false, longest: '', target: at, f: 0, why: '' };
+    el.dataset.group = labelGroup;
     labels.push(l);
     return l;
   };
@@ -389,14 +393,19 @@ export function mount(canvas: HTMLCanvasElement) {
   };
   const talkers: Talker[] = [];
   labelGroup = 'messages';
+  let msgLayout = 'spread'; // the layout messaging is heading for: its names are solved for it
   const PM_NAMES = ['pm-web', 'pm-mobile', 'pm-data', 'pm-infra'];
   const PMS = 4;
-  const PER_PM = mobile ? 4 : 6;
+  const PER_PM = mobile ? 3 : 6; // a phone shows every name, so fewer workers there
   const TALK = 1 + PMS + PMS * PER_PM;
   // a phone screen is tall: the shape is stretched front to back (screen up and down) there
-  const ZS = mobile ? 1.3 : 1;
+  const ZS = mobile ? 1.7 : 1;
   const PM_R = mobile ? 1.32 : 1.75;
-  const WORKER_R = mobile ? 0.74 : 0.8;
+  const WORKER_R = mobile ? 0.74 : 0.95;
+  // how far each PM's ring of workers is turned (radians); ?cenote&orb=<n> overrides it for tests
+  const orbParam = location.search.includes('cenote') ? new URLSearchParams(location.search).get('orb') : null;
+  // (chosen by a scan so every name has room: 0 hidden at 390 px, 1 of 29 at 1440)
+  const ORBIT_TURN = orbParam !== null ? Number(orbParam) : mobile ? 5.45 : 1.75;
   const orbitPos = (tk: Talker, out: Vector3) => {
     if (!tk.parent) return out.set(LX.messages, Y.messages, 0);
     orbitPos(tk.parent, out);
@@ -417,7 +426,8 @@ export function mount(canvas: HTMLCanvasElement) {
     const rt: Runtime = role === 'gm' ? 'claude' : role === 'pm' ? RUNTIME_CYCLE[i % RUNTIME_CYCLE.length] : RUNTIME_CYCLE[worker++ % RUNTIME_CYCLE.length];
     const label =
       role === 'gm'
-        ? addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: 'general manager' })
+        ? // on a phone the role goes on the second line, so the GM's box stays narrow
+          addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: mobile ? undefined : 'general manager' })
         : role === 'pm'
           ? addLabel(name, () => n.pos, () => n.alpha, 'pm', { runtime: rt }) // styled like every agent; only the text differs
           : addLabel(name, () => n.pos, () => n.alpha, 'talker', { runtime: rt });
@@ -436,7 +446,8 @@ export function mount(canvas: HTMLCanvasElement) {
       hub: new Vector3(),
       phase: Math.random() * 6.28,
     };
-    if (label && role === 'worker') label.longest = mobile ? 'busy' : `${tk.rt}, busy: mail waits`;
+    if (label) label.target = () => (msgLayout === 'gathered' ? tk.hub : tk.home);
+    if (label && role === 'worker') label.longest = mobile ? 'busy' : `${tk.rt}, busy`;
     orbitPos(tk, tk.hub);
     if (role !== 'gm') tk.hub.y += Math.sin(i * 1.7) * (role === 'pm' ? 0.12 : 0.22);
     talkers.push(tk);
@@ -454,7 +465,7 @@ export function mount(canvas: HTMLCanvasElement) {
     for (let j = 0; j < PER_PM; j++) {
       // round the PM, starting from the side facing away from the GM. With an even count the
       // offset leaves the side facing the GM open, so the GM -> PM spoke runs clear.
-      const off = PER_PM % 2 === 0 ? Math.PI / PER_PM : 0;
+      const off = (PER_PM % 2 === 0 ? Math.PI / PER_PM : 0) + ORBIT_TURN;
       const a = pm.orbitA + off + (j / PER_PM) * Math.PI * 2;
       const i = 1 + PMS + p * PER_PM + j;
       makeTalker(i, 'worker', pm, WORKER_R, a, TALKER_NAMES[(i - 1 - PMS) % TALKER_NAMES.length]);
@@ -536,10 +547,11 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   FACT_LABELS.forEach((text, i) => {
     const f = facts[i * 3 + 1];
-    if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false });
+    // a steady name: the fact lights brighten only as the camera nears, the names shouldn't wait
+    if (f) addLabel(text, () => f.pos, () => 0.85, 'fact', { sub: false });
   });
   let memGen = 7;
-  const memLabel = addLabel('dev-api', () => memSeat.pos, () => (memSeat.alpha < 0.1 ? 0.85 : memSeat.alpha), 'mem', { runtime: 'claude' });
+  const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' }); // steady; its line says when it restarts
   const lpos = new Float32Array(FACTS * 6);
   const lcol = new Float32Array(FACTS * 8);
   const lgeo = new BufferGeometry();
@@ -591,7 +603,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let apPanelTop = Infinity; // the approvals panel's top edge on screen, in px (narrow layout)
   const apPanel = document.querySelector<HTMLElement>('[data-layer="approvals"] .panel');
   const memPanel = document.querySelector<HTMLElement>('[data-layer="memory"] .panel');
-  const panels = [...document.querySelectorAll<HTMLElement>('[data-layer] .panel')];
+  const layerSections = new Map(sections.filter((s) => s.dataset.layer).map((s) => [s.dataset.layer!, s] as const));
   let lastScrollAt = 0;
   const readScroll = () => {
     lastScrollAt = performance.now();
@@ -667,6 +679,10 @@ export function mount(canvas: HTMLCanvasElement) {
   // ---- names: where each sits relative to its light, and the solve that picks it (see the label
   // pass in the loop)
   const solvedAs = new Map<string, string>(); // layer -> the layout its names were solved for
+  // names fade in as the scroll brings the camera from NAMES_FROM to NAMES_FULL (in depth units)
+  // from a layer's own depth; layers are 0.18-0.2 apart
+  const NAMES_FROM = 0.085;
+  const NAMES_FULL = 0.035;
   const sideAt = (l: Label, narrow: boolean): [number, number] => {
     const { sx, sy, w, h } = l;
     switch (l.side) {
@@ -680,16 +696,35 @@ export function mount(canvas: HTMLCanvasElement) {
         return [sx - w / 2, sy + 9];
     }
   };
-  const solveNames = (group: Label[], W: number, H: number, narrow: boolean, EDGE: number) => {
-    const placed: { x: number; y: number; w: number; h: number }[] = [];
-    // the text panels on screen are taken already: no name may slide under one
-    for (const el of panels) {
-      const r = el.getBoundingClientRect();
-      if (r.bottom > 0 && r.top < H) placed.push({ x: r.left - 8, y: r.top - 8, w: r.width + 16, h: r.height + 16 });
+  // Solved for where things WILL be: the layer's lights at their target places, seen from the
+  // camera as it will be once this layer's section is centred (its rest), with its panel where it
+  // will sit then. So it can run the moment the layer starts coming into view.
+  const restCam = camera.clone();
+  const solveNames = (group: Label[], section: HTMLElement, W: number, H: number, narrow: boolean, EDGE: number) => {
+    const sr = section.getBoundingClientRect();
+    const shift = H / 2 - (sr.top + sr.height / 2); // how far the section moves to reach its rest
+    restCam.copy(camera);
+    restCam.position.set(0, lerp(CAM_TOP, CAM_BOTTOM, Number(section.dataset.depth)), 2.2);
+    restCam.updateMatrixWorld();
+    const placed: { x: number; y: number; w: number; h: number; by: string }[] = [];
+    // its text panel is taken: no name may sit under it
+    const panel = section.querySelector<HTMLElement>('.panel');
+    if (panel) {
+      const r = panel.getBoundingClientRect();
+      placed.push({ x: r.left - 8, y: r.top + shift - 8, w: r.width + 16, h: r.height + 16, by: 'panel' });
+    }
+    for (const l of group) {
+      const t = l.target();
+      l.d = restCam.position.distanceTo(t);
+      proj.copy(t).project(restCam);
+      l.on = proj.z <= 1;
+      l.sx = (proj.x * 0.5 + 0.5) * W;
+      l.sy = (-proj.y * 0.5 + 0.5) * H;
     }
     // the GM first, then the PMs, then the rest nearest-first
     const rank = (l: Label) => (l.el.classList.contains('gm') ? 2 : l.el.classList.contains('pm') ? 1 : 0);
-    const order = [...group].sort((p, q) => rank(q) - rank(p) || p.d - q.d);
+    const order = group.filter((l) => l.on).sort((p, q) => rank(q) - rank(p) || p.d - q.d);
+    for (const l of group) if (!l.on) l.hidden = true;
     for (const l of order) {
       const { sx, sy, h } = l;
       // room for the longest its text gets, so a name that later reads 'busy' still fits
@@ -715,7 +750,9 @@ export function mount(canvas: HTMLCanvasElement) {
         const y = clamp(y0, EDGE, H - h - EDGE);
         // a side only counts if the name fits there as it is: a name held in by the screen edge
         // would stop riding with its light and slide against it as the layer moves
-        const free = x === x0 && y === y0 && !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h);
+        const hit = placed.find((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h);
+        const free = x === x0 && y === y0 && !hit;
+        l.why = x !== x0 || y !== y0 ? `edge ${Math.round(x0)},${Math.round(y0)} w${Math.round(w)}` : hit ? `over ${hit.by}` : '';
         if (gm || free) {
           found = side;
           break;
@@ -727,8 +764,8 @@ export function mount(canvas: HTMLCanvasElement) {
       l.hidden = !found;
       if (found) {
         const [x0, y0] = sideAt(l, narrow);
-        const pad = gm ? 10 : pm ? 5 : 0;
-        placed.push({ x: clamp(x0, EDGE, W - w - EDGE) - pad, y: clamp(y0, EDGE, H - h - EDGE) - pad, w: w + pad * 2, h: h + pad * 2 });
+        const pad = gm ? 4 : 0;
+        placed.push({ x: clamp(x0, EDGE, W - w - EDGE) - pad, y: clamp(y0, EDGE, H - h - EDGE) - pad, w: w + pad * 2, h: h + pad * 2, by: l.el.firstChild?.textContent ?? '' });
       }
       l.w = wNow;
       // a seat whose name has no room in this layout shows as a dimmer, background seat
@@ -866,8 +903,8 @@ export function mount(canvas: HTMLCanvasElement) {
       // a PM's role goes on this line (short on a phone)
       // on a phone the runtime's name is dropped (its mark stays), so every name has room
       const sub = mobile
-        ? tk.busy ? 'busy' : tk.role === 'pm' ? 'PM' : tk.role === 'gm' ? tk.rt : ''
-        : tk.busy ? `${tk.rt}, busy: mail waits` : (tk.role === 'pm' ? 'project manager, ' : '') + tk.rt;
+        ? tk.busy ? 'busy' : tk.role === 'pm' ? 'PM' : tk.role === 'gm' ? 'general manager' : ''
+        : tk.busy ? `${tk.rt}, busy` : tk.role === 'pm' ? 'project manager' : tk.rt;
       if (tk.label) setSub(tk.label, sub);
     }
     for (let i = packets.length - 1; i >= 0; i--) {
@@ -1067,12 +1104,14 @@ export function mount(canvas: HTMLCanvasElement) {
 
     renderer.render(scene, camera);
 
-    // Labels follow their lights; they fade with distance so only the layer you are in is named.
     // Every name is pinned to its own light at one fixed offset (under it on a phone, up and to the
     // right on a wide screen), in every state; it never moves for anything else, mail included.
-    // The only thing decided is which names show: once per layout, when the page is at rest, a
-    // name that would overlap another name (or run off screen) fades out and stays out until the
-    // layout changes (messaging gathering or spreading, or the layer entered afresh).
+    // Which names show is decided once per layout, for the layout the layer is heading to: a name
+    // that would overlap another name (or run off screen) there stays out. How visible the rest are
+    // is set by SCROLL, like everything else in the scene: they fade in over the last stretch of
+    // the camera's way to the layer (NAMES_FROM .. NAMES_FULL) and out the same way as it leaves,
+    // so they appear at the same place every time and run backwards when you scroll back. Only a layout switch (messaging gathering
+    // or spreading), which has no scroll distance of its own, crossfades in time (~0.2 s).
     const W = innerWidth;
     const H = innerHeight;
     const narrow = W <= 900;
@@ -1080,11 +1119,10 @@ export function mount(canvas: HTMLCanvasElement) {
     for (const l of labels) {
       const p = l.at();
       l.d = camera.position.distanceTo(p);
-      l.a = clamp(l.alpha(), 0, 1) * smooth(13, 8.5, l.d) * smooth(2.2, 3.5, l.d);
+      // a name shows by its layer (below), not by distance; only a light right at the lens hides it
+      l.a = clamp(l.alpha(), 0, 1) * smooth(2.2, 3.5, l.d);
       proj.copy(p).project(camera);
-      l.on = proj.z <= 1 && Math.abs(proj.x) <= 1.05 && Math.abs(proj.y) <= 1.05;
-      if (!l.on) l.a = 0;
-      if (l.a < 0.03) l.a = 0;
+      if (proj.z > 1) l.a = 0;
       if (!l.w) {
         l.w = l.el.offsetWidth || 90;
         l.h = l.el.offsetHeight || 28;
@@ -1092,34 +1130,46 @@ export function mount(canvas: HTMLCanvasElement) {
       l.sx = (proj.x * 0.5 + 0.5) * W;
       l.sy = (-proj.y * 0.5 + 0.5) * H;
     }
-    // which layout each layer is in. Messaging has two (gathered, spread) and none while moving
-    // between them, when its names are faded out.
-    const layoutOf = (g: string) => (g !== 'messages' ? 'still' : gk > 0.9 ? 'gathered' : gk < 0.1 ? 'spread' : '');
+    // which layout each layer is heading for. Messaging has two: gathered and spread.
+    msgLayout = gatherTarget > 0.5 ? 'gathered' : 'spread';
+    const layoutOf = (g: string) => (g === 'messages' ? msgLayout : 'still');
+    const inView = new Map<string, number>();
     for (const g of ['seats', 'messages', 'memory']) {
+      const section = layerSections.get(g);
+      if (!section) continue;
+      const r = section.getBoundingClientRect();
+      // how close the camera's scroll position is to this layer's (depthTarget is set straight
+      // from the scroll): names fade in over the last stretch of the way there and out the same
+      // way after, so they never show while the layer is still a small cluster under other text
+      const off = Math.abs(depthTarget - Number(section.dataset.depth));
+      const vis = smooth(NAMES_FROM, NAMES_FULL, off);
+      inView.set(g, vis);
       const group = labels.filter((l) => l.group === g);
-      const layout = layoutOf(g);
-      const seen = group.some((l) => l.a > 0);
-      // left the layer and every name has faded: the next visit solves afresh
-      if (!seen && group.every((l) => l.o < 0.01)) solvedAs.delete(g);
-      // solve only once the page is at rest (camera arrived, no scroll for a moment): solved while
-      // the camera is still travelling, names fit a layer that then grows under them
-      const atRest = Math.abs(depthTarget - depth) < 0.003 && now - lastScrollAt > 250;
-      if (seen && layout && atRest && solvedAs.get(g) !== layout) {
-        solveNames(group.filter((l) => l.on), W, H, narrow, EDGE);
-        for (const l of group) if (!l.on) l.hidden = true;
-        solvedAs.set(g, layout);
+      // out of view: the next visit solves afresh
+      if (vis === 0) solvedAs.delete(g);
+      if (vis > 0 && solvedAs.get(g) !== layoutOf(g)) {
+        const fresh = !solvedAs.has(g);
+        solveNames(group, section, W, H, narrow, EDGE);
+        solvedAs.set(g, layoutOf(g));
+        // entering: names take their state at once (scroll does the fading); a layout switch eases
+        if (fresh) for (const l of group) l.f = l.hidden ? 0 : 1;
       }
     }
     for (const l of labels) {
-      const settled = layoutOf(l.group) !== '' && solvedAs.get(l.group) === layoutOf(l.group);
-      const target = settled && !l.hidden ? l.a : 0;
-      l.o += (target - l.o) * Math.min(1, dt * 5);
+      // a layout switch crossfades in about 0.2 s; everything else follows the scroll directly
+      const want = l.hidden ? 0 : 1;
+      const step = dt / 0.22;
+      l.f = want > l.f ? Math.min(want, l.f + step) : Math.max(want, l.f - step);
+      l.o = (inView.get(l.group) ?? 0) * l.f * l.a;
       if (l.o < 0.01) {
         if (l.el.style.opacity !== '0') l.el.style.opacity = '0';
         continue;
       }
       // rides with its light exactly: the edge margin was enforced when the side was chosen
       // (the GM's and PMs' names, which always show, are the exception and stay held in)
+      proj.copy(l.at()).project(camera);
+      l.sx = (proj.x * 0.5 + 0.5) * W;
+      l.sy = (-proj.y * 0.5 + 0.5) * H;
       const [x, y] = sideAt(l, narrow);
       const held = l.el.classList.contains('gm') || l.el.classList.contains('pm');
       l.x = held ? clamp(x, EDGE, W - l.w - EDGE) : x;
@@ -1166,6 +1216,7 @@ export function mount(canvas: HTMLCanvasElement) {
       canvasW: canvas.getBoundingClientRect().width,
       camX: +camera.position.x.toFixed(3),
       gather: +gather.toFixed(2),
+      hiddenWhy: labels.filter((l) => l.hidden).map((l) => `${l.group}:${l.el.firstChild?.textContent} ${l.why} at ${Math.round(l.sx)},${Math.round(l.sy)}`),
       names: labels
         .filter((l) => l.o > 0.05)
         // offset of the name's anchor from its light: its centre when over or under, its inner edge
