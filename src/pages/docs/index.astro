@@ -1,10 +1,16 @@
 ---
+// The docs are ONE long page: the intro and reading order at the top, then every synced doc in that
+// order, each in its own section. The reading order links jump to the sections. Heading ids are
+// prefixed with their doc's slug after the build (scripts/docs-anchors.mjs), so they stay unique on
+// the page, and cross-doc links become in-page anchors. Old /docs/<slug>/ URLs 301 here
+// (public/_redirects).
 import Base from '../../layouts/Base.astro';
 import Install from '../../components/Install.astro';
-import { getCollection } from 'astro:content';
+import { getCollection, render } from 'astro:content';
 import lock from '../../../docs.lock.json';
 
 const docs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order);
+const rendered = await Promise.all(docs.map(async (d) => ({ d, Content: (await render(d)).Content })));
 const blurbs: Record<string, string> = {
   overview: 'What is in the box, the two ways to run it, and how to contribute.',
   install: 'From nothing to a VPS, Tailscale and the dashboard in your browser, one seat, one card answered. About an hour the first time.',
@@ -15,35 +21,120 @@ const blurbs: Record<string, string> = {
   architecture: 'The map. Read it before you touch rotation or approvals.',
   rotation: 'How a seat hands off to its successor before it runs out of context.',
 };
+const tree = `https://github.com/${lock.repo}/tree/${lock.sha}`;
 ---
 
 <Base title="OrchestraOS docs" description="How to install and run OrchestraOS, built from the Tulum-DAO/orchestraos repository.">
-  <div class="docs-home">
-    <h1>Set up OrchestraOS</h1>
-    <p class="lede">
-      Every page here is built from the{' '}
-      <a href={`https://github.com/${lock.repo}/tree/${lock.sha}`}>OrchestraOS repository</a> at commit{' '}
-      <code>{lock.sha.slice(0, 7)}</code>, so it says what the code says.
-    </p>
-    <div class="quick"><Install /></div>
-    <h2>Read in this order</h2>
-    <ol class="list">
+  <div class="docs">
+    <aside>
+      <nav class="toc" aria-label="Contents">
+        <p class="toc-head">Contents</p>
+        <ul>
+          {
+            docs.map((d) => (
+              <li>
+                <a href={`#${d.id}`}>{d.data.title}</a>
+              </li>
+            ))
+          }
+        </ul>
+      </nav>
+    </aside>
+
+    <article>
+      <header class="docs-home">
+        <h1>Set up OrchestraOS</h1>
+        <p class="lede">
+          Everything on this page is built from the <a href={tree}>OrchestraOS repository</a> at commit{' '}
+          <code>{lock.sha.slice(0, 7)}</code>, so it says what the code says.
+        </p>
+        <div class="quick"><Install /></div>
+        <h2 id="contents">Read in this order</h2>
+        <ol class="list">
+          {
+            docs.map((d) => (
+              <li>
+                <a href={`#${d.id}`}>{d.data.title}</a>
+                <p>{blurbs[d.id]}</p>
+              </li>
+            ))
+          }
+        </ol>
+      </header>
+
       {
-        docs.map((d) => (
-          <li>
-            <a href={`/docs/${d.id}/`}>{d.data.title}</a>
-            <p>{blurbs[d.id]}</p>
-          </li>
+        rendered.map(({ d, Content }) => (
+          <section class="doc" id={d.id} data-doc={d.id}>
+            <h2 class="doc-title">{d.data.title}</h2>
+            <p class="source">
+              Built from{' '}
+              <a href={`https://github.com/${lock.repo}/blob/${lock.sha}/${d.data.source}`}>
+                <code>{d.data.source}</code>
+              </a>{' '}
+              at <code>{lock.sha.slice(0, 7)}</code>.
+            </p>
+            <div class="prose">
+              <Content />
+            </div>
+          </section>
         ))
       }
-    </ol>
+    </article>
   </div>
+  <!-- phones: the contents list is at the top of the page; this takes you back to it -->
+  <a class="to-contents" href="#contents">Contents</a>
 </Base>
 
 <style>
-  .docs-home {
-    max-width: 760px;
-    padding: 40px var(--gutter) 64px;
+  /* in-page jumps glide, unless the visitor asked for less motion */
+  @media (prefers-reduced-motion: no-preference) {
+    :global(html) {
+      scroll-behavior: smooth;
+    }
+  }
+  .docs {
+    display: grid;
+    grid-template-columns: 250px minmax(0, 1fr);
+    gap: clamp(24px, 4vw, 56px);
+    padding: 32px var(--gutter) 64px;
+  }
+  aside {
+    position: sticky;
+    top: 20px;
+    align-self: start;
+    max-height: calc(100vh - 40px);
+    overflow-y: auto;
+  }
+  .toc-head {
+    margin: 0 0 6px 12px;
+    font-size: 0.82rem;
+    font-weight: 650;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--doc-ink-2);
+  }
+  .toc ul {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: grid;
+    gap: 2px;
+  }
+  .toc a {
+    display: block;
+    padding: 8px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--doc-ink-2);
+    font-weight: 520;
+  }
+  .toc a:hover {
+    background: var(--doc-code-bg);
+    color: var(--doc-ink);
+  }
+  article {
+    min-width: 0;
+    max-width: 78ch;
   }
   h1 {
     font-size: clamp(2.2rem, 5vw, 3.6rem);
@@ -56,7 +147,8 @@ const blurbs: Record<string, string> = {
     font-size: 1.12rem;
     margin: 0 0 32px;
   }
-  .lede a {
+  .lede a,
+  .source a {
     color: var(--doc-link);
   }
   .quick {
@@ -69,7 +161,7 @@ const blurbs: Record<string, string> = {
   .quick :global(.step::before) {
     border-color: var(--doc-ink);
   }
-  h2 {
+  .docs-home h2 {
     font-size: 1.5rem;
     letter-spacing: -0.015em;
     margin: 0 0 12px;
@@ -88,5 +180,108 @@ const blurbs: Record<string, string> = {
   .list p {
     margin: 2px 0 0;
     color: var(--doc-ink-2);
+  }
+  /* a jump lands with a little air above the heading */
+  [id] {
+    scroll-margin-top: 20px;
+  }
+  .doc {
+    margin-top: 72px;
+    padding-top: 40px;
+    border-top: 1px solid var(--doc-rule);
+  }
+  .doc-title {
+    font-size: clamp(2rem, 4.4vw, 3.1rem);
+    letter-spacing: -0.03em;
+    line-height: 1.02;
+    margin: 0 0 10px;
+  }
+  .source {
+    color: var(--doc-ink-2);
+    font-size: 0.93rem;
+    margin: 0 0 30px;
+  }
+  .prose :global(h2) {
+    font-size: 1.6rem;
+    letter-spacing: -0.02em;
+    line-height: 1.15;
+    margin: 2.2em 0 0.5em;
+  }
+  .prose :global(h3) {
+    font-size: 1.22rem;
+    margin: 1.8em 0 0.4em;
+  }
+  .prose :global(p),
+  .prose :global(li) {
+    max-width: 72ch;
+  }
+  .prose :global(a) {
+    color: var(--doc-link);
+    text-underline-offset: 3px;
+  }
+  .prose :global(:not(pre) > code) {
+    background: var(--doc-code-bg);
+    padding: 0.1em 0.35em;
+    border-radius: 5px;
+    overflow-wrap: anywhere;
+  }
+  .prose :global(pre) {
+    padding: 16px 18px;
+    border-radius: 12px;
+    overflow-x: auto;
+    font-size: 0.86rem;
+    line-height: 1.6;
+    border: 1px solid var(--doc-rule);
+  }
+  .prose :global(table) {
+    display: block;
+    overflow-x: auto;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+    margin: 1.2em 0;
+  }
+  .prose :global(th),
+  .prose :global(td) {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--doc-rule);
+    vertical-align: top;
+  }
+  .prose :global(blockquote) {
+    margin: 1.2em 0;
+    padding: 4px 18px;
+    border-left: 3px solid var(--ochre);
+    color: var(--doc-ink-2);
+  }
+  .prose :global(img) {
+    height: auto;
+  }
+  .to-contents {
+    display: none;
+  }
+  @media (max-width: 860px) {
+    .docs {
+      grid-template-columns: minmax(0, 1fr);
+    }
+    /* phones: no side column; the reading order at the top is the contents, and a small button
+       (fixed, so it never shifts the layout) takes you back to it */
+    aside {
+      display: none;
+    }
+    .to-contents {
+      display: block;
+      position: fixed;
+      right: 16px;
+      bottom: 16px;
+      z-index: 5;
+      padding: 10px 16px;
+      border-radius: 999px;
+      background: var(--doc-ink);
+      color: var(--doc-bg, #fff);
+      font-weight: 650;
+      font-size: 0.95rem;
+      text-decoration: none;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.18);
+    }
   }
 </style>

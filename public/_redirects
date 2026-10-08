@@ -1,0 +1,17 @@
+# /docs/ is one page now: each old doc page lands on its section (scripts/docs-anchors.mjs)
+/docs/overview/  /docs/#overview  301
+/docs/overview   /docs/#overview  301
+/docs/install/  /docs/#install  301
+/docs/install   /docs/#install  301
+/docs/beginners-guide/  /docs/#beginners-guide  301
+/docs/beginners-guide   /docs/#beginners-guide  301
+/docs/costs/  /docs/#costs  301
+/docs/costs   /docs/#costs  301
+/docs/onboarding/  /docs/#onboarding  301
+/docs/onboarding   /docs/#onboarding  301
+/docs/reference-install/  /docs/#reference-install  301
+/docs/reference-install   /docs/#reference-install  301
+/docs/architecture/  /docs/#architecture  301
+/docs/architecture   /docs/#architecture  301
+/docs/rotation/  /docs/#rotation  301
+/docs/rotation   /docs/#rotation  301
