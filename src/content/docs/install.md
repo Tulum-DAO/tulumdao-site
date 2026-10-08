@@ -437,6 +437,12 @@ to. Use `["gemini"]` or `["codex"]` if that is your CLI. `orchestra.toml` has ot
 lines (`[arturo]`, `[telemetry]`, `[plugins.*]`); leave those alone. To edit by hand instead:
 `$EDITOR orchestra.toml`, find `[runtimes]`, and change the `enabled` line just below it.
 
+**Your timezone (recommended).** Agents show times in UTC unless you tell them where you are.
+In `orchestra.toml`, under `[operator]`, set `timezone` to your IANA zone name, for example
+`timezone = "America/Cancun"` or `timezone = "Europe/Berlin"` (find yours by searching "IANA
+time zone" plus your city). It is not detected from the server on purpose: a cloud server
+usually runs on UTC, not where you are. Left empty, agents show UTC and label it "UTC".
+
 `orchestra init` is idempotent: it never overwrites `orchestra.toml`, skips what
 exists, and prints did/skipped per step. `--data-dir PATH` moves state elsewhere
 (so does `ORCHESTRA_DIR=PATH` in the environment: flag > `ORCHESTRA_DIR` > `[data] dir`
@@ -450,7 +456,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/df0909228f34925cd5edccc241bb5250a4c82c65/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/d98710f253f23394466dfd71e3352a2b682218a2/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -607,17 +613,18 @@ the `gm` seat's screen: type to it like a chat and press Enter. To leave without
 seat keeps running. (Closing the Terminal window also leaves it running.) `tmux ls` lists the
 sessions. You can also talk to seats from the dashboard in your browser.
 
-**Scrolling back in a seat.** The mouse wheel scrolls a seat's screen through its earlier
-output; press `q` to get back to typing. From the keyboard: press `Ctrl-B`, let go, then `[`,
-and use the arrow keys or `PgUp`/`PgDn` (on a Mac laptop, `fn` with the up or down arrow);
-`q` leaves.
+**Scrolling back.** While you are looking at an agent's screen in your terminal, turn the mouse
+wheel to scroll back through what it wrote. To get back to typing, press `q`.
 
-**If the input box shows `History 1/...`** instead (you pressed the up arrow, or the seat was
-started before mouse support), it is offering to re-send an earlier prompt. Press `Esc` to
-clear it. Never press Enter on it: that sends the old prompt to the seat again. For a seat
-that is already running, `tmux set -t <seat> mouse on` turns the wheel on.
+**If an old message appears in the box where you type** (it shows `History 1/...`; this happens
+if you press the up arrow), press the **down arrow** until the box is empty again. Never press
+Enter on it: that sends the old message to the agent again.
 
-**Selecting text in a seat** to copy it: a plain drag may not select. Instead:
+(Without a mouse: press `Ctrl-B`, let go, then `[`, and use the arrow keys; `q` returns. If the
+wheel does not scroll an agent that was already running before you upgraded, run
+`tmux set -t <seat> mouse on` once, with the agent's name in place of `<seat>`.)
+
+**Selecting text** on an agent's screen to copy it: a plain drag does not select. Instead:
 
 - **Windows Terminal, or Linux:** hold `Shift` while you drag.
 - **iTerm2 on a Mac:** hold `Option` while you drag.
