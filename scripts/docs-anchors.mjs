@@ -34,6 +34,35 @@ for (const slug of slugs) {
   html = html.slice(0, tagEnd) + body + html.slice(close);
 }
 
+// a comparison table whose top-left header cell is empty has its row labels in the first column:
+// mark them as row headers, so every data cell has a header (screen readers, and axe's
+// td-has-header)
+html = html.replace(/<table>([\s\S]*?)<\/table>/g, (t, inner) => {
+  if (!/<thead>\s*<tr>\s*<th[^>]*>\s*<\/th>/.test(inner)) return t;
+  const body = inner.replace(/(<tbody>[\s\S]*?<\/tbody>)/, (tb) => tb.replace(/<tr>\s*<td([^>]*)>([\s\S]*?)<\/td>/g, '<tr><th scope="row"$1>$2</th>'));
+  return `<table>${body.replace(/<thead>\s*<tr>\s*<th([^>]*)>\s*<\/th>/, '<thead><tr><td$1></td>')}</table>`;
+});
+
+// images in the docs: give each a size (so it can't shift the page as it loads) and load it lazily.
+// Sizes come from the image itself (an SVG's width/height or viewBox); one that can't be read is
+// left as it was, with a warning.
+const imgs = [...new Set([...html.matchAll(/<img (?![^>]*\swidth=)[^>]*src="(https:\/\/raw\.githubusercontent\.com\/[^"]+)"[^>]*>/g)].map((m) => m[1]))];
+for (const src of imgs) {
+  let size = null;
+  try {
+    const svg = await (await fetch(src, { signal: AbortSignal.timeout(8000) })).text();
+    const wh = svg.match(/<svg[^>]*\swidth="(\d+(?:\.\d+)?)"[^>]*\sheight="(\d+(?:\.\d+)?)"/);
+    const vb = svg.match(/viewBox="[\d.\s-]*?\s([\d.]+)\s([\d.]+)"/);
+    if (wh) size = [wh[1], wh[2]];
+    else if (vb) size = [vb[1], vb[2]];
+  } catch {}
+  if (!size) {
+    console.warn(`docs-anchors: no size for ${src}`);
+    continue;
+  }
+  html = html.split(`src="${src}"`).join(`src="${src}" width="${Math.round(size[0])}" height="${Math.round(size[1])}" loading="lazy" decoding="async"`);
+}
+
 // checks: unique ids; every in-page anchor has a target; no links left to removed doc pages
 const ids = [...html.matchAll(/\sid="([^"]+)"/g)].map((m) => m[1]);
 const dup = ids.filter((id, i) => ids.indexOf(id) !== i);
