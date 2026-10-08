@@ -94,7 +94,7 @@ Later (even after restarting it), ask "what's my favorite color?" — it should
 answer correctly by reading back what it wrote, not by guessing. This is the
 same mechanism the full harness uses to survive [docs/ARCHITECTURE.md](/docs/architecture/)'s
 rotations — an agent replacing itself without forgetting anything. The exact
-files and paths this writes to are in [docs/MEMORY.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/MEMORY.md) (it's
+files and paths this writes to are in [docs/MEMORY.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/MEMORY.md) (it's
 not the same file as the handoff document a retiring generation writes — that
 one carries where it stopped, not what it remembers).
 
@@ -103,7 +103,7 @@ one carries where it stopped, not what it remembers).
 Everyone who wants to build on the harness — picking a track, adding a feature —
 completes these seven steps first. They are cumulative: each one builds on the
 last, and together they touch most of the files any track's doc will send you
-to, so you will recognize them when you get there. [docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/GATE.md) has the full
+to, so you will recognize them when you get there. [docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/GATE.md) has the full
 version of each step below — the exact command, what it should print, and
 where to look if it doesn't.
 
@@ -111,22 +111,22 @@ where to look if it doesn't.
    through §2: a VPS with Tailscale, `orchestra init --yes`, `orchestra doctor` (every
    row OK once your CLI is logged in; before that, `runtime:login` is the one missing
    row), `orchestra up`, the dashboard open in your browser over Tailscale.
-2. **Always-on agent spawned, answers questions in terminal.** [docs/INSTALL.md](/docs/install/)
-   §3: spawn one seat, confirm it is alive, ask it something in its own tmux
-   pane and get a real answer.
-3. **Telegram bot connected, agent answers from phone.** See [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/PROMPTS.md)'s
+2. **Starter team running, gm answers questions in terminal.** [docs/INSTALL.md](/docs/install/)
+   §3: `orchestra starter` starts gm, a project manager and a worker; confirm all three
+   are alive, ask gm something in its own tmux pane and get a real answer.
+3. **Telegram bot connected, agent answers from phone.** See [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/PROMPTS.md)'s
    "Connect Telegram" prompt — set up the bot token as an environment variable
    (never paste it into a file or a chat), send yourself a message from your
    phone, get a reply.
-4. **Two seats exchange a message, both visible in Inbox.** [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/PROMPTS.md)'s
-   "Two-seat message" prompt: spawn a second seat, send one message between
-   them, see it land in both the dashboard's Inbox and the command line.
+4. **Two seats exchange a message, both visible in Inbox.** [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/PROMPTS.md)'s
+   "Two-seat message" prompt: send one message from the project manager to the
+   worker, see it land in both the dashboard's Inbox and the command line.
 5. **One approval card answered from Telegram or dashboard.**
-   [docs/INSTALL.md](/docs/install/) §5 / [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/PROMPTS.md)'s "Answer a card" prompt: fire a
+   [docs/INSTALL.md](/docs/install/) §5 / [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/PROMPTS.md)'s "Answer a card" prompt: fire a
    card, answer it from your phone or the dashboard, watch the decision land
    back in the agent's terminal.
-6. **Manual rotation of the always-on agent completed, nothing lost.**
-   [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/PROMPTS.md)'s "Rotate" prompt: trigger one rotation by hand, read the
+6. **Manual rotation of a seat completed, nothing lost.**
+   [docs/PROMPTS.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/PROMPTS.md)'s "Rotate" prompt: rotate the worker once by hand, read the
    handoff document the old version wrote and the new version's proof it
    understood it.
 7. **One fact written, restart, agent recalls it.** The "Save one command"
@@ -134,7 +134,7 @@ where to look if it doesn't.
    conversation — confirm the memory survives.
 
 Once you have done all seven, you understand the whole loop well enough to pick
-a track. See [docs/tracks/README.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/tracks/README.md) for the list, or [docs/HACKATHON_ISSUES.md](https://github.com/Tulum-DAO/orchestraos/blob/6a33ea53558d4c11dd6b371aa2bb96c2b41e7950/docs/HACKATHON_ISSUES.md)
+a track. See [docs/tracks/README.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/tracks/README.md) for the list, or [docs/HACKATHON_ISSUES.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/HACKATHON_ISSUES.md)
 for something smaller (`good-first-issue`) if you would rather land something in
 an hour than a weekend.
 
