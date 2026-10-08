@@ -6,7 +6,7 @@ export default defineConfig({
   trailingSlash: 'always',
   integrations: [sitemap()],
   markdown: {
-    shikiConfig: { themes: { light: 'github-light', dark: 'github-dark-dimmed' } },
+    shikiConfig: { themes: { light: 'github-light-high-contrast', dark: 'github-dark-dimmed' } },
   },
   build: { inlineStylesheets: 'always' },
 });

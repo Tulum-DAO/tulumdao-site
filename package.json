@@ -6,7 +6,7 @@
     "dev": "astro dev",
     "sync-docs": "node scripts/sync-docs.mjs",
     "check-docs": "node scripts/sync-docs.mjs --check",
-    "build": "node scripts/sync-docs.mjs --check && astro build",
+    "build": "node scripts/sync-docs.mjs --check && astro build && node scripts/docs-anchors.mjs",
     "preview": "astro preview"
   },
   "dependencies": {
