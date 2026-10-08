@@ -7,8 +7,10 @@
 //   -28  messages: packets fly between named seats and often get a reply; a message to a busy
 //        seat waits beside it and is delivered when its turn ends. While this layer is on screen
 //        the seats gather round the GM and the mail runs hub and spoke, to and from it
-//   -38  memory: a seat at the centre of what it remembers; it restarts, its light goes out, the
-//        facts stay lit, and the next generation re-links to every one of them
+//   -38  memory: a seat inside a glass bubble of working context that fills as it works; now and
+//        then a fragment is written down and sinks into one of the stones below. The context fills,
+//        the bubble pops and everything loose in it is gone; the stones stay, and the next
+//        generation grows a fresh bubble and pulls each stone's memory back up into it
 // Seats carry HTML name labels (example names) projected from 3D every frame.
 //   -49  approvals: one ochre card rises toward the surface, toward you
 import {
@@ -34,6 +36,7 @@ import {
   PointsMaterial,
   Scene,
   ShaderMaterial,
+  SphereGeometry,
   SRGBColorSpace,
   Vector3,
   WebGLRenderer,
@@ -93,9 +96,7 @@ export function mount(canvas: HTMLCanvasElement) {
   // on wide screens each layer sits a little away from its text panel (seats and memory panels are
   // on the left, messaging's on the right); on phones the panels span the width, so no shift
   const shift = innerWidth > 900 ? 1 : 0;
-  // narrow screens: clusters a little smaller so a layer fits the width of a portrait screen
-  const K = innerWidth > 900 ? 1 : 0.72;
-  const LX = { seats: 2.25 * shift, messages: -2.1 * shift, memory: 0.9 * shift };
+  const LX = { seats: 2.25 * shift, messages: -2.1 * shift, memory: 1.7 * shift };
   let renderer: WebGLRenderer;
   try {
     // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
@@ -529,38 +530,107 @@ export function mount(canvas: HTMLCanvasElement) {
     if (n) askers.push(n);
   }
 
-  // memory that survives a restart: a seat at the centre of the facts it has learned. Every few
-  // seconds it restarts. Its light and its links go out, but the facts stay lit; the next
-  // generation lights up and re-links to each fact in turn (recall).
+  // memory that survives a restart. The seat works inside a glass bubble: its context, small
+  // fragments that pile up as it works, with a gauge filling round it. Now and then one fragment is
+  // WRITTEN DOWN: it turns sand and sinks into one of the stones below. When the context is full
+  // the bubble pops: every loose fragment scatters and is gone, and the light goes out. The stones
+  // stay. The next generation grows a fresh bubble and each stone's memory rises back into it.
   labelGroup = 'memory';
-  const memSeat = spawn(new Vector3(LX.memory, Y.memory, -0.4), LIGHT, 30)!;
-  const FACTS = mobile ? 12 : 16;
-  const facts: Node[] = [];
-  for (let i = 0; i < FACTS; i++) {
-    const a = (i / FACTS) * Math.PI * 2 + (i % 2) * 0.2;
-    const r = (i % 2 ? 2.0 + Math.random() * 0.35 : 1.1 + Math.random() * 0.3) * K;
-    const f = spawn(new Vector3(LX.memory + Math.cos(a) * r, Y.memory + (Math.random() - 0.5) * 0.6, Math.sin(a) * r - 0.4), SAND, 15);
-    if (f) {
-      f.drift = 0; // facts hold still: they are the part that persists
-      facts.push(f);
-    }
-  }
-  FACT_LABELS.forEach((text, i) => {
-    const f = facts[i * 3 + 1];
-    // a steady name: the fact lights brighten only as the camera nears, the names shouldn't wait
-    if (f) addLabel(text, () => f.pos, () => 0.85, 'fact', { sub: false });
+  const MEM_C = new Vector3(LX.memory, Y.memory, -0.4); // the seat, at the bubble's centre
+  const BUBBLE_R = mobile ? 0.95 : 1.2;
+  const memSeat = spawn(MEM_C, LIGHT, 30)!;
+  const HIDE = 0.001; // an owned light is hidden this way, never with 0 (0 hands it back to the pool)
+  // the bubble: a glass sphere that glows at its rim
+  const bubbleMat = new ShaderMaterial({
+    transparent: true,
+    depthWrite: false,
+    blending: AdditiveBlending,
+    uniforms: { color: { value: MAYA.clone() }, alpha: { value: 0 } },
+    vertexShader: /* glsl */ `
+      varying vec3 vN; varying vec3 vV;
+      void main() {
+        vec4 mv = modelViewMatrix * vec4(position, 1.0);
+        vN = normalize(normalMatrix * normal); vV = normalize(-mv.xyz);
+        gl_Position = projectionMatrix * mv;
+      }`,
+    fragmentShader: /* glsl */ `
+      uniform vec3 color; uniform float alpha; varying vec3 vN; varying vec3 vV;
+      void main() {
+        float rim = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), 2.2);
+        // mostly rim: glass you see through, not a disc
+        gl_FragColor = vec4(color * (0.08 + rim), (0.015 + rim * 0.85) * alpha);
+      }`,
   });
+  const bubble = new Mesh(new SphereGeometry(1, mobile ? 24 : 36, mobile ? 16 : 24), bubbleMat);
+  bubble.position.copy(MEM_C);
+  scene.add(bubble);
+  // the context gauge: an ochre arc round the bubble that fills as the seat works
+  const GAUGE_SEG = 96;
+  const gaugeGeo = new BufferGeometry();
+  {
+    const pts = new Float32Array((GAUGE_SEG + 1) * 3);
+    for (let i = 0; i <= GAUGE_SEG; i++) {
+      // from the top of the bubble (far side, top of the screen), clockwise
+      const t = -Math.PI / 2 + (i / GAUGE_SEG) * Math.PI * 2;
+      pts.set([Math.cos(t) * BUBBLE_R * 1.16, 0, Math.sin(t) * BUBBLE_R * 1.16], i * 3);
+    }
+    gaugeGeo.setAttribute('position', new BufferAttribute(pts, 3));
+  }
+  const gaugeMat = new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false, fog: false });
+  const gauge = new Line(gaugeGeo, gaugeMat);
+  gauge.position.copy(MEM_C);
+  gauge.frustumCulled = false;
+  scene.add(gauge);
+  // the stones: what has been written down, on a ledge in front of the bubble (lower on screen),
+  // in two staggered rows so their names have room
+  type Stone = { node: Node; at: Vector3 };
+  const stones: Stone[] = FACT_LABELS.map((text, i) => {
+    const n = FACT_LABELS.length;
+    const th = (i / (n - 1) - 0.5) * (mobile ? 1.9 : 2.2); // spread across the front
+    const r = BUBBLE_R + (i % 2 ? 1.25 : 0.7) * (mobile ? 1 : 1.15);
+    const at = new Vector3(MEM_C.x + Math.sin(th) * r * (mobile ? 1.05 : 1.25), MEM_C.y - 0.35, MEM_C.z + Math.cos(th) * r);
+    const node = spawn(at, SAND, 18, 0.8)!;
+    node.drift = 0; // the stones hold still: they are the part that persists
+    // a steady name: the stones brighten only as the camera nears, their names shouldn't wait
+    addLabel(text, () => node.pos, () => 0.85, 'fact', { sub: false });
+    return { node, at };
+  });
+  // the context: loose fragments inside the bubble. A fragment is hidden, drifting, sinking into a
+  // stone (written down), rising from a stone (recalled), or scattering (the bubble popped).
+  type Frag = { node: Node; off: Vector3; vel: Vector3; state: 'off' | 'drift' | 'sink' | 'rise' | 'burst'; t: number; from: Vector3; stone: Stone | null; recalled: boolean };
+  const FRAGS = mobile ? 18 : 26;
+  const frags: Frag[] = [];
+  for (let i = 0; i < FRAGS + stones.length; i++) {
+    const node = spawn(MEM_C, MAYA, 11, HIDE);
+    if (!node) break;
+    node.drift = 0;
+    frags.push({ node, off: new Vector3(), vel: new Vector3(), state: 'off', t: 0, from: new Vector3(), stone: null, recalled: false });
+  }
+  const inBubble = (out: Vector3) => {
+    // a random point well inside the bubble
+    do out.set(Math.random() * 2 - 1, Math.random() * 2 - 1, Math.random() * 2 - 1);
+    while (out.lengthSq() > 1);
+    return out.multiplyScalar(BUBBLE_R * 0.72);
+  };
   let memGen = 7;
-  const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' }); // steady; its line says when it restarts
-  const lpos = new Float32Array(FACTS * 6);
-  const lcol = new Float32Array(FACTS * 8);
+  const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' }); // steady; its line says what is happening
+  memLabel.longest = 'Claude, gen 10, context 100%';
+  // recall threads: a line from each stone to the seat while its memory rises
+  const lpos = new Float32Array(stones.length * 6);
+  const lcol = new Float32Array(stones.length * 8);
   const lgeo = new BufferGeometry();
   lgeo.setAttribute('position', new BufferAttribute(lpos, 3));
   lgeo.setAttribute('color', new BufferAttribute(lcol, 4));
   const memLines = new LineSegments(lgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, blending: AdditiveBlending, depthWrite: false, fog: false }));
   memLines.frustumCulled = false;
   scene.add(memLines);
-  const MEM_CYCLE = 7.5;
+  // the loop, in seconds: a new generation grows its bubble and recalls (0 - 2.2), works and fills
+  // its context, writing three fragments down (2.2 - 6.8), the bubble pops (6.8 - 7.6), a beat of
+  // dark with only the stones lit (7.6 - 9)
+  const MEM_CYCLE = 9;
+  const M = { recallEnd: 2.2, workEnd: 6.8, popEnd: 7.6, writes: [3.3, 4.5, 5.7] };
+  let memPh = 0;
+  let memLast = -1;
 
   // a little sediment drifting down, for depth
   const SED = mobile ? 160 : 360;
@@ -962,37 +1032,154 @@ export function mount(canvas: HTMLCanvasElement) {
       }
     }
 
-    // memory: work, restart (light out, facts stay), then the next generation recalls every fact
+    // memory: recall, work (context fills, three fragments written down), pop, dark, repeat
     {
-      const ph = clock % MEM_CYCLE;
+      memPh = clock % MEM_CYCLE;
+      const wrapped = memPh < memLast;
+      memLast = memPh;
       // only visible when you are down in this layer; from above it would read as a hub in the others
-      const near = smooth(15, 10, camera.position.distanceTo(memSeat.pos));
-      const restartAt = 4.2;
-      const backAt = 5.2;
-      if (ph < restartAt) {
-        memSeat.target = Math.max(near, 0.05);
-        setSub(memLabel, `Claude, gen ${memGen}`);
-      } else if (ph < backAt) {
-        memSeat.target = 0.03;
-        setSub(memLabel, 'Claude, restarting');
-      } else {
-        if (memSeat.target < 0.05) memGen++;
-        memSeat.target = Math.max(near, 0.05);
-        setSub(memLabel, ph < backAt + 1.6 ? `Claude, gen ${memGen}, recalling` : `Claude, gen ${memGen}`);
+      const near = smooth(15, 10, camera.position.distanceTo(MEM_C));
+      const vis = Math.max(near, 0.05);
+      if (wrapped) {
+        // a new generation: everything loose from the last one is already gone
+        memGen++;
+        for (const f of frags) {
+          f.state = 'off';
+          f.node.target = HIDE;
+          f.node.alpha = 0;
+        }
       }
-      for (let i = 0; i < facts.length; i++) {
-        const f = facts[i];
-        // the facts never go out; they glow a little brighter while the seat is down
-        f.target = (ph >= restartAt && ph < backAt + 0.4 ? 1 : 0.8) * Math.max(near, 0.05);
-        let a: number;
-        if (ph < restartAt) a = 0.55;
-        else if (ph < backAt) a = 0.55 * (1 - smooth(restartAt, restartAt + 0.5, ph));
-        else a = 0.55 * smooth(backAt + 0.15 + i * 0.09, backAt + 0.45 + i * 0.09, ph);
-        lpos.set([memSeat.pos.x, memSeat.pos.y, memSeat.pos.z, f.pos.x, f.pos.y, f.pos.z], i * 6);
-        lcol.set([SAND.r, SAND.g, SAND.b, a * 0.5 * near, SAND.r, SAND.g, SAND.b, a * near], i * 8);
-      }
+      const recallT = memPh < M.recallEnd;
+      const working = memPh >= M.recallEnd && memPh < M.workEnd;
+      const popping = memPh >= M.workEnd && memPh < M.popEnd;
+      const dark = memPh >= M.popEnd;
+      // the seat
+      memSeat.target = popping || dark ? 0.03 : vis;
+      // the bubble grows at the start, sits through the work, bursts outward at the pop
+      const grow = smooth(0, 0.8, memPh);
+      const burst = popping ? smooth(M.workEnd, M.popEnd, memPh) : dark ? 1 : 0;
+      bubble.scale.setScalar(BUBBLE_R * (0.15 + 0.85 * grow) * (1 + burst * 0.5));
+      bubbleMat.uniforms.alpha.value = near * grow * (1 - burst) * (popping ? 1 + 2 * (1 - burst) : 1);
+      bubble.visible = bubbleMat.uniforms.alpha.value > 0.005;
+      // the gauge: how full the context is
+      const fill = working ? lerp(0.12, 1, smooth(M.recallEnd, M.workEnd, memPh)) : recallT ? 0.12 * smooth(0.6, 1.6, memPh) : popping ? 1 : 0;
+      gaugeGeo.setDrawRange(0, 1 + Math.round(GAUGE_SEG * fill));
+      gaugeMat.opacity = 0.85 * near * (popping ? 1 - burst : dark ? 0 : 1);
+      gauge.visible = gaugeMat.opacity > 0.01 && fill > 0;
+      setSub(
+        memLabel,
+        popping || dark
+          ? 'Claude, restarting'
+          : recallT
+            ? `Claude, gen ${memGen}, recalling`
+            : `Claude, gen ${memGen}, context ${Math.round(fill * 100)}%`,
+      );
+      // recall: one fragment rises from each stone into the bubble, in turn, and stays there (sand)
+      stones.forEach((st, i) => {
+        const at = 0.35 + i * 0.32;
+        const f = frags[FRAGS + i];
+        if (f && recallT && memPh >= at && f.state === 'off') {
+          f.state = 'rise';
+          f.t = 0;
+          f.from.copy(st.at);
+          inBubble(f.off);
+          f.recalled = true;
+          f.node.color.copy(SAND);
+          f.node.target = vis;
+          f.node.alpha = vis;
+          st.node.alpha = 1.6; // the stone flares as it is read
+        }
+        // its thread, while it rises
+        const a = recallT ? smooth(at - 0.1, at + 0.1, memPh) * (1 - smooth(at + 0.5, at + 0.9, memPh)) : 0;
+        lpos.set([st.at.x, st.at.y, st.at.z, MEM_C.x, MEM_C.y, MEM_C.z], i * 6);
+        lcol.set([SAND.r, SAND.g, SAND.b, a * 0.7 * near, SAND.r, SAND.g, SAND.b, a * 0.2 * near], i * 8);
+        // the stones never go out; they glow brighter while the seat is down
+        st.node.target = (popping || dark ? 1 : 0.8) * vis;
+      });
       lgeo.attributes.position.needsUpdate = true;
       lgeo.attributes.color.needsUpdate = true;
+      // work: the context fills, a fragment at a time
+      if (working) {
+        const want = Math.floor(smooth(M.recallEnd, M.workEnd - 0.4, memPh) * FRAGS);
+        let live = frags.slice(0, FRAGS).filter((f) => f.state !== 'off').length;
+        for (const f of frags.slice(0, FRAGS)) {
+          if (live >= want) break;
+          if (f.state !== 'off') continue;
+          f.state = 'drift';
+          inBubble(f.off);
+          f.vel.set(Math.random() - 0.5, (Math.random() - 0.5) * 0.4, Math.random() - 0.5).multiplyScalar(0.35);
+          f.recalled = false;
+          f.node.size = 11;
+          f.node.color.copy(MAYA);
+          f.node.target = vis;
+          live++;
+        }
+        // writing it down: at set moments one drifting fragment turns sand and sinks into a stone
+        for (const w of M.writes) {
+          if (memPh >= w && memPh - dt < w) {
+            const f = frags.slice(0, FRAGS).find((x) => x.state === 'drift');
+            if (f) {
+              f.state = 'sink';
+              f.t = 0;
+              f.from.copy(f.node.pos);
+              f.stone = stones[Math.floor(Math.random() * stones.length)];
+              f.node.color.copy(SAND);
+              f.node.size = 17; // a written fragment reads a little larger on its way down
+            }
+          }
+        }
+      }
+      // the pop: every loose fragment, recalled ones included, flies out and is gone
+      if (popping) {
+        for (const f of frags) {
+          if (f.state === 'drift' || f.state === 'rise') {
+            f.state = 'burst';
+            f.vel.copy(f.off).normalize().multiplyScalar(2.2 + Math.random() * 1.5);
+          }
+        }
+      }
+      for (const f of frags) {
+        if (f.state === 'drift') {
+          f.off.addScaledVector(f.vel, dt);
+          // stay inside the glass: bounce off it
+          if (f.off.length() > BUBBLE_R * 0.8) {
+            f.vel.reflect(f.off.clone().normalize()).multiplyScalar(0.9);
+            f.off.setLength(BUBBLE_R * 0.8);
+          }
+          f.node.pos.copy(MEM_C).add(f.off);
+          f.node.target = vis;
+        } else if (f.state === 'rise') {
+          // from its stone up into the bubble, then it stays there as recalled context
+          f.t = Math.min(1, f.t + dt / 0.7);
+          const k = f.t * f.t * (3 - 2 * f.t);
+          f.node.pos.copy(f.from).lerp(dest.copy(MEM_C).add(f.off), k);
+          if (f.t >= 1) {
+            f.state = 'drift';
+            f.vel.set(Math.random() - 0.5, (Math.random() - 0.5) * 0.4, Math.random() - 0.5).multiplyScalar(0.2);
+          }
+        } else if (f.state === 'sink') {
+          // out through the bottom of the bubble and into its stone, which flares as it takes it
+          f.t = Math.min(1, f.t + dt / 0.9);
+          const k = f.t * f.t * (3 - 2 * f.t);
+          f.node.pos.copy(f.from).lerp(f.stone!.at, k);
+          if (f.t >= 1) {
+            f.state = 'off';
+            f.node.target = HIDE;
+            f.node.alpha = 0;
+            f.stone!.node.alpha = 1.6;
+          }
+        } else if (f.state === 'burst') {
+          // flies outward and fades over the whole pop, so you see it scatter
+          f.off.addScaledVector(f.vel, dt);
+          f.node.pos.copy(MEM_C).add(f.off);
+          f.node.alpha = f.node.target = Math.max(HIDE, vis * (1 - burst));
+          if (burst >= 1) {
+            f.state = 'off';
+            f.node.target = HIDE;
+            f.node.alpha = 0;
+          }
+        }
+      }
     }
 
     // nodes: drift, fade, recycle
@@ -1216,6 +1403,7 @@ export function mount(canvas: HTMLCanvasElement) {
       canvasW: canvas.getBoundingClientRect().width,
       camX: +camera.position.x.toFixed(3),
       gather: +gather.toFixed(2),
+      mem: { ph: +memPh.toFixed(2), gen: memGen, frags: frags.filter((f) => f.state !== 'off').length },
       hiddenWhy: labels.filter((l) => l.hidden).map((l) => `${l.group}:${l.el.firstChild?.textContent} ${l.why} at ${Math.round(l.sx)},${Math.round(l.sy)}`),
       names: labels
         .filter((l) => l.o > 0.05)
@@ -1228,7 +1416,7 @@ export function mount(canvas: HTMLCanvasElement) {
         }),
       seats: centroid(seats.map((s) => s.node.pos)),
       messages: centroid(talkers.map((t) => t.node.pos)),
-      memory: centroid([memSeat.pos, ...facts.map((f) => f.pos)]),
+      memory: centroid([memSeat.pos, ...stones.map((st) => st.node.pos)]),
     });
   }
 
