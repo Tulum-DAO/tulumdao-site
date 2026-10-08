@@ -316,7 +316,8 @@ your own login; never copy someone else's credentials onto the server.
 (claude.com/pricing; [docs/COSTS.md](/docs/costs/) compares the options). Buy it first, with the same
 email you will sign in with. On Claude's website it takes only a credit or debit card; if you
 subscribe in the Claude iPhone or Android app instead, the App Store or Google Play handles
-payment ("Paid plan billing FAQs", support.claude.com).
+payment ("Paid plan billing FAQs", support.claude.com); check which payment methods your store
+accepts.
 
 On the server, start Claude Code once:
 
@@ -429,7 +430,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/9fb818f29e89919f1559d920ad8b80aecd93059c/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/af66efa49e86c2a19ee9b4bfc873a28c99b1212d/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 

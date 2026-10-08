@@ -76,7 +76,7 @@ supervisor and are restarted by a watchdog cron. Pick one model; do not run both
 | `identity_store/orphan_pane_scan.py` | — | `*/15` (flags raw tmux spawns, chip only) |
 | `identity_store/identity_reconciler.py --cron` | — | `*/15` |
 | `agent-recovery.sh --boot` | — | `@reboot sleep 45` (re-attaches seats after a reboot) |
-| `lineage_daemon/telemetryd.py` | — | systemd unit (see issue 3 in [`HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/9fb818f29e89919f1559d920ad8b80aecd93059c/docs/HACKATHON_ISSUES.md): the unit needs templating) |
+| `lineage_daemon/telemetryd.py` | — | systemd unit (see issue 3 in [`HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/af66efa49e86c2a19ee9b4bfc873a28c99b1212d/docs/HACKATHON_ISSUES.md): the unit needs templating) |
 
 A minimal reference crontab (user crontab on the VPS; `cd` into the checkout so
 `orchestra-env.sh` finds `orchestra.toml`):
