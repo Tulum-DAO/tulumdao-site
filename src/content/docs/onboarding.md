@@ -136,6 +136,7 @@ you're ready, and only if the check didn't print `up to date`, update the files:
 orchestra upgrade
 ```
 
+It can take about five minutes (it may rebuild the dashboard); wait for it to finish, don't stop it.
 If it stops with a message about uncommitted changes, don't discard anything: stop, and bring
 that message to whoever is helping you (or open an issue at
 https://github.com/Tulum-DAO/orchestraos/issues). It ends by running `orchestra doctor`; if a
@@ -486,7 +487,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/ebdb932d138018cc5cfb2d8eda369b22fba12a8d/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/3425007802802eaf2dfa0909eac50e535ef8bff3/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -500,7 +501,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/ebdb932d138018cc5cfb2d8eda369b22fba12a8d/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/3425007802802eaf2dfa0909eac50e535ef8bff3/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.
