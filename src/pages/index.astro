@@ -269,8 +269,12 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
     color: var(--foam-2);
     margin-left: 6px;
   }
+  /* the GM's name sits on a dark backing, so it reads over the spokes and rings round it */
   #cenote-labels :global(.cl.gm) {
     font-size: 14px;
+    padding: 3px 8px 4px;
+    border-radius: 9px;
+    background: rgba(4, 24, 24, 0.62);
   }
   #cenote-labels :global(.cl.fact) {
     font-weight: 500;

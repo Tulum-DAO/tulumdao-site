@@ -234,7 +234,23 @@ export function mount(canvas: HTMLCanvasElement) {
 
   // ---- labels: plain HTML over the canvas, placed from 3D each frame (crisp text, no font atlas)
   const labelLayer = document.getElementById('cenote-labels');
-  type Label = { el: HTMLElement; sub: HTMLElement | null; at: () => Vector3; alpha: () => number; last: string; w: number; h: number; d: number; x: number; y: number; a: number };
+  type Label = {
+    el: HTMLElement;
+    sub: HTMLElement | null;
+    at: () => Vector3;
+    alpha: () => number;
+    last: string;
+    w: number;
+    h: number;
+    d: number;
+    x: number;
+    y: number;
+    a: number;
+    sx: number; // its light on screen
+    sy: number;
+    side: number; // which side of its light it sat on last frame
+    dim: Node | null; // a seat whose light dims while its name has no room
+  };
   const labels: Label[] = [];
   const addLabel = (
     name: string,
@@ -269,7 +285,7 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0 };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: 0, dim: null };
     labels.push(l);
     return l;
   };
@@ -331,6 +347,7 @@ export function mount(canvas: HTMLCanvasElement) {
       runtime: rt,
       role: i === 0 ? 'general manager' : undefined,
     });
+    if (i > 0) label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
     const l: Lineage = { node: n, rings: [], handoffAt: -100, gen: past + 1, label, rt: RUNTIMES[rt].name };
     for (let g = past - 1; g >= 0; g--) addRing(l, -100, ringRadius(g));
     seats.push(l);
@@ -917,21 +934,41 @@ export function mount(canvas: HTMLCanvasElement) {
         l.w = l.el.offsetWidth || 90;
         l.h = l.el.offsetHeight || 28;
       }
-      const sx = (proj.x * 0.5 + 0.5) * W;
-      const sy = (-proj.y * 0.5 + 0.5) * H;
-      // wide screens: the name sits up and to the right of its light. Phones: centred just under
-      // it, so names don't pull every layer's weight to the right of the screen
-      l.x = narrow ? clamp(sx - l.w / 2, 4, W - l.w - 4) : sx + 9;
-      l.y = narrow ? sy + 9 : sy - 9;
+      l.sx = (proj.x * 0.5 + 0.5) * W;
+      l.sy = (-proj.y * 0.5 + 0.5) * H;
       shown.push(l);
     }
     // the general manager's name always wins; the rest are placed nearest-first
     shown.sort((p, q) => Number(q.el.classList.contains('gm')) - Number(p.el.classList.contains('gm')) || p.d - q.d);
-    const placed: Label[] = [];
+    // Each name tries the sides of its light in turn (the side it used last frame first, so names
+    // don't hop) and takes the first that is clear. Wide screens prefer up and to the right; phones
+    // prefer centred just under the light, so names don't pull every layer's weight to the right.
+    // The GM's name is placed first, always shown, and keeps clear space round it.
+    const placed: { x: number; y: number; w: number; h: number }[] = [];
+    const GM_PAD = 10;
     for (const l of shown) {
-      const hit = placed.some((o) => l.x < o.x + o.w && o.x < l.x + l.w && l.y < o.y + o.h && o.y < l.y + l.h);
-      if (hit) l.a = 0;
-      else placed.push(l);
+      const { sx, sy, w, h } = l;
+      const sides: [number, number][] = narrow
+        ? [[sx - w / 2, sy + 9], [sx - w / 2, sy - h - 9], [sx + 11, sy - h / 2], [sx - w - 11, sy - h / 2]]
+        : [[sx + 9, sy - 9], [sx - w - 9, sy - 9], [sx - w / 2, sy + 9], [sx - w / 2, sy - h - 9]];
+      const gm = l.el.classList.contains('gm');
+      let side = -1;
+      for (const k of [l.side, 0, 1, 2, 3]) {
+        const x = clamp(sides[k][0], 4, W - w - 4);
+        const y = sides[k][1];
+        if (gm || !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h)) {
+          side = k;
+          l.x = x;
+          l.y = y;
+          break;
+        }
+      }
+      if (side < 0) l.a = 0;
+      else {
+        l.side = side;
+        placed.push(gm ? { x: l.x - GM_PAD, y: l.y - GM_PAD, w: w + GM_PAD * 2, h: h + GM_PAD * 2 } : { x: l.x, y: l.y, w, h });
+      }
+      if (l.dim) l.dim.target = l.a ? 1 : 0.4;
     }
     for (const l of labels) {
       if (!l.a) {
