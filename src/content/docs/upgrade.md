@@ -97,7 +97,7 @@ session they were spawned with. A seat only picks up harness-side code changes
 (a changed `spawn-agent.sh`, a changed rotation beat behavior) the next time
 it's respawned or rotated. If a change specifically requires every seat to
 restart (rare — the commit message should say so), rotate each one by hand
-([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/4347a7dde84a051da992ed0fa14a9e5c7b7d52d6/docs/GATE.md) step 6) rather than killing panes directly.
+([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/9703c796804f1388754f6e3e9fd35d3f624b937f/docs/GATE.md) step 6) rather than killing panes directly.
 
 ## If something breaks after upgrading
 

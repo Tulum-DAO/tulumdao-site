@@ -1,22 +1,22 @@
 {
   "repo": "Tulum-DAO/orchestraos",
-  "sha": "4347a7dde84a051da992ed0fa14a9e5c7b7d52d6",
-  "committedAt": "2026-10-08T03:17:24-04:00",
+  "sha": "9703c796804f1388754f6e3e9fd35d3f624b937f",
+  "committedAt": "2026-10-08T03:36:28-04:00",
   "install": [
     "git clone https://github.com/Tulum-DAO/orchestraos.git orchestraos && cd orchestraos",
     "make install"
   ],
-  "syncedAt": "2026-10-08T07:22:24.408Z",
+  "syncedAt": "2026-10-08T07:36:35.514Z",
   "files": {
     "from-scratch": "06fda51244be9a04f7f268ec27149c8f07519b58dabaffbf6eddc2339f5cd217",
-    "beginners-guide": "85d4038678ba25719e14840d37bce966f1b1f866fcb910eb66d6521f8d1737b8",
-    "install": "ec08c0a6178430d52d5ba77ca29284b9e38841b73ae4ae0c21d7f2b0207d1202",
-    "overview": "c075114f7c9ec847b03fee277ec1b844cbb8b194bef32217248456df39a9299c",
-    "costs": "f800439876d80ace6023b79a11c30c9748f2a4125c85850b31cea758d16e2f6b",
-    "onboarding": "802f2b8f00d767f8ae44bfccd2392c26cc4365deb9ba418fe73eef3d841859fe",
-    "upgrade": "6bdcecf2934991b17938fcbef7f19070fb40f3aeed43fe074d69dd25f8dba3ed",
-    "reference-install": "063dcf4c67093018c4df50d53cf0e54a318fdad90c25a148583aacd9a18d9548",
-    "architecture": "9bd7a60734c6b4c4a49e4a7bc1af0afce4603756e4c2cfd23febf62ba8fd58f6",
+    "beginners-guide": "cdb78711326f5fb0ee547a8ca85c09714fe2982afd9145cc00096a3fdaefd2cc",
+    "install": "6b6ea5a2c73cbb83c5dfa0a34802cf3d692535a670de3c923cb9bb991c3c7db5",
+    "overview": "deab73f86b13667ad68ea2548f36e0441991599b018be5c385f9a5708578a6b8",
+    "costs": "70527301ce2951fd6d2e09434581fde366468f375765b7a67869deba86a4edc5",
+    "onboarding": "1e9f0e9aea799d91e74420009ad6c7889b6ccc975e711458810d7e8f38427311",
+    "upgrade": "a578bea2d998dfc844939258727bbce007035decca57f8ce94a50c776b337fc2",
+    "reference-install": "df20d25ff2ad7d39999a4e5e8255a0aa109edefcb15d048c324f29c1447e3dd0",
+    "architecture": "8e4954291373be5f0ab972f8bd877afcd2b0256b83bbe07c6b0329f5cb9fbf65",
     "rotation": "797a0fc895d7b445252595d3d043aa8510a4d779154a44559e4c56bd9bedd21c"
   }
 }
