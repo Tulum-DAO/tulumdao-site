@@ -2,9 +2,23 @@
 import lock from '../../docs.lock.json';
 // The command is read out of docs/INSTALL.md by scripts/sync-docs.mjs. Never type it here.
 const lines: string[] = lock.install;
+interface Props {
+  novice?: boolean; // point a newcomer to the beginner's guide (off where the page already does)
+}
+const { novice = true } = Astro.props;
 const text = lines.join('\n');
 ---
 
+<!-- for someone who already has a server: a novice is pointed to the beginner's guide first -->
+<p class="for">
+  Already have a server and a terminal open?{
+    novice && (
+      <>
+        {' '}New to this? <a href="/docs/#beginners-guide">Start with the beginner's guide</a>.
+      </>
+    )
+  }
+</p>
 <ol class="steps">
   <li class="step">
     <h2 class="step-title">Log in to one agent CLI first</h2>
@@ -52,6 +66,16 @@ const text = lines.join('\n');
 </script>
 
 <style>
+  .for {
+    margin: 0 0 14px;
+    font-weight: 650;
+    font-size: 0.95rem;
+    color: var(--ink-2);
+  }
+  .for a {
+    color: inherit;
+    text-underline-offset: 3px;
+  }
   .steps {
     list-style: none;
     margin: 0;

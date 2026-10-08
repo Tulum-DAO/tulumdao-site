@@ -1,7 +1,7 @@
 ---
 title: "Overview"
 source: "README.md"
-order: 0
+order: 2
 ---
 ![OrchestraOS](https://raw.githubusercontent.com/Tulum-DAO/orchestraos/43a07b0e39fe1cd8718e80e9bad412855cad304e/docs/design/brand/readme-header.svg)
 

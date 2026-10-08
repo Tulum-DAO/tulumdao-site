@@ -1,7 +1,7 @@
 ---
 title: "Beginner's guide"
 source: "docs/BEGINNERS_GUIDE.md"
-order: 2
+order: 0
 ---
 This is for you if you have never opened a terminal and are not sure whether the
 "command line" is a website, an app, or something else. It is not. By the end of

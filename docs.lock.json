@@ -6,11 +6,11 @@
     "git clone https://github.com/Tulum-DAO/orchestraos.git orchestraos && cd orchestraos",
     "make install"
   ],
-  "syncedAt": "2026-10-08T07:04:07.265Z",
+  "syncedAt": "2026-10-08T07:05:46.446Z",
   "files": {
-    "overview": "880aabd8e749f6e5ba4bce66555809acd3e6f46a61076b546ce789afa8bb10ba",
+    "beginners-guide": "16a3c1701cc8124afbe9cc259c18b959c5b769416d8f0eb551a2ad9ab3a7fcf2",
     "install": "e8881ae2ca7ed7764ebb7c8f2b6103f96e750a423d3e9a26975ad805d4b5ac00",
-    "beginners-guide": "628b20d023632216ccf2fe2890e97e6e64231f5f7753e80f41067246d351181a",
+    "overview": "c1883cf50e1797f813b5bae56a9a69b5ab983fc671372af6777fd3268d256a54",
     "costs": "6a208d861f8ddef89b89f56ef32b1666998f9ee2b9b7d1054e6d74f896eb7223",
     "onboarding": "0f7f6da9b3f933ed960c71f977bf43ff2f1a071f7345f52cc30bb0fe1f6493e6",
     "upgrade": "8ef7a17f0a0356ee86b086f05370926fb4d09dcd3327bb55d26f3ced2d1fc13b",

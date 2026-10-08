@@ -49,7 +49,11 @@ const tree = `https://github.com/${lock.repo}/tree/${lock.sha}`;
           Everything on this page is built from the <a href={tree}>OrchestraOS repository</a> at commit{' '}
           <code>{lock.sha.slice(0, 7)}</code>, so it says what the code says.
         </p>
-        <div class="quick"><Install /></div>
+        <p class="start">
+          Never used a terminal or a server? Start with the <a href="#beginners-guide">beginner's guide</a>, then the
+          install.
+        </p>
+        <div class="quick"><Install novice={false} /></div>
         <h2 id="contents">Read in this order</h2>
         <ol class="list">
           {
@@ -151,6 +155,18 @@ const tree = `https://github.com/${lock.repo}/tree/${lock.sha}`;
   .lede a,
   .source a {
     color: var(--doc-link);
+  }
+  .start {
+    margin: 0 0 28px;
+    padding: 14px 18px;
+    border-left: 3px solid var(--ochre);
+    background: var(--doc-code-bg);
+    border-radius: 0 10px 10px 0;
+    font-size: 1.05rem;
+  }
+  .start a {
+    color: var(--doc-link);
+    font-weight: 650;
   }
   .quick {
     margin-bottom: 48px;

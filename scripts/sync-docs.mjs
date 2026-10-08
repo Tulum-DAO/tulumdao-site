@@ -17,9 +17,10 @@ const REPO = 'Tulum-DAO/orchestraos';
 
 // source path in the repo -> site slug, title, nav order
 export const DOCS = [
-  { src: 'README.md', slug: 'overview', title: 'Overview' },
-  { src: 'docs/INSTALL.md', slug: 'install', title: 'Install: the minimum path' },
+  // a novice starts here: what a terminal is, then the install (pm-tulumdao, Shaw's from-scratch brief)
   { src: 'docs/BEGINNERS_GUIDE.md', slug: 'beginners-guide', title: "Beginner's guide" },
+  { src: 'docs/INSTALL.md', slug: 'install', title: 'Install: the minimum path' },
+  { src: 'README.md', slug: 'overview', title: 'Overview' },
   { src: 'docs/COSTS.md', slug: 'costs', title: 'What it costs' },
   { src: 'docs/ONBOARDING.md', slug: 'onboarding', title: 'Connect your phone and browser' },
   { src: 'docs/UPGRADE.md', slug: 'upgrade', title: 'Upgrade' },
