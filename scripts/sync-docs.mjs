@@ -17,9 +17,9 @@ const REPO = 'Tulum-DAO/orchestraos';
 
 // source path in the repo -> site slug, title, nav order
 export const DOCS = [
-  // a novice starts here: from a Mac with nothing to their own server, what a terminal is, then the
+  // a novice starts here: from any computer with nothing to their own server, what a terminal is, then the
   // install (pm-tulumdao, Shaw's from-scratch brief)
-  { src: 'docs/FROM_SCRATCH.md', slug: 'from-scratch', title: 'From scratch: your Mac to your own server' },
+  { src: 'docs/FROM_SCRATCH.md', slug: 'from-scratch', title: 'From scratch: your computer to your own server' },
   { src: 'docs/BEGINNERS_GUIDE.md', slug: 'beginners-guide', title: "Beginner's guide" },
   { src: 'docs/INSTALL.md', slug: 'install', title: 'Install: the minimum path' },
   { src: 'README.md', slug: 'overview', title: 'Overview' },
