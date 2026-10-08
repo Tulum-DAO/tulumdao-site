@@ -5,7 +5,8 @@
 //   -18  seats and generations: each seat is a light with tree rings, one ring per past generation;
 //        a handoff grows a new ring that flashes ochre (the readback) and then settles
 //   -28  messages: packets fly between named seats and often get a reply; a message to a busy
-//        seat waits beside it and is delivered when its turn ends
+//        seat waits beside it and is delivered when its turn ends. While this layer is on screen
+//        the seats gather round the GM and the mail runs hub and spoke, to and from it
 //   -38  memory: a seat at the centre of what it remembers; it restarts, its light goes out, the
 //        facts stay lit, and the next generation re-links to every one of them
 // Seats carry HTML name labels (example names) projected from 3D every frame.
@@ -66,8 +67,8 @@ const pickKind = (): MailKind => {
 };
 
 // example names only; nothing here names a real seat
-const SEAT_NAMES = ['gm', 'pm-web', 'dev-api', 'dev-ui', 'reviewer', 'docs', 'qa', 'release', 'research', 'infra', 'design'];
-const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'pm-mobile', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics'];
+const SEAT_NAMES = ['gm', 'pm-web', 'dev-api', 'dev-ui', 'reviewer', 'docs', 'qa', 'release', 'research', 'infra', 'design', 'pm-mobile', 'dev-auth', 'ops', 'tests', 'scout', 'writer', 'security'];
+const TALKER_NAMES = ['planner', 'dev-auth', 'dev-db', 'tests', 'dev-ios', 'designer', 'ops', 'scout', 'writer', 'dev-search', 'triage', 'data', 'support', 'perf', 'i18n', 'billing', 'security', 'a11y', 'devrel', 'mobile', 'sdk', 'analytics', 'release', 'qa', 'docs', 'review', 'infra', 'research'];
 // which CLI each seat runs on: the general manager is Claude; the rest mix the three runtimes the
 // OrchestraOS README supports
 const RUNTIME_CYCLE: Runtime[] = ['claude', 'codex', 'claude', 'gemini'];
@@ -94,7 +95,7 @@ export function mount(canvas: HTMLCanvasElement) {
   const shift = innerWidth > 900 ? 1 : 0;
   // narrow screens: clusters a little smaller so a layer fits the width of a portrait screen
   const K = innerWidth > 900 ? 1 : 0.72;
-  const LX = { seats: 1.5 * shift, messages: -1.1 * shift, memory: 0.9 * shift };
+  const LX = { seats: 2.25 * shift, messages: -2.1 * shift, memory: 0.9 * shift };
   let renderer: WebGLRenderer;
   try {
     // Opaque on purpose: an alpha canvas composited over the page turns every fading additive glow
@@ -233,7 +234,32 @@ export function mount(canvas: HTMLCanvasElement) {
 
   // ---- labels: plain HTML over the canvas, placed from 3D each frame (crisp text, no font atlas)
   const labelLayer = document.getElementById('cenote-labels');
-  type Label = { el: HTMLElement; sub: HTMLElement | null; at: () => Vector3; alpha: () => number; last: string; w: number; h: number; d: number; x: number; y: number; a: number };
+  type Label = {
+    el: HTMLElement;
+    sub: HTMLElement | null;
+    at: () => Vector3;
+    alpha: () => number;
+    last: string;
+    w: number;
+    h: number;
+    d: number;
+    x: number;
+    y: number;
+    a: number;
+    sx: number; // its light on screen
+    sy: number;
+    side: string; // which side of its light it sat on last frame
+    dim: Node | null; // a seat whose light dims while its name has no room
+    group: string; // the layer it belongs to; a layer's names are solved together
+    hidden: boolean; // no room in this layout: faded out until the layout changes
+    o: number; // opacity on screen, eased, so a name fades instead of popping
+    on: boolean; // its light is on screen this frame
+    longest: string; // the longest its second line gets (busy, mid-handoff): room is kept for it
+    target: () => Vector3; // where its light will be once the layer settles (visibility is solved there)
+    f: number; // 0..1, eased: only for a name joining or leaving when the layout switches
+    why: string; // why the last solve hid it (for ?cenote tests)
+  };
+  let labelGroup = 'seats'; // the layer being built; addLabel tags each name with it
   const labels: Label[] = [];
   const addLabel = (
     name: string,
@@ -268,7 +294,8 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0 };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, group: labelGroup, hidden: false, o: 0, on: false, longest: '', target: at, f: 0, why: '' };
+    el.dataset.group = labelGroup;
     labels.push(l);
     return l;
   };
@@ -285,8 +312,10 @@ export function mount(canvas: HTMLCanvasElement) {
 
   // seats and generations. A seat is a light; every generation it has been through is a ring around
   // it, newest innermost, fading as it ages outward, like the rings of a tree.
-  const SEATS = mobile ? 8 : 11;
-  const MAX_RINGS = 6;
+  const SEATS = mobile ? 13 : 18;
+  const HANDOFF = mobile ? 'handoff' : 'reading handoff'; // short on a phone, so names fit
+  // fewer rings on a phone: each ring is a draw call, and wide rings would touch their neighbours
+  const MAX_RINGS = mobile ? 4 : 6;
   const circle = new BufferGeometry();
   {
     const SEG = 64;
@@ -314,43 +343,147 @@ export function mount(canvas: HTMLCanvasElement) {
     }
   };
   const seats: Lineage[] = [];
+  // seat 0 is the general manager, at the centre; the others are spread across the layer with
+  // room between them. A phone screen is tall and narrow, so there the spread is taller than wide.
+  const seatAt = [[0, 0] as [number, number], ...spread(SEATS - 1, mobile ? 2.05 : 2.9, 2.5, mobile ? 1.05 : 1.25, [[0, 0]], 7)];
   for (let i = 0; i < SEATS; i++) {
-    // seat 0 is the general manager, at the centre; the others sit in two close rows around it
-    const k = i - 1;
-    const a = (k / (SEATS - 1)) * Math.PI * 2;
-    const r = i === 0 ? 0 : (1.6 + (k % 2) * 1.05) * K;
-    const y = i === 0 ? Y.seats : Y.seats + Math.sin(i * 2.1) * 0.8;
-    const n = spawn(new Vector3(LX.seats + Math.cos(a) * r, y, Math.sin(a) * r), LIGHT, i === 0 ? 30 : 24);
+    const [sx, sz] = seatAt[i];
+    const y = i === 0 ? Y.seats : Y.seats + Math.sin(i * 2.1) * 0.6;
+    const n = spawn(new Vector3(LX.seats + sx, y, sz), LIGHT, i === 0 ? 30 : 24);
     if (!n) continue;
     // a history: every seat has already been through a few generations
     const past = 1 + Math.floor(Math.random() * 4);
     const rt = runtimeFor(i);
-    const label = addLabel(SEAT_NAMES[i % SEAT_NAMES.length], () => n.pos, () => n.alpha, i === 0 ? 'gm' : '', {
+    // the name holds steady through a handoff (the light dips; the name doesn't flicker with it)
+    const label = addLabel(SEAT_NAMES[i % SEAT_NAMES.length], () => n.pos, () => Math.max(n.alpha, 0.85 * n.target), i === 0 ? 'gm' : '', {
       runtime: rt,
       role: i === 0 ? 'general manager' : undefined,
     });
+    if (i > 0) label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
+    label.longest = mobile ? `gen 10, ${HANDOFF}` : `${RUNTIMES[rt].name}, gen 10, ${HANDOFF}`;
     const l: Lineage = { node: n, rings: [], handoffAt: -100, gen: past + 1, label, rt: RUNTIMES[rt].name };
     for (let g = past - 1; g >= 0; g--) addRing(l, -100, ringRadius(g));
     seats.push(l);
   }
   // messages: a field of named seats handing each other work. Some are busy; mail for a busy seat
   // waits beside it and is delivered when its turn ends, so nobody is interrupted mid-task.
-  type Talker = { node: Node; busy: boolean; flipAt: number; ring: Line; label: Label | null; rt: string };
+  // While this layer is on screen the seats gather into the fleet's shape: the GM at the centre,
+  // project managers round it, and each PM's workers in its orbit. Mail follows that shape (worker
+  // and PM most, PM and GM less; an escalation climbs worker -> PM -> GM). Scroll on and they spread
+  // back out and mail each other directly.
+  // radius of the ring round a busy seat, where its parked mail circles: small, so it hugs its seat
+  const ORBIT = 0.19;
+  type Role = 'gm' | 'pm' | 'worker';
+  type Talker = {
+    node: Node;
+    busy: boolean;
+    flipAt: number;
+    ring: Line;
+    label: Label | null;
+    rt: string;
+    role: Role;
+    parent: Talker | null; // a worker's PM, a PM's GM
+    // place in the shape, as polar coordinates round its parent (the GM's own is the layer centre).
+    // Kept as radius + angle so the orbits can be set turning later without a rewrite.
+    orbitR: number;
+    orbitA: number;
+    home: Vector3; // where it sits when spread out
+    hub: Vector3; // its place in the shape
+    phase: number;
+  };
   const talkers: Talker[] = [];
-  const TALK = mobile ? 12 : 22;
-  for (let i = 0; i < TALK; i++) {
-    const a = (i / TALK) * Math.PI * 2 + Math.random() * 0.4;
-    const r = (0.6 + Math.sqrt(Math.random()) * 2.7) * K;
-    const n = spawn(new Vector3(LX.messages + Math.cos(a) * r, Y.messages + (Math.random() - 0.5) * 2.2, Math.sin(a) * r), MAYA, 20);
-    if (!n) continue;
+  labelGroup = 'messages';
+  let msgLayout = 'spread'; // the layout messaging is heading for: its names are solved for it
+  const PM_NAMES = ['pm-web', 'pm-mobile', 'pm-data', 'pm-infra'];
+  const PMS = 4;
+  const PER_PM = mobile ? 3 : 6; // a phone shows every name, so fewer workers there
+  const TALK = 1 + PMS + PMS * PER_PM;
+  // a phone screen is tall: the shape is stretched front to back (screen up and down) there
+  const ZS = mobile ? 1.7 : 1;
+  const PM_R = mobile ? 1.32 : 1.75;
+  const WORKER_R = mobile ? 0.74 : 0.95;
+  // how far each PM's ring of workers is turned (radians); ?cenote&orb=<n> overrides it for tests
+  const orbParam = location.search.includes('cenote') ? new URLSearchParams(location.search).get('orb') : null;
+  // (chosen by a scan so every name has room: 0 hidden at 390 px, 1 of 29 at 1440)
+  const ORBIT_TURN = orbParam !== null ? Number(orbParam) : mobile ? 5.45 : 1.75;
+  const orbitPos = (tk: Talker, out: Vector3) => {
+    if (!tk.parent) return out.set(LX.messages, Y.messages, 0);
+    orbitPos(tk.parent, out);
+    return out.set(out.x + Math.cos(tk.orbitA) * tk.orbitR, out.y, out.z + Math.sin(tk.orbitA) * tk.orbitR * ZS);
+  };
+  const talkHome = [[0, 0] as [number, number], ...spread(TALK - 1, mobile ? 2.1 : 2.9, mobile ? 2.6 : 2.8, mobile ? 0.9 : 0.95, [[0, 0]], 11)];
+  let worker = 0;
+  const makeTalker = (i: number, role: Role, parent: Talker | null, orbitR: number, orbitA: number, name: string) => {
+    const [hx, hz] = talkHome[i];
+    const home = new Vector3(LX.messages + hx, Y.messages + (role === 'gm' ? 0 : Math.sin(i * 1.7) * 0.9), hz);
+    const n = spawn(home, role === 'worker' ? MAYA : LIGHT, role === 'gm' ? 30 : role === 'pm' ? 25 : 19);
+    if (!n) return null;
+    n.drift = 0; // talkers bob from their own phase, set each frame (they also move)
     const ring = new Line(circle, new LineBasicMaterial({ color: OCHRE, transparent: true, opacity: 0, depthWrite: false }));
-    ring.scale.setScalar(0.32);
+    ring.scale.setScalar(ORBIT); // parked mail circles on this ring
     scene.add(ring);
-    // on a phone every other seat is named, so the names don't crowd the field
-    const rt = runtimeFor(i + 1);
-    const label = !mobile || i % 2 === 0 ? addLabel(TALKER_NAMES[i % TALKER_NAMES.length], () => n.pos, () => n.alpha, 'talker', { runtime: rt }) : null;
-    talkers.push({ node: n, busy: Math.random() < 0.2, flipAt: Math.random() * 6, ring, label, rt: RUNTIMES[rt].name });
+    // the GM is Claude; PMs and workers mix the three runtimes
+    const rt: Runtime = role === 'gm' ? 'claude' : role === 'pm' ? RUNTIME_CYCLE[i % RUNTIME_CYCLE.length] : RUNTIME_CYCLE[worker++ % RUNTIME_CYCLE.length];
+    const label =
+      role === 'gm'
+        ? // on a phone the role goes on the second line, so the GM's box stays narrow
+          addLabel('GM', () => n.pos, () => n.alpha, 'gm', { runtime: rt, role: mobile ? undefined : 'general manager' })
+        : role === 'pm'
+          ? addLabel(name, () => n.pos, () => n.alpha, 'pm', { runtime: rt }) // styled like every agent; only the text differs
+          : addLabel(name, () => n.pos, () => n.alpha, 'talker', { runtime: rt });
+    const tk: Talker = {
+      node: n,
+      busy: role === 'worker' && Math.random() < 0.2,
+      flipAt: Math.random() * 6,
+      ring,
+      label,
+      rt: RUNTIMES[rt].name,
+      role,
+      parent,
+      orbitR,
+      orbitA,
+      home,
+      hub: new Vector3(),
+      phase: Math.random() * 6.28,
+    };
+    if (label) label.target = () => (msgLayout === 'gathered' ? tk.hub : tk.home);
+    if (label && role === 'worker') label.longest = mobile ? 'busy' : `${tk.rt}, busy`;
+    orbitPos(tk, tk.hub);
+    if (role !== 'gm') tk.hub.y += Math.sin(i * 1.7) * (role === 'pm' ? 0.12 : 0.22);
+    talkers.push(tk);
+    return tk;
+  };
+  const gmTalker = makeTalker(0, 'gm', null, 0, 0, 'GM')!;
+  const pms: Talker[] = [];
+  for (let p = 0; p < PMS; p++) {
+    // PMs on the diagonals, so the four orbits sit in the four corners of a portrait screen
+    const a = Math.PI / 4 + (p / PMS) * Math.PI * 2;
+    const pm = makeTalker(1 + p, 'pm', gmTalker, PM_R, a, PM_NAMES[p % PM_NAMES.length]);
+    if (pm) pms.push(pm);
   }
+  pms.forEach((pm, p) => {
+    for (let j = 0; j < PER_PM; j++) {
+      // round the PM, starting from the side facing away from the GM. With an even count the
+      // offset leaves the side facing the GM open, so the GM -> PM spoke runs clear.
+      const off = (PER_PM % 2 === 0 ? Math.PI / PER_PM : 0) + ORBIT_TURN;
+      const a = pm.orbitA + off + (j / PER_PM) * Math.PI * 2;
+      const i = 1 + PMS + p * PER_PM + j;
+      makeTalker(i, 'worker', pm, WORKER_R, a, TALKER_NAMES[(i - 1 - PMS) % TALKER_NAMES.length]);
+    }
+  });
+  const workers = talkers.filter((t) => t.role === 'worker');
+  let gather = 0; // 0 spread out, 1 gathered into the shape
+  let gatherTarget = 0;
+  // spokes: faint lines from each agent's parent to it (GM -> PMs, PM -> its workers), drawn while
+  // they are gathered. The grouping reads from position and spokes alone.
+  const kpos = new Float32Array(TALK * 6);
+  const kcol = new Float32Array(TALK * 8);
+  const kgeo = new BufferGeometry();
+  kgeo.setAttribute('position', new BufferAttribute(kpos, 3));
+  kgeo.setAttribute('color', new BufferAttribute(kcol, 4));
+  const spokes = new LineSegments(kgeo, new LineBasicMaterial({ vertexColors: true, transparent: true, depthWrite: false, fog: false }));
+  spokes.frustumCulled = false;
+  scene.add(spokes);
   // fly: rides the line from one orb centre to the other. wait: the receiver is busy, so it circles
   // beside it. land: the receiver is free again, so it flies into the receiver's centre. done: it
   // has been delivered and fades out inside the receiver.
@@ -366,8 +499,8 @@ export function mount(canvas: HTMLCanvasElement) {
     landFrom: Vector3;
     ang: number; // where on the orbit it is circling
     reply: boolean;
+    forward: Talker | null; // an escalation: on delivery, the receiver passes it up to this seat
   };
-  const ORBIT = 0.45;
   const dest = new Vector3();
   // where a message should stop: the receiver's centre if it is free, otherwise the near edge of
   // its orbit (on the side the message comes from), so it never enters a busy orb
@@ -380,13 +513,13 @@ export function mount(canvas: HTMLCanvasElement) {
     return out.set(c.x + (dx / len) * ORBIT, c.y + 0.1, c.z + (dz / len) * ORBIT);
   };
   const packets: Packet[] = [];
-  const send = (from: Talker, to: Talker, reply: boolean) => {
+  const send = (from: Talker, to: Talker, reply: boolean, kindIs?: MailKind, forward: Talker | null = null) => {
     if (packets.length >= MAXP) return;
-    const kind: MailKind = reply ? 'reply' : pickKind();
+    const kind: MailKind = reply ? 'reply' : (kindIs ?? pickKind());
     const n = spawn(from.node.pos, MAIL[kind], 22);
     if (!n) return;
     const dur = 0.9 + from.node.pos.distanceTo(to.node.pos) * 0.12;
-    packets.push({ node: n, from, to, state: 'fly', kind, t: 0, dur, waited: 0, landFrom: new Vector3(), ang: 0, reply });
+    packets.push({ node: n, from, to, state: 'fly', kind, t: 0, dur, waited: 0, landFrom: new Vector3(), ang: 0, reply, forward });
   };
   // approvals: dim seats around the card that rises
   const askers: Node[] = [];
@@ -399,6 +532,7 @@ export function mount(canvas: HTMLCanvasElement) {
   // memory that survives a restart: a seat at the centre of the facts it has learned. Every few
   // seconds it restarts. Its light and its links go out, but the facts stay lit; the next
   // generation lights up and re-links to each fact in turn (recall).
+  labelGroup = 'memory';
   const memSeat = spawn(new Vector3(LX.memory, Y.memory, -0.4), LIGHT, 30)!;
   const FACTS = mobile ? 12 : 16;
   const facts: Node[] = [];
@@ -413,10 +547,11 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   FACT_LABELS.forEach((text, i) => {
     const f = facts[i * 3 + 1];
-    if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false });
+    // a steady name: the fact lights brighten only as the camera nears, the names shouldn't wait
+    if (f) addLabel(text, () => f.pos, () => 0.85, 'fact', { sub: false });
   });
   let memGen = 7;
-  const memLabel = addLabel('dev-api', () => memSeat.pos, () => (memSeat.alpha < 0.1 ? 0.85 : memSeat.alpha), 'mem', { runtime: 'claude' });
+  const memLabel = addLabel('dev-api', () => memSeat.pos, () => 0.95, 'mem', { runtime: 'claude' }); // steady; its line says when it restarts
   const lpos = new Float32Array(FACTS * 6);
   const lcol = new Float32Array(FACTS * 8);
   const lgeo = new BufferGeometry();
@@ -468,6 +603,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let apPanelTop = Infinity; // the approvals panel's top edge on screen, in px (narrow layout)
   const apPanel = document.querySelector<HTMLElement>('[data-layer="approvals"] .panel');
   const memPanel = document.querySelector<HTMLElement>('[data-layer="memory"] .panel');
+  const layerSections = new Map(sections.filter((s) => s.dataset.layer).map((s) => [s.dataset.layer!, s] as const));
   let lastScrollAt = 0;
   const readScroll = () => {
     lastScrollAt = performance.now();
@@ -495,6 +631,12 @@ export function mount(canvas: HTMLCanvasElement) {
       approvalsT = clamp(1 - (r.top + r.height * 0.35) / innerHeight, 0, 1);
     }
     if (apPanel) apPanelTop = apPanel.getBoundingClientRect().top;
+    // gathered round the GM while the messaging section is near the middle of the screen
+    const msg = sections.find((s) => s.dataset.layer === 'messages');
+    if (msg) {
+      const r = msg.getBoundingClientRect();
+      gatherTarget = smooth(0.8, 0.3, Math.abs(r.top + r.height / 2 - mid) / innerHeight);
+    }
     const floor = sections.find((s) => s.classList.contains('paths'));
     if (floor) floorT = smooth(0.95, 0.5, floor.getBoundingClientRect().top / innerHeight);
   };
@@ -505,6 +647,9 @@ export function mount(canvas: HTMLCanvasElement) {
   addEventListener(
     'pointermove',
     (e) => {
+      // the lean follows a mouse only: on a phone every touch is a pointer move, and leaning toward
+      // the thumb pushed whole layers off centre
+      if (e.pointerType !== 'mouse') return;
       px = e.clientX / innerWidth - 0.5;
       py = e.clientY / innerHeight - 0.5;
     },
@@ -531,6 +676,103 @@ export function mount(canvas: HTMLCanvasElement) {
   resize();
   depth = depthTarget;
 
+  // ---- names: where each sits relative to its light, and the solve that picks it (see the label
+  // pass in the loop)
+  const solvedAs = new Map<string, string>(); // layer -> the layout its names were solved for
+  // names fade in as the scroll brings the camera from NAMES_FROM to NAMES_FULL (in depth units)
+  // from a layer's own depth; layers are 0.18-0.2 apart
+  const NAMES_FROM = 0.085;
+  const NAMES_FULL = 0.035;
+  const sideAt = (l: Label, narrow: boolean): [number, number] => {
+    const { sx, sy, w, h } = l;
+    switch (l.side) {
+      case 'over':
+        return [sx - w / 2, sy - h - 9];
+      case 'right':
+        return narrow ? [sx + 11, sy - h / 2] : [sx + 9, sy - 9];
+      case 'left':
+        return narrow ? [sx - w - 11, sy - h / 2] : [sx - w - 9, sy - 9];
+      default:
+        return [sx - w / 2, sy + 9];
+    }
+  };
+  // Solved for where things WILL be: the layer's lights at their target places, seen from the
+  // camera as it will be once this layer's section is centred (its rest), with its panel where it
+  // will sit then. So it can run the moment the layer starts coming into view.
+  const restCam = camera.clone();
+  const solveNames = (group: Label[], section: HTMLElement, W: number, H: number, narrow: boolean, EDGE: number) => {
+    const sr = section.getBoundingClientRect();
+    const shift = H / 2 - (sr.top + sr.height / 2); // how far the section moves to reach its rest
+    restCam.copy(camera);
+    restCam.position.set(0, lerp(CAM_TOP, CAM_BOTTOM, Number(section.dataset.depth)), 2.2);
+    restCam.updateMatrixWorld();
+    const placed: { x: number; y: number; w: number; h: number; by: string }[] = [];
+    // its text panel is taken: no name may sit under it
+    const panel = section.querySelector<HTMLElement>('.panel');
+    if (panel) {
+      const r = panel.getBoundingClientRect();
+      placed.push({ x: r.left - 8, y: r.top + shift - 8, w: r.width + 16, h: r.height + 16, by: 'panel' });
+    }
+    for (const l of group) {
+      const t = l.target();
+      l.d = restCam.position.distanceTo(t);
+      proj.copy(t).project(restCam);
+      l.on = proj.z <= 1;
+      l.sx = (proj.x * 0.5 + 0.5) * W;
+      l.sy = (-proj.y * 0.5 + 0.5) * H;
+    }
+    // the GM first, then the PMs, then the rest nearest-first
+    const rank = (l: Label) => (l.el.classList.contains('gm') ? 2 : l.el.classList.contains('pm') ? 1 : 0);
+    const order = group.filter((l) => l.on).sort((p, q) => rank(q) - rank(p) || p.d - q.d);
+    for (const l of group) if (!l.on) l.hidden = true;
+    for (const l of order) {
+      const { sx, sy, h } = l;
+      // room for the longest its text gets, so a name that later reads 'busy' still fits
+      let w = l.w;
+      if (l.longest && l.sub) {
+        const now = l.sub.textContent;
+        l.sub.textContent = l.longest;
+        w = Math.max(w, l.el.offsetWidth);
+        l.sub.textContent = now;
+      }
+      const wNow = l.w;
+      l.w = w; // sideAt reads it: solve at the longest width
+      // every name has ONE place: centred just under its light on a phone, up and to the right on
+      // a wide screen. It never chooses another side; the only question is whether it shows.
+      const sides = [narrow ? 'under' : 'right'];
+      const gm = rank(l) === 2;
+      const pm = rank(l) === 1;
+      let found = '';
+      for (const side of sides) {
+        l.side = side;
+        const [x0, y0] = sideAt(l, narrow);
+        const x = clamp(x0, EDGE, W - w - EDGE);
+        const y = clamp(y0, EDGE, H - h - EDGE);
+        // a side only counts if the name fits there as it is: a name held in by the screen edge
+        // would stop riding with its light and slide against it as the layer moves
+        const hit = placed.find((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h);
+        const free = x === x0 && y === y0 && !hit;
+        l.why = x !== x0 || y !== y0 ? `edge ${Math.round(x0)},${Math.round(y0)} w${Math.round(w)}` : hit ? `over ${hit.by}` : '';
+        if (gm || free) {
+          found = side;
+          break;
+        }
+      }
+      // the GM's and the PMs' names always show: with no clear side they take their first choice
+      if (!found && (gm || pm)) found = sides[0];
+      l.side = found || sides[0];
+      l.hidden = !found;
+      if (found) {
+        const [x0, y0] = sideAt(l, narrow);
+        const pad = gm ? 4 : 0;
+        placed.push({ x: clamp(x0, EDGE, W - w - EDGE) - pad, y: clamp(y0, EDGE, H - h - EDGE) - pad, w: w + pad * 2, h: h + pad * 2, by: l.el.firstChild?.textContent ?? '' });
+      }
+      l.w = wNow;
+      // a seat whose name has no room in this layout shows as a dimmer, background seat
+      if (l.dim) l.dim.target = l.hidden ? 0.3 : 1;
+    }
+  };
+
   // ---- the loop
   let last = performance.now();
   let nextHandoff = 1.2;
@@ -538,6 +780,7 @@ export function mount(canvas: HTMLCanvasElement) {
   let clock = 0;
   let raf = 0;
   const minFrame = mobile ? 1000 / 31 : 0;
+  const snap = location.search.includes('snap');
   let painted = false;
   let stopped = false;
   // frame-rate guard: if a weak GPU can't hold ~20fps, give the visitor the static page back
@@ -557,7 +800,8 @@ export function mount(canvas: HTMLCanvasElement) {
       stop();
       return;
     }
-    const dt = Math.min(dtRaw / 1000, 0.05);
+    // ?cenote&snap (screenshots on a slow software renderer): let a slow frame cover real time
+    const dt = Math.min(dtRaw / 1000, snap ? 0.3 : 0.05);
     clock += dt;
 
     // camera follows the scroll with a little inertia, and leans toward the pointer
@@ -584,7 +828,9 @@ export function mount(canvas: HTMLCanvasElement) {
       // the core glows ochre while the successor answers the readback, then turns back to light
       const since = clock - l.handoffAt;
       l.node.color.copy(LIGHT).lerp(OCHRE, since < 2 ? smooth(0, 0.3, since) * (1 - smooth(1.2, 2, since)) : 0);
-      setSub(l.label, since < 1.8 ? `${l.rt}, gen ${l.gen}, reading handoff` : `${l.rt}, gen ${l.gen}`);
+      // a phone drops the runtime's name (its mark stays), so every name has room
+      const rtName = mobile ? '' : `${l.rt}, `;
+      setSub(l.label, since < 1.8 ? `${rtName}gen ${l.gen}, ${HANDOFF}` : `${rtName}gen ${l.gen}`);
       l.rings.forEach((ring, i) => {
         const age = clock - ring.born;
         ring.r += (ringRadius(i) - ring.r) * Math.min(1, dt * 3);
@@ -594,18 +840,58 @@ export function mount(canvas: HTMLCanvasElement) {
         // ochre while the readback is checked (first ~1.2s), then the ring cools to water-blue
         ring.mat.color.copy(MAYA).lerp(OCHRE, fresh ? 1 - smooth(1.0, 1.8, age) : 0);
         const settled = 0.75 * Math.pow(0.62, i);
-        ring.mat.opacity = fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled;
+        // a background seat (its name had no room) keeps its rings faint too
+        const bg = l.node.target < 1 ? 0.35 : 1;
+        ring.mat.opacity = bg * (fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled);
       });
     }
-    // messages: a steady loop of sends across the whole field
+    // messages: gathered into the shape, mail follows it; spread out, agents mail each other directly
+    gather += (gatherTarget - gather) * Math.min(1, dt * 1.6);
+    const gk = gather * gather * (3 - 2 * gather);
+    for (const tk of talkers) {
+      tk.node.pos.lerpVectors(tk.home, tk.hub, gk);
+      tk.node.pos.y += Math.sin(clock * 0.7 + tk.phase) * 0.11;
+    }
+    {
+      const near = smooth(15, 9, camera.position.distanceTo(gmTalker.node.pos)) * gk;
+      let k = 0;
+      for (const tk of talkers) {
+        if (!tk.parent) continue;
+        const g = tk.parent.node.pos;
+        const p = tk.node.pos;
+        // GM -> PM spokes a little stronger than PM -> worker
+        const a = tk.role === 'pm' ? 0.4 : 0.26;
+        kpos.set([g.x, g.y, g.z, p.x, p.y, p.z], k * 6);
+        kcol.set([LIGHT.r, LIGHT.g, LIGHT.b, a * near, MAYA.r, MAYA.g, MAYA.b, a * 0.4 * near], k * 8);
+        k++;
+      }
+      kgeo.setDrawRange(0, k * 2);
+      kgeo.attributes.position.needsUpdate = true;
+      kgeo.attributes.color.needsUpdate = true;
+      spokes.visible = near > 0.01;
+    }
     if (clock > nextMessage && talkers.length > 1) {
       nextMessage = clock + 0.22 + Math.random() * 0.3;
-      const a = talkers[Math.floor(Math.random() * talkers.length)];
-      const b = talkers[Math.floor(Math.random() * talkers.length)];
-      if (a !== b) send(a, b, false);
+      if (gather > 0.5) {
+        // most mail is between a worker and its PM; less between a PM and the GM; an escalation
+        // goes worker -> PM, and the PM passes it up to the GM
+        const r = Math.random();
+        const w = workers[Math.floor(Math.random() * workers.length)];
+        const pm = pms[Math.floor(Math.random() * pms.length)];
+        if (r < 0.34) send(w.parent!, w, false, 'task');
+        else if (r < 0.62) send(w, w.parent!, false, 'task_complete');
+        else if (r < 0.76) send(gmTalker, pm, false, 'task');
+        else if (r < 0.9) send(pm, gmTalker, false, 'task_complete');
+        else send(w, w.parent!, false, 'escalate', gmTalker);
+      } else {
+        const others = talkers.length - 1;
+        const a = talkers[1 + Math.floor(Math.random() * others)];
+        const b = talkers[1 + Math.floor(Math.random() * others)];
+        if (a !== b) send(a, b, false);
+      }
     }
     for (const tk of talkers) {
-      if (clock > tk.flipAt) {
+      if (clock > tk.flipAt && tk.role === 'worker') {
         tk.busy = !tk.busy && Math.random() < 0.35;
         tk.flipAt = clock + (tk.busy ? 2.5 + Math.random() * 3 : 1.5 + Math.random() * 4);
       }
@@ -613,7 +899,13 @@ export function mount(canvas: HTMLCanvasElement) {
       m.opacity += ((tk.busy ? 0.9 : 0) - m.opacity) * Math.min(1, dt * 4);
       tk.ring.position.copy(tk.node.pos);
       tk.ring.visible = m.opacity > 0.01;
-      if (tk.label) setSub(tk.label, tk.busy ? `${tk.rt}, busy: mail waits` : tk.rt);
+      // phones: the short form, so names fit beside a crowded hub
+      // a PM's role goes on this line (short on a phone)
+      // on a phone the runtime's name is dropped (its mark stays), so every name has room
+      const sub = mobile
+        ? tk.busy ? 'busy' : tk.role === 'pm' ? 'PM' : tk.role === 'gm' ? 'general manager' : ''
+        : tk.busy ? `${tk.rt}, busy` : tk.role === 'pm' ? 'project manager' : tk.rt;
+      if (tk.label) setSub(tk.label, sub);
     }
     for (let i = packets.length - 1; i >= 0; i--) {
       const pk = packets[i];
@@ -638,7 +930,7 @@ export function mount(canvas: HTMLCanvasElement) {
       if (pk.state === 'wait') {
         // parked OUTSIDE a busy seat; it circles there until the seat's turn ends
         pk.waited += dt;
-        pk.ang += dt * 2.2;
+        pk.ang += dt * 4.4; // a tight ring: turn faster so the circling still reads
         pk.node.pos.set(center.x + Math.cos(pk.ang) * ORBIT, center.y + 0.1, center.z + Math.sin(pk.ang) * ORBIT);
         if (pk.to.busy) continue;
         pk.state = 'land';
@@ -659,7 +951,9 @@ export function mount(canvas: HTMLCanvasElement) {
           // delivered: the receiver flares, and often answers
           pk.node.target = 0;
           pk.to.node.alpha = 1.6;
-          if (!pk.reply && Math.random() < 0.55) send(pk.to, pk.from, true);
+          // an escalation is passed up the line instead of answered
+          if (pk.forward) send(pk.to, pk.forward, false, 'escalate');
+          else if (!pk.reply && Math.random() < 0.55) send(pk.to, pk.from, true);
         }
         // fade out inside the receiver, following it as it floats. Let go above the pool's 0.02
         // reclaim threshold, so this packet never holds a node the pool has handed to a new one.
@@ -810,43 +1104,77 @@ export function mount(canvas: HTMLCanvasElement) {
 
     renderer.render(scene, camera);
 
-    // labels follow their lights; they fade with distance so only the layer you are in is named.
-    // Placed nearest-first: a label that would overlap one already placed is hidden for now, so a
-    // tight cluster never turns into overlapping text.
+    // Every name is pinned to its own light at one fixed offset (under it on a phone, up and to the
+    // right on a wide screen), in every state; it never moves for anything else, mail included.
+    // Which names show is decided once per layout, for the layout the layer is heading to: a name
+    // that would overlap another name (or run off screen) there stays out. How visible the rest are
+    // is set by SCROLL, like everything else in the scene: they fade in over the last stretch of
+    // the camera's way to the layer (NAMES_FROM .. NAMES_FULL) and out the same way as it leaves,
+    // so they appear at the same place every time and run backwards when you scroll back. Only a layout switch (messaging gathering
+    // or spreading), which has no scroll distance of its own, crossfades in time (~0.2 s).
     const W = innerWidth;
     const H = innerHeight;
-    const shown: Label[] = [];
+    const narrow = W <= 900;
+    const EDGE = 16; // every name stays this far inside the screen
     for (const l of labels) {
       const p = l.at();
       l.d = camera.position.distanceTo(p);
-      l.a = clamp(l.alpha(), 0, 1) * smooth(13, 8.5, l.d) * smooth(2.2, 3.5, l.d);
+      // a name shows by its layer (below), not by distance; only a light right at the lens hides it
+      l.a = clamp(l.alpha(), 0, 1) * smooth(2.2, 3.5, l.d);
       proj.copy(p).project(camera);
-      if (l.a < 0.03 || proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) {
-        l.a = 0;
-        continue;
-      }
-      l.x = (proj.x * 0.5 + 0.5) * W + 9;
-      l.y = (-proj.y * 0.5 + 0.5) * H - 9;
+      if (proj.z > 1) l.a = 0;
       if (!l.w) {
         l.w = l.el.offsetWidth || 90;
         l.h = l.el.offsetHeight || 28;
       }
-      shown.push(l);
+      l.sx = (proj.x * 0.5 + 0.5) * W;
+      l.sy = (-proj.y * 0.5 + 0.5) * H;
     }
-    // the general manager's name always wins; the rest are placed nearest-first
-    shown.sort((p, q) => Number(q.el.classList.contains('gm')) - Number(p.el.classList.contains('gm')) || p.d - q.d);
-    const placed: Label[] = [];
-    for (const l of shown) {
-      const hit = placed.some((o) => l.x < o.x + o.w && o.x < l.x + l.w && l.y < o.y + o.h && o.y < l.y + l.h);
-      if (hit) l.a = 0;
-      else placed.push(l);
+    // which layout each layer is heading for. Messaging has two: gathered and spread.
+    msgLayout = gatherTarget > 0.5 ? 'gathered' : 'spread';
+    const layoutOf = (g: string) => (g === 'messages' ? msgLayout : 'still');
+    const inView = new Map<string, number>();
+    for (const g of ['seats', 'messages', 'memory']) {
+      const section = layerSections.get(g);
+      if (!section) continue;
+      const r = section.getBoundingClientRect();
+      // how close the camera's scroll position is to this layer's (depthTarget is set straight
+      // from the scroll): names fade in over the last stretch of the way there and out the same
+      // way after, so they never show while the layer is still a small cluster under other text
+      const off = Math.abs(depthTarget - Number(section.dataset.depth));
+      const vis = smooth(NAMES_FROM, NAMES_FULL, off);
+      inView.set(g, vis);
+      const group = labels.filter((l) => l.group === g);
+      // out of view: the next visit solves afresh
+      if (vis === 0) solvedAs.delete(g);
+      if (vis > 0 && solvedAs.get(g) !== layoutOf(g)) {
+        const fresh = !solvedAs.has(g);
+        solveNames(group, section, W, H, narrow, EDGE);
+        solvedAs.set(g, layoutOf(g));
+        // entering: names take their state at once (scroll does the fading); a layout switch eases
+        if (fresh) for (const l of group) l.f = l.hidden ? 0 : 1;
+      }
     }
     for (const l of labels) {
-      if (!l.a) {
+      // a layout switch crossfades in about 0.2 s; everything else follows the scroll directly
+      const want = l.hidden ? 0 : 1;
+      const step = dt / 0.22;
+      l.f = want > l.f ? Math.min(want, l.f + step) : Math.max(want, l.f - step);
+      l.o = (inView.get(l.group) ?? 0) * l.f * l.a;
+      if (l.o < 0.01) {
         if (l.el.style.opacity !== '0') l.el.style.opacity = '0';
         continue;
       }
-      l.el.style.opacity = l.a.toFixed(2);
+      // rides with its light exactly: the edge margin was enforced when the side was chosen
+      // (the GM's and PMs' names, which always show, are the exception and stay held in)
+      proj.copy(l.at()).project(camera);
+      l.sx = (proj.x * 0.5 + 0.5) * W;
+      l.sy = (-proj.y * 0.5 + 0.5) * H;
+      const [x, y] = sideAt(l, narrow);
+      const held = l.el.classList.contains('gm') || l.el.classList.contains('pm');
+      l.x = held ? clamp(x, EDGE, W - l.w - EDGE) : x;
+      l.y = held ? clamp(y, EDGE, H - l.h - EDGE) : y;
+      l.el.style.opacity = l.o.toFixed(2);
       l.el.style.transform = `translate3d(${l.x.toFixed(1)}px, ${l.y.toFixed(1)}px, 0)`;
     }
 
@@ -856,6 +1184,53 @@ export function mount(canvas: HTMLCanvasElement) {
     }
   };
   raf = requestAnimationFrame(tick);
+
+  // ?cenote only (screenshots and tests): each layer's on-screen centroid, in CSS px
+  if (location.search.includes('cenote')) {
+    const centroid = (ps: Vector3[]) => {
+      let x = 0;
+      let y = 0;
+      let x0 = Infinity;
+      let x1 = -Infinity;
+      let y0 = Infinity;
+      let y1 = -Infinity;
+      let gap = Infinity; // closest two lights on screen, px
+      const sp = ps.map((p) => {
+        proj.copy(p).project(camera);
+        return [(proj.x * 0.5 + 0.5) * innerWidth, (-proj.y * 0.5 + 0.5) * innerHeight];
+      });
+      sp.forEach(([sx, sy], i) => {
+        x += sx;
+        y += sy;
+        x0 = Math.min(x0, sx);
+        x1 = Math.max(x1, sx);
+        y0 = Math.min(y0, sy);
+        y1 = Math.max(y1, sy);
+        for (let j = i + 1; j < sp.length; j++) gap = Math.min(gap, Math.hypot(sx - sp[j][0], sy - sp[j][1]));
+      });
+      const r = Math.round;
+      return { x: r(x / ps.length), y: r(y / ps.length), n: ps.length, box: [r(x0), r(y0), r(x1), r(y1)], gap: r(gap) };
+    };
+    (window as unknown as { __cenote: unknown }).__cenote = () => ({
+      vw: innerWidth,
+      canvasW: canvas.getBoundingClientRect().width,
+      camX: +camera.position.x.toFixed(3),
+      gather: +gather.toFixed(2),
+      hiddenWhy: labels.filter((l) => l.hidden).map((l) => `${l.group}:${l.el.firstChild?.textContent} ${l.why} at ${Math.round(l.sx)},${Math.round(l.sy)}`),
+      names: labels
+        .filter((l) => l.o > 0.05)
+        // offset of the name's anchor from its light: its centre when over or under, its inner edge
+        // when beside (so a second line changing length doesn't read as movement)
+        .map((l) => {
+          const ax = l.side === 'left' ? l.x + l.w : l.side === 'right' ? l.x : l.x + l.w / 2;
+          const ay = l.side === 'over' ? l.y + l.h : l.side === 'under' ? l.y : l.y + l.h / 2;
+          return { t: l.el.firstChild?.textContent, g: l.group, side: l.side, dx: Math.round(ax - l.sx), dy: Math.round(ay - l.sy) };
+        }),
+      seats: centroid(seats.map((s) => s.node.pos)),
+      messages: centroid(talkers.map((t) => t.node.pos)),
+      memory: centroid([memSeat.pos, ...facts.map((f) => f.pos)]),
+    });
+  }
 
   const reduce = matchMedia('(prefers-reduced-motion: reduce)');
   const stop = () => {
@@ -916,6 +1291,34 @@ function dot() {
   g.fillStyle = grad;
   g.fillRect(0, 0, 32, 32);
   return new CanvasTexture(c);
+}
+
+// n points spread over an ellipse (radii rx, rz) with at least `gap` between any two, around the
+// points in `keep` (which are not returned). Seeded, so a layer looks the same on every visit.
+function spread(n: number, rx: number, rz: number, gap: number, keep: [number, number][], seed: number): [number, number][] {
+  let s = seed >>> 0;
+  const rand = () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+  const pts: [number, number][] = [...keep];
+  let g = gap;
+  // if the ellipse can't hold them all at this gap, give a little and keep going
+  for (let tries = 0; pts.length < n + keep.length; tries++) {
+    if (tries > 0 && tries % 400 === 0) g *= 0.93;
+    const a = rand() * Math.PI * 2;
+    const r = Math.sqrt(rand());
+    const x = Math.cos(a) * r * rx;
+    const z = Math.sin(a) * r * rz;
+    if (pts.every(([px, pz]) => Math.hypot(px - x, pz - z) >= g)) pts.push([x, z]);
+  }
+  // centre the new points' weight sideways, so a layer never leans left or right of its anchor
+  const out = pts.slice(keep.length);
+  const mx = out.reduce((a, [x]) => a + x, 0) / out.length;
+  return out.map(([x, z]) => [x - mx, z]);
 }
 
 function lerp(a: number, b: number, t: number) {
