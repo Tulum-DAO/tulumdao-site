@@ -4,14 +4,107 @@ source: "docs/INSTALL.md"
 order: 1
 ---
 One machine, one CLI (claude OR gemini OR codex), no voice, no Telegram.
-Target: gateway up, one seat spawned, one approval card answered from the web
-dashboard, in under 30 minutes on a clean Ubuntu 22.04/24.04 VPS.
+Starting from nothing, you end with: a VPS, Tailscale on it and on your own
+laptop or phone, `orchestra up` running, the dashboard open in your browser over
+https, an agent CLI logged in, and one seat spawned. Budget about an hour the
+first time; a clean Ubuntu 22.04/24.04 VPS is assumed.
 
-Once the gateway from step 2 below is up, connecting your own phone and
-browser to it (no baked-in token) is [`docs/ONBOARDING.md`](/docs/onboarding/) — a separate
-short walkthrough, not part of this doc's steps.
+The path, in order:
+
+| step | where | what you end with |
+|---|---|---|
+| Get a VPS | your provider's website | a server you can `ssh` into |
+| 0. Prerequisites | the VPS | a normal sudo user, Tailscale, packages, a pinned agent CLI, logged in |
+| 1. Clone, init, doctor | the VPS | `orchestra doctor` all OK |
+| 2. Up | the VPS, then your browser | the supervisor running; the dashboard open at `https://<vps>.<tailnet>.ts.net` |
+| 3. Spawn one seat | the VPS or the dashboard | one live seat |
+| 4. Answer one card | the dashboard | the seat receives your answer |
+
+Connecting the iOS app to your gateway (pairing) is [`docs/ONBOARDING.md`](/docs/onboarding/), a
+separate short walkthrough after this one.
+
+## Get a VPS
+
+Any provider that sells a Linux virtual server works; nothing here is tied to one.
+Choose:
+
+- **Ubuntu 24.04 LTS** (22.04 also works).
+- **At least 2 vCPU, 4 GB RAM and 40 GB disk.** The models run on the vendor's
+  servers, not yours. What uses memory is the agent CLIs: each Claude Code seat
+  takes roughly 400 MB (median of 27 seats on the reference install). 4 GB holds
+  the services and a handful of seats; take 8 GB if you plan on more than five.
+  We have not tested below 4 GB.
+- **ssh key login.** Most providers ask for your public key when you create the
+  server. If you have none, run `ssh-keygen -t ed25519` on your own computer
+  and paste the contents of `~/.ssh/id_ed25519.pub`.
+
+[`docs/COSTS.md`](/docs/costs/) has current prices for a few providers, and a no-cost path. When the
+server is ready, the provider shows its public IP address. Log in from your own
+computer:
+
+```bash
+ssh root@<server ip>        # some providers give you a named user instead of root; use that
+```
+
+You only need the public IP until Tailscale is set up below. The dashboard is never
+opened on it.
 
 ## 0. Prerequisites
+
+### Run as a normal user, not root
+
+On a fresh VPS you are often logged in as `root`. Do not install as root. Every seat launches
+its agent CLI with the permission-skip flag (`claude --dangerously-skip-permissions`;
+`spawn-agent.sh`), and Claude Code refuses that flag as root with
+`--dangerously-skip-permissions cannot be used with root/sudo privileges for security reasons`.
+Every seat would fail at launch.
+
+If `whoami` prints `root`, create a normal user with sudo once, give it your ssh key, and log
+back in as that user. Everything after this point runs as that user.
+
+```bash
+# as root, once (the name "orchestra" is only an example)
+adduser orchestra                       # choose a password; the other questions can be left blank
+usermod -aG sudo orchestra
+mkdir -p /home/orchestra/.ssh
+cp ~/.ssh/authorized_keys /home/orchestra/.ssh/
+chown -R orchestra:orchestra /home/orchestra/.ssh
+chmod 700 /home/orchestra/.ssh && chmod 600 /home/orchestra/.ssh/authorized_keys
+exit
+```
+
+Logged in as root with a password rather than a key? Then `/root/.ssh/authorized_keys` does
+not exist and the `cp` line fails. Run only `adduser` and `usermod`, `exit`, and then, from your
+own computer, `ssh-copy-id orchestra@<server ip>` (it asks for the new user's password once).
+
+Then, from your own computer: `ssh orchestra@<your server address>`. Check: `whoami` prints
+`orchestra` and `sudo -v` asks for that user's password and succeeds. If your provider already
+logs you in as a normal user with sudo, skip this step.
+
+### Tailscale on the VPS and on your own device
+
+Tailscale puts the VPS and your own laptop or phone on a private network (a
+"tailnet") that only your devices can join. It is how you will open the dashboard
+in your browser over https without putting it on the public internet. The free
+personal plan is enough.
+
+On the VPS, as your normal user:
+
+```bash
+curl -fsSL https://tailscale.com/install.sh | sh
+sudo tailscale up                       # prints a login URL: open it in your browser and sign in
+sudo tailscale set --operator=$USER     # lets your user run `tailscale serve` without sudo (step 2)
+tailscale status                        # the VPS is listed, with a 100.x.y.z address
+```
+
+On your own laptop and/or phone: install Tailscale from tailscale.com/download (or
+the app store), and sign in **with the same account**. Run `tailscale status` on the
+VPS again: your device is now listed too.
+
+Check: from your laptop, `ping <the VPS's 100.x.y.z address>` answers. From now on
+you can `ssh <your user>@<that address>` instead of the public IP.
+
+### Packages
 
 ```bash
 sudo apt update && sudo apt install -y git tmux python3 python3-venv build-essential curl iproute2   # iproute2 = `ss`, which `orchestra doctor` needs to attribute ports to its own supervisor
@@ -21,13 +114,8 @@ sudo apt update && sudo apt install -y git tmux python3 python3-venv build-essen
 curl -fsSL https://deb.nodesource.com/setup_22.x | sudo -E bash - && sudo apt install -y nodejs
 ```
 
-Install and log in to ONE agent CLI (the runtime catalog probes these):
-
-| runtime | binary | login |
-|---|---|---|
-| claude | `claude` | run `claude`, complete the login; `claude auth status` must report `loggedIn: true` |
-| gemini | `agy`    | run `agy` once; token lands in `~/.gemini/antigravity-cli/antigravity-oauth-token` |
-| codex  | `codex`  | run `codex login`; `~/.codex/auth.json` gets a `tokens` key |
+Then install ONE agent CLI, pinned (next section), and log in to it (the section
+after).
 
 ### Pin the agent CLI version
 
@@ -38,10 +126,19 @@ auto-updater off. Two versions are known good, both measured on 2026-09-19: the 
 native install moved from 2.1.263 to 2.1.278 in one morning with no action from the operator.
 
 ```bash
-npm install -g @anthropic-ai/claude-code@2.1.276
-export DISABLE_AUTOUPDATER=1     # put it in your shell profile so every seat inherits it
+sudo npm install -g @anthropic-ai/claude-code@2.1.276
+echo 'export DISABLE_AUTOUPDATER=1' >> ~/.bashrc && export DISABLE_AUTOUPDATER=1   # every seat's shell inherits it
 claude --version                 # must print 2.1.276
 ```
+
+Why `sudo`: the Node above is a system-wide install, so global npm packages go to
+`/usr/lib/node_modules`, which is owned by root. Without `sudo` the install fails with
+`EACCES: permission denied` for a normal user. Do not work around that by pointing npm at a
+prefix in your home directory: a prefix you own is one the CLI's auto-updater can write to,
+and it can then move you off the pinned version. With the root-owned install the pin holds
+even if `DISABLE_AUTOUPDATER` is ever missing from a shell; the updater just reports
+`Auto-update failed: no write permission to npm prefix`, which is harmless. To change versions
+later, run the same `sudo npm install -g` line with the new version.
 
 If you installed Claude Code with the native installer instead of npm, it auto-updates; switch to the
 npm install above for any machine that runs seats. For the Docker image, pass the pin as the build
@@ -49,26 +146,59 @@ argument: `--build-arg AGENT_CLIS="@anthropic-ai/claude-code@2.1.276"`. Without 
 whatever is current at build time, and inside the container auto-update is attempted every session
 and fails with `Auto-update failed: no write permission to npm prefix` because the npm prefix is not
 writable by the container user. That footer is not a fault in your setup; the pin and the export make
-it go away. Gemini and Codex CLIs: pin the same way with their package managers (the reference fleet
-runs agy 1.2.6 and codex-cli 0.153.4).
+it go away. Gemini and Codex CLIs: pin the same way with their package managers (`sudo npm install -g` for
+an npm package; the reference fleet runs agy 1.2.6 and codex-cli 0.153.4).
+
+### Log in to the agent CLI (the one step only you can do)
+
+This is the only step that needs a person: you sign in with your own account. Use
+your own login; never copy someone else's credentials onto the server.
+
+On the VPS, run the CLI once by itself. On a server with no browser it prints a
+sign-in URL instead of opening one:
+
+1. Copy the URL into the browser on your laptop or phone and sign in.
+2. If the page shows a code, paste it back into the terminal and press Enter.
+3. Answer the first-run questions (theme, and whether you trust the folder), then
+   type `/exit`.
+
+Then check that the login stuck:
+
+| runtime | binary | run once | check |
+|---|---|---|---|
+| claude | `claude` | `claude` | `claude auth status` reports `loggedIn: true` |
+| gemini | `agy`    | `agy` | `~/.gemini/antigravity-cli/antigravity-oauth-token` exists |
+| codex  | `codex`  | `codex login` | `~/.codex/auth.json` has a `tokens` key |
+
+Do this before step 1. A seat spawned against a CLI you have not logged in to does not
+tell you so: it retries, prints `Injection FAILED`, and exits, while the CLI's own
+sign-in screen waits unread in the seat's terminal.
 
 ## 1. Clone, init, doctor
 
 ```bash
 git clone https://github.com/Tulum-DAO/orchestraos.git orchestraos && cd orchestraos
 make install                 # symlinks bin/orchestra into ~/.local/bin
-./bin/orchestra init         # data dir (~/.orchestra), orchestra.toml, .venv + pip, npm install, builds;
+export PATH="$HOME/.local/bin:$PATH"
+grep -q 'HOME/.local/bin' ~/.bashrc || echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+orchestra init --yes         # data dir (~/.orchestra), orchestra.toml, .venv + pip, npm install, builds.
+                             #   Takes about 5 minutes on a small VPS (the dashboard build); it is not hung.
+                             #   --yes writes the Claude Code hook rows into ~/.claude/settings.json (see below)
                              #   mic dictation works in every browser out of the box (~99 MB model, background);
                              #   --stt adds the better faster-whisper engine (+~500 MB, see docs/ARTURO.md)
-                             # shows the Claude hook rows it will add to ~/.claude/settings.json and asks (or --yes)
-$EDITOR orchestra.toml       # set [runtimes] enabled to the CLI you logged in to, e.g. ["claude"]
-./bin/orchestra doctor       # every row OK (WARN/INFO rows are advisory); exit code 0
+sed -i '/^\[runtimes\]/,/^\[/ s/^enabled = .*/enabled = ["claude"]/' orchestra.toml   # the CLI you logged in to
+orchestra doctor             # every row OK (WARN/INFO rows are advisory); exit code 0
 ```
 
-`./bin/orchestra` is spelled out above because `~/.local/bin` only joins your PATH at **login**, and
-only if it already existed then — on a clean machine it did not, so a bare `orchestra` in the same
-shell as `make install` answers `command not found`. `make install` prints the `export PATH=...` line
-when that applies; run it (and add it to `~/.bashrc`) to use the bare `orchestra` everywhere.
+The two PATH lines matter: `~/.local/bin` only joins your PATH at **login**, and only if it
+already existed then. On a clean machine it did not, so without them a bare `orchestra` right after
+`make install` answers `command not found`. With them, `orchestra` works in this shell and in every
+later one; `./bin/orchestra` from the checkout always works too.
+
+The `sed` line sets the `enabled = [...]` line **under `[runtimes]`** to the one CLI you logged in
+to. Use `["gemini"]` or `["codex"]` if that is your CLI. `orchestra.toml` has other `enabled =`
+lines (`[arturo]`, `[telemetry]`, `[plugins.*]`); leave those alone. To edit by hand instead:
+`$EDITOR orchestra.toml`, find `[runtimes]`, and change the `enabled` line just below it.
 
 `orchestra init` is idempotent: it never overwrites `orchestra.toml`, skips what
 exists, and prints did/skipped per step. `--data-dir PATH` moves state elsewhere
@@ -83,7 +213,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/0f4fe490ba840a52bd83c4e5b6d4f6a7646b13f7/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -112,6 +242,9 @@ One supervisor process runs, restarts (with backoff) and logs each child under
 | cron_beat | autonomous blue-green rotation beat — ON by default | every `cron_beat_interval_seconds` (900) |
 | router | `message-router.py --cron` delivery backstop | `[router] interval_seconds` (60) |
 | approval_resume | `approval_resume.py` — delivers an answered card to its seat (pane inject + msg_store row) | every 60 s |
+| telemetryd | `lineage_daemon.telemetryd` — works out which seats are working or idle, for the Agents page and the router. Local only: it reads the seats' terminal output and `/proc` and writes a status file under `<data>/realtime`; nothing is sent anywhere | `[telemetry] enabled` (on) |
+| menu_bridge | `scripts/menu_bridge.py` — turns a question menu inside a seat into a decision card, and types your answer back | every 60 s (`[menus] bridge_enabled`) |
+| telegram | `plugins/telegram/router.py` (optional) | off unless `[plugins.telegram] enabled` and `TELEGRAM_BOT_TOKEN` |
 
 No crontab is installed. `orchestra up --dry-run` prints this table without
 starting anything. `orchestra down` stops it; `orchestra status` shows pids.
@@ -119,8 +252,61 @@ starting anything. `orchestra down` stops it; `orchestra status` shows pids.
 Smoke check: `curl -s http://127.0.0.1:8888/api/health` → `{"status":"ok", "db":{"open":true}, ...}`
 (`orchestra doctor` runs the same probe as `api:health` while the supervisor is up).
 
-Open the dashboard: `http://127.0.0.1:8891` (ssh -L 8891:127.0.0.1:8891 if remote,
-or set `[dashboard] host` / `[public] host`).
+### Open the dashboard in your browser, over Tailscale https
+
+The dashboard listens on `127.0.0.1:8891` on the VPS, so it is not reachable from
+outside the machine. `tailscale serve` gives it an https address that only devices
+on your tailnet can open.
+
+**Keep it tailnet only.** The dashboard has no login of its own, and its web terminal
+types into your seats' terminals on the server. Anyone who can open it can run
+commands as your user. So: never `--funnel` (that publishes it to the whole internet),
+never `[dashboard] host = "0.0.0.0"` on a VPS, and share your tailnet only with people
+you would give a shell to. The web terminal also refuses on purpose to connect when the
+dashboard is opened by a raw IP address (e.g. `http://203.0.113.5:8891`), so a
+`0.0.0.0` bind gets you a dashboard whose terminal does not work.
+
+First see what Tailscale already serves on this machine. `tailscale serve` on an https
+port that is already taken silently replaces whatever was there:
+
+```bash
+tailscale serve status        # on a fresh VPS: "No serve config"
+```
+
+Pick an https port that is not in that list. On a fresh VPS nothing is, so use 443,
+which gives an address with no port number in it. The target is the dashboard's plain
+http address (`[dashboard] port`, default 8891; `orchestra status` prints it):
+
+```bash
+tailscale serve --bg --https=443 http://127.0.0.1:8891
+tailscale serve status        # prints the address, e.g. https://<vps>.<tailnet>.ts.net
+```
+
+If 443 was taken, use another free port, e.g. `--https=8446`; the address then ends
+in `:8446`. The first time, Tailscale may answer that serve or https certificates
+are not enabled on your tailnet and print an admin link: open it, enable them, and
+run the command again.
+
+Open that address in a browser on your laptop or phone (it must be signed in to
+Tailscale). The dashboard loads, with an empty Agents list until step 3. The first
+visit can take a few seconds while the certificate is issued. Optional: put the
+address in `orchestra.toml` as `[public] host` so links in the UI and notifications
+point at it.
+
+`tailscale serve` keeps this setting across reboots. `tailscale serve --https=443 off`
+removes it.
+
+The web terminal only accepts connections from the address the dashboard was opened at,
+and it knows three kinds: loopback (`127.0.0.1`), the `[dashboard] host` you set, and
+Tailscale names (`*.ts.net`). If you put the dashboard behind your own reverse proxy or
+domain instead, list that name in `ORCHESTRA_DASHBOARD_ALLOWED_HOSTS` (comma-separated)
+in the shell that runs `orchestra up`, then restart it, e.g.
+`export ORCHESTRA_DASHBOARD_ALLOWED_HOSTS=dash.example.org`. Otherwise the dashboard loads
+but its terminal fails to connect, and `<data>/logs/dashboard.log` shows
+`[ws] refused ... (host-not-served)`.
+
+No Tailscale? From your laptop, `ssh -L 8891:127.0.0.1:8891 <user>@<server>` and then
+open `http://127.0.0.1:8891` while that ssh session stays open.
 
 ## 3. Spawn one seat
 
@@ -133,6 +319,8 @@ orchestra spawn hello --task "Say hello, then park."   # a worker seat (prompts/
 orchestra agent create dev-x --template dev --parent pm-y --set PROJECT=demo   # one verb: fill the role template (refuses an unfilled {TOKEN}), record the parent, validate runtime/model, spawn, verify ALIVE
 tmux attach -t gm                        # talk to it; detach with Ctrl-B D
 ```
+
+The new seat appears in the dashboard's Agents list in your browser within about 15 seconds.
 
 Options: `--runtime claude|gemini|codex` (default: first of `[runtimes] enabled`), `--model`,
 `--tier`, `--prompt path/relative/to/checkout`. An existing registry row is kept as-is.
@@ -258,8 +446,8 @@ docker run -it --rm -p 8891:8891 -p 8888:8888 -p 8890:8890 orchestraos
 ### Machine image (VPS snapshot) — 20-minute job once the provider is chosen
 
 Same recipe, no Docker: on a fresh Ubuntu 24.04 VPS as a non-root sudo user, run the
-`RUN` steps of the `Dockerfile` in order (§0 prerequisites, node 22, `npm i -g
-@anthropic-ai/claude-code`, clone, `make install`, `orchestra init`), leave the agent CLI
+`RUN` steps of the `Dockerfile` in order (§0 prerequisites, node 22, `sudo npm i -g
+@anthropic-ai/claude-code@2.1.276`, clone, `make install`, `orchestra init`), leave the agent CLI
 logged OUT, then snapshot. A team booting the snapshot logs in, edits `[runtimes]
 enabled`, and runs `orchestra doctor && orchestra up --detach`. Pre-provision one snapshot
 per team (P5).

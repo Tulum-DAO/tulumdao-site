@@ -7,16 +7,25 @@ For someone who already has a gateway running and wants to reach it from a
 phone and from a browser, on their own network, with no baked-in token. Two
 client surfaces, one pairing flow.
 
-> **Not built yet.** Every step below — `orchestra pair`, the handshake, both
-> client connect flows — describes what you will do once this lands Saturday
-> morning; none of it is on `main` right now, and none of the commands below
-> will work if you try them tonight. Check `orchestra pair --help` first if
-> you're reading this after Saturday morning to confirm it has landed.
+Just want the web dashboard in your browser? That needs no pairing:
+[`docs/INSTALL.md`](/docs/install/) §2, "Open the dashboard in your browser, over Tailscale https".
+This page is about the gateway (8890), which the phone app talks to.
+
+> **What works today, step by step** (updated 2026-10-07):
+>
+> | Step | Status |
+> |---|---|
+> | 1. Run your gateway | Works on `main`. |
+> | 2. `orchestra pair` | Works on `main`: prints the code and QR; the gateway serves `POST /pair/exchange`. |
+> | 3. Connect the web dashboard | **Not on `main`.** The connect screen described below was proposed (PR #23) and closed unmerged; this section describes the intended flow. |
+> | 4. Connect the iOS app | **Not released yet.** The pairing screen is being built and the app is headed for the App Store; this section describes that build. |
+>
+> Run `orchestra pair --help` to confirm the command on your install.
 
 ## Before anything else: log in
 
 Do this before you do anything below — install and log in to one agent CLI
-(Claude Code, Gemini CLI, or Codex). [`docs/INSTALL.md`](/docs/install/) §0 has the exact
+(Claude Code, Gemini (Antigravity `agy` CLI), or Codex). [`docs/INSTALL.md`](/docs/install/) §0 has the exact
 commands. If you have no subscription to any of them, Gemini CLI's free tier
 needs no credit card — that's the zero-cost path onto this whole doc.
 
@@ -39,7 +48,9 @@ orchestra up --detach && orchestra status
 
 Confirm the `gateway` row has a live pid. Note the host you'll reach it at —
 a Tailscale hostname, a LAN IP, or `127.0.0.1` if the phone and the gateway are
-on the same machine (rare outside a demo). This doc uses
+on the same machine (rare outside a demo). The iOS app needs an **https**
+address with a trusted certificate (see step 4), so if you'll pair a phone,
+plan on the Tailscale hostname. This doc uses
 `your-gateway.example.net` as a placeholder everywhere; substitute your real
 host, never share it outside people you're actually pairing.
 
@@ -84,6 +95,35 @@ First launch shows a pairing screen, not the approvals list:
 - **Type it in** — enter the gateway URL and the code by hand (the same
   values the dashboard used), if scanning isn't practical.
 
+**The app only connects over https, with a certificate the phone trusts.**
+A plain `http://` address (a LAN IP, `localhost`) is refused on the pairing
+screen, and the app tells you so. The simplest way to get a trusted https
+address, whether the gateway runs on a VPS or on a Mac, is Tailscale on both
+the gateway machine and the phone ([`docs/INSTALL.md`](/docs/install/) §0 sets it up). On the gateway machine, first see what
+Tailscale already serves, because `tailscale serve` on a port that is taken
+silently REPLACES whatever was there:
+
+```bash
+tailscale serve status
+```
+
+Then pick an https port that is not in that list (8445 here) and serve the
+gateway on it. The proxy target is the plain-HTTP address your gateway listens
+on. `8890` below is the default (`[gateway] port` in `orchestra.toml`); if you
+changed it, use the port that `orchestra status` prints on the `gateway` row:
+
+```bash
+tailscale serve --bg --https=8445 http://127.0.0.1:8890
+```
+
+Your gateway URL is then `https://<machine>.<tailnet>.ts.net:8445`. Use that
+address in step 2 (`orchestra pair`) so the QR carries it. Keep it tailnet
+only: do not add `--funnel` (or `tailscale funnel`). The phone reaches it
+over Tailscale; the gateway does not need to be on the public internet.
+
+A reverse proxy with a real certificate (Caddy, nginx + Let's Encrypt) works
+too; a self-signed certificate does not.
+
 Either way, the app exchanges the code for its own token and stores both in
 Keychain. It does not ask again unless you revoke that device from Settings
 or its pairing genuinely expires.
@@ -98,9 +138,19 @@ Neither client trusts a plain 200 OK. Two calls, in order:
   table.
 - `GET /gateway/capabilities` — **behind your paired token**, tells the client
   what this gateway actually offers: `{"providers":[...],"surfaces":[...],
-  "pending":N}`. The client renders whatever's in the list — it never assumes
-  a fixed set, so a gateway can add a provider or a surface later without an
-  app update.
+  "pending":N,"features":[...]}`. The client renders whatever's in the list — it
+  never assumes a fixed set, so a gateway can add a provider or a surface later
+  without an app update. `features` is a flat list of strings naming optional
+  routes. The app answers approval cards through `POST /menu-submit`; a
+  gateway whose `features` lacks `"menu_submit"` (or has no `features` at all)
+  predates that route and can't take answers from the app — update it, or
+  answer in the dashboard. Answers are delivered by default; every answer must
+  name the card it was drafted for, so it can never land in a different
+  menu. To turn delivery off, run the gateway with
+  `MENU_MULTIPART_SUBMIT_ARMED=0`: the route then reports what it would press
+  and presses nothing, and `menu_submit.armed: false` in the same response
+  tells the app so. Answers typed in your own words stay off unless
+  `MENU_MULTIPART_TEXT_ARMED=1`.
 
 This is a deliberately different pair of endpoints from `/health` (that one's
 for `orchestra doctor` and the supervisor — don't confuse the two if you're
@@ -142,7 +192,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/0f4fe490ba840a52bd83c4e5b6d4f6a7646b13f7/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -156,7 +206,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [`docs/tracks/01-device-pairing.md`](https://github.com/Tulum-DAO/orchestraos/blob/0f4fe490ba840a52bd83c4e5b6d4f6a7646b13f7/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [`docs/tracks/01-device-pairing.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.

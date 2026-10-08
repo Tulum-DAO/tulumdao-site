@@ -7,7 +7,7 @@ import lock from '../../../docs.lock.json';
 const docs = (await getCollection('docs')).sort((a, b) => a.data.order - b.data.order);
 const blurbs: Record<string, string> = {
   overview: 'What is in the box, the two ways to run it, and how to contribute.',
-  install: 'One machine, one CLI. Gateway up, one seat, one card answered, in under thirty minutes.',
+  install: 'From nothing to a VPS, Tailscale and the dashboard in your browser, one seat, one card answered. About an hour the first time.',
   'beginners-guide': 'Never used a terminal? Start here.',
   costs: 'What a VPS and a CLI plan cost, and the no-cost option.',
   onboarding: 'Pair your own phone and browser with your gateway, and what each failure means.',

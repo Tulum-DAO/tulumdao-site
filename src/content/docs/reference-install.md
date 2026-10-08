@@ -29,7 +29,8 @@ placeholders — `<vps>`, `<laptop>`, `<tailnet>`, `<chat-id>` — fill in your 
 ```
 
 Only the VPS runs seats. The laptop is a client (browser, phone, and the
-"resume auth on the other machine" helper). `[machines]` in `orchestra.toml` records the
+"resume auth on the other machine" helper). The browser reaches the dashboard over
+Tailscale https (`tailscale serve`, tailnet only; [`docs/INSTALL.md`](/docs/install/) §2). `[machines]` in `orchestra.toml` records the
 two Tailscale addresses; leave it blank on a single machine.
 
 ```toml
@@ -75,7 +76,7 @@ supervisor and are restarted by a watchdog cron. Pick one model; do not run both
 | `identity_store/orphan_pane_scan.py` | — | `*/15` (flags raw tmux spawns, chip only) |
 | `identity_store/identity_reconciler.py --cron` | — | `*/15` |
 | `agent-recovery.sh --boot` | — | `@reboot sleep 45` (re-attaches seats after a reboot) |
-| `lineage_daemon/telemetryd.py` | — | systemd unit (see issue 3 in [`HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/0f4fe490ba840a52bd83c4e5b6d4f6a7646b13f7/docs/HACKATHON_ISSUES.md): the unit needs templating) |
+| `lineage_daemon/telemetryd.py` | — | systemd unit (see issue 3 in [`HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/11961b186fee8783bc9cace072a186d83862f05e/docs/HACKATHON_ISSUES.md): the unit needs templating) |
 
 A minimal reference crontab (user crontab on the VPS; `cd` into the checkout so
 `orchestra-env.sh` finds `orchestra.toml`):
