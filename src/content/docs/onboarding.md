@@ -11,7 +11,7 @@ Just want the web dashboard in your browser? That needs no pairing:
 [docs/INSTALL.md](/docs/install/) §2, "Open the dashboard in your browser, over Tailscale https".
 This page is about the gateway (8890), which the phone app talks to.
 
-> **What works today, step by step** (updated 2026-10-07):
+> **What works today, step by step** (updated 2026-10-08):
 >
 > | Step | Status |
 > |---|---|
@@ -55,6 +55,18 @@ address with a trusted certificate (see step 4), so if you'll pair a phone,
 plan on the Tailscale hostname. This doc uses
 `your-gateway.example.net` as a placeholder everywhere; substitute your real
 host, never share it outside people you're actually pairing.
+
+**The apps need OrchestraOS on your server at `main` `cdcd701` (#259, 2026-10-08) or newer.**
+On an older checkout, a long or multi-line message you send from the app comes back in your
+transcript as a one-line `[LONG-MSG chip-dodge] ...` note with a server file path, instead of
+your own words and photos. To check, run this on the server, inside your OrchestraOS checkout:
+
+```bash
+git merge-base --is-ancestor cdcd701 HEAD && echo "up to date"
+```
+
+It prints `up to date` if you are. If it prints nothing, or an error, run `orchestra upgrade`
+and then the restart in [docs/UPGRADE.md](/docs/upgrade/).
 
 ## 2. Run `orchestra pair`
 
@@ -293,7 +305,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/5cf1f92d6df766cdcf05b9827b1aa3498d5d41ec/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -307,7 +319,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/5cf1f92d6df766cdcf05b9827b1aa3498d5d41ec/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.

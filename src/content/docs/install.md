@@ -458,7 +458,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/da79e844baa2b484e3d0d5dec7f6b117f882dc62/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/5cf1f92d6df766cdcf05b9827b1aa3498d5d41ec/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
