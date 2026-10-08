@@ -248,8 +248,9 @@ export function mount(canvas: HTMLCanvasElement) {
     a: number;
     sx: number; // its light on screen
     sy: number;
-    side: number; // which side of its light it sat on last frame
+    side: string; // which side of its light it sat on last frame
     dim: Node | null; // a seat whose light dims while its name has no room
+    hub: Vector3 | null; // the centre of its cluster: the name prefers the side facing away from it
   };
   const labels: Label[] = [];
   const addLabel = (
@@ -285,7 +286,7 @@ export function mount(canvas: HTMLCanvasElement) {
       el.appendChild(line);
     }
     labelLayer?.appendChild(el);
-    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: 0, dim: null };
+    const l: Label = { el, sub, at, alpha, last: '', w: 0, h: 0, d: 0, x: 0, y: 0, a: 0, sx: 0, sy: 0, side: '', dim: null, hub: null };
     labels.push(l);
     return l;
   };
@@ -347,7 +348,10 @@ export function mount(canvas: HTMLCanvasElement) {
       runtime: rt,
       role: i === 0 ? 'general manager' : undefined,
     });
-    if (i > 0) label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
+    if (i > 0) {
+      label.dim = n; // a seat whose name has no room shows as a dimmer, background seat
+      label.hub = seats[0]?.node.pos ?? null;
+    }
     const l: Lineage = { node: n, rings: [], handoffAt: -100, gen: past + 1, label, rt: RUNTIMES[rt].name };
     for (let g = past - 1; g >= 0; g--) addRing(l, -100, ringRadius(g));
     seats.push(l);
@@ -404,6 +408,7 @@ export function mount(canvas: HTMLCanvasElement) {
     talkers.push({ node: n, busy: !gm && Math.random() < 0.2, flipAt: Math.random() * 6, ring, label, rt: RUNTIMES[rt].name, home, hub, phase: Math.random() * 6.28 });
   }
   const gmTalker = talkers[0];
+  for (const tk of talkers) if (tk.label && tk !== gmTalker) tk.label.hub = gmTalker.node.pos;
   let gather = 0; // 0 spread out, 1 gathered round the GM
   let gatherTarget = 0;
   // spokes: faint lines from the GM to every agent round it, drawn while they are gathered
@@ -477,7 +482,7 @@ export function mount(canvas: HTMLCanvasElement) {
   }
   FACT_LABELS.forEach((text, i) => {
     const f = facts[i * 3 + 1];
-    if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false });
+    if (f) addLabel(text, () => f.pos, () => f.alpha, 'fact', { sub: false }).hub = memSeat.pos;
   });
   let memGen = 7;
   const memLabel = addLabel('dev-api', () => memSeat.pos, () => (memSeat.alpha < 0.1 ? 0.85 : memSeat.alpha), 'mem', { runtime: 'claude' });
@@ -669,7 +674,9 @@ export function mount(canvas: HTMLCanvasElement) {
         // ochre while the readback is checked (first ~1.2s), then the ring cools to water-blue
         ring.mat.color.copy(MAYA).lerp(OCHRE, fresh ? 1 - smooth(1.0, 1.8, age) : 0);
         const settled = 0.75 * Math.pow(0.62, i);
-        ring.mat.opacity = fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled;
+        // a background seat (its name had no room) keeps its rings faint too
+        const bg = l.node.target < 1 ? 0.35 : 1;
+        ring.mat.opacity = bg * (fresh ? Math.min(1, age * 3) * lerp(1, settled, smooth(1.2, 2.4, age)) : settled);
       });
     }
     // messages: gathered round the GM, the mail runs hub and spoke (an agent reports to the GM, or
@@ -717,7 +724,8 @@ export function mount(canvas: HTMLCanvasElement) {
       m.opacity += ((tk.busy ? 0.9 : 0) - m.opacity) * Math.min(1, dt * 4);
       tk.ring.position.copy(tk.node.pos);
       tk.ring.visible = m.opacity > 0.01;
-      if (tk.label) setSub(tk.label, tk.busy ? `${tk.rt}, busy: mail waits` : tk.rt);
+      // phones: the short form, so names fit beside a crowded hub
+      if (tk.label) setSub(tk.label, tk.busy ? (mobile ? `${tk.rt}, busy` : `${tk.rt}, busy: mail waits`) : tk.rt);
     }
     for (let i = packets.length - 1; i >= 0; i--) {
       const pk = packets[i];
@@ -946,17 +954,49 @@ export function mount(canvas: HTMLCanvasElement) {
     // The GM's name is placed first, always shown, and keeps clear space round it.
     const placed: { x: number; y: number; w: number; h: number }[] = [];
     const GM_PAD = 10;
+    const EDGE = 16; // every name stays this far inside the screen
+    // lights and mail in flight are obstacles too: a name may not cover one. Its own light counts:
+    // the four sides keep clear of it, but a name pushed in from the screen edge may not land on it.
+    const LIGHT_R = 7;
+    const lightsOnScreen: [number, number][] = [];
+    for (const n of nodes) {
+      if (!n.live || n.alpha < 0.1 || camera.position.distanceTo(n.pos) > 13) continue;
+      proj.copy(n.pos).project(camera);
+      if (proj.z > 1 || Math.abs(proj.x) > 1.05 || Math.abs(proj.y) > 1.05) continue;
+      lightsOnScreen.push([(proj.x * 0.5 + 0.5) * W, (-proj.y * 0.5 + 0.5) * H]);
+    }
     for (const l of shown) {
       const { sx, sy, w, h } = l;
-      const sides: [number, number][] = narrow
-        ? [[sx - w / 2, sy + 9], [sx - w / 2, sy - h - 9], [sx + 11, sy - h / 2], [sx - w - 11, sy - h / 2]]
-        : [[sx + 9, sy - 9], [sx - w - 9, sy - 9], [sx - w / 2, sy + 9], [sx - w / 2, sy - h - 9]];
+      // the four places, by name: under, over, right, left
+      const at: Record<string, [number, number]> = {
+        under: [sx - w / 2, sy + 9],
+        over: [sx - w / 2, sy - h - 9],
+        right: narrow ? [sx + 11, sy - h / 2] : [sx + 9, sy - 9],
+        left: narrow ? [sx - w - 11, sy - h / 2] : [sx - w - 9, sy - 9],
+      };
+      // preference: away from the cluster's centre first (the open side), else the screen's default
+      let order = narrow ? ['under', 'over', 'right', 'left'] : ['right', 'left', 'under', 'over'];
+      if (l.hub) {
+        proj.copy(l.hub).project(camera);
+        const dx = sx - (proj.x * 0.5 + 0.5) * W;
+        const dy = sy - (-proj.y * 0.5 + 0.5) * H;
+        const lr = dx > 0 ? 'right' : 'left';
+        const ud = dy > 0 ? 'under' : 'over';
+        const first = Math.abs(dx) > Math.abs(dy) ? [lr, ud] : [ud, lr];
+        order = [...first, ...order.filter((o) => !first.includes(o))];
+      }
+      // the side it used last frame comes first while it is still clear, so names don't hop
+      if (l.side) order = [l.side, ...order.filter((o) => o !== l.side)];
+      const sides = order.map((o) => at[o]);
       const gm = l.el.classList.contains('gm');
       let side = -1;
-      for (const k of [l.side, 0, 1, 2, 3]) {
-        const x = clamp(sides[k][0], 4, W - w - 4);
-        const y = sides[k][1];
-        if (gm || !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h)) {
+      for (const k of [0, 1, 2, 3]) {
+        const x = clamp(sides[k][0], EDGE, W - w - EDGE);
+        const y = clamp(sides[k][1], EDGE, H - h - EDGE);
+        const free =
+          !placed.some((o) => x < o.x + o.w && o.x < x + w && y < o.y + o.h && o.y < y + h) &&
+          !lightsOnScreen.some(([lx, ly]) => lx + LIGHT_R > x && lx - LIGHT_R < x + w && ly + LIGHT_R > y && ly - LIGHT_R < y + h);
+        if (gm || free) {
           side = k;
           l.x = x;
           l.y = y;
@@ -965,10 +1005,10 @@ export function mount(canvas: HTMLCanvasElement) {
       }
       if (side < 0) l.a = 0;
       else {
-        l.side = side;
+        l.side = order[side];
         placed.push(gm ? { x: l.x - GM_PAD, y: l.y - GM_PAD, w: w + GM_PAD * 2, h: h + GM_PAD * 2 } : { x: l.x, y: l.y, w, h });
       }
-      if (l.dim) l.dim.target = l.a ? 1 : 0.4;
+      if (l.dim) l.dim.target = l.a ? 1 : 0.3;
     }
     for (const l of labels) {
       if (!l.a) {
