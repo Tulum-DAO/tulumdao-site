@@ -3,7 +3,7 @@ title: "The reference install"
 source: "docs/REFERENCE_INSTALL.md"
 order: 7
 ---
-[`docs/INSTALL.md`](/docs/install/) is the **minimum path**: one machine, one CLI, one supervisor process,
+[docs/INSTALL.md](/docs/install/) is the **minimum path**: one machine, one CLI, one supervisor process,
 no push, no voice. This page is the **reference install**: the setup the harness runs on
 every day. Do the minimum path first; every section below is a knob you *add* to it, and
 each one says why it exists and what breaks if you leave it out. Hosts and ids are
@@ -30,7 +30,7 @@ placeholders — `<vps>`, `<laptop>`, `<tailnet>`, `<chat-id>` — fill in your 
 
 Only the VPS runs seats. The laptop is a client (browser, phone, and the
 "resume auth on the other machine" helper). The browser reaches the dashboard over
-Tailscale https (`tailscale serve`, tailnet only; [`docs/INSTALL.md`](/docs/install/) §2). `[machines]` in `orchestra.toml` records the
+Tailscale https (`tailscale serve`, tailnet only; [docs/INSTALL.md](/docs/install/) §2). `[machines]` in `orchestra.toml` records the
 two Tailscale addresses; leave it blank on a single machine.
 
 ```toml
@@ -76,7 +76,7 @@ supervisor and are restarted by a watchdog cron. Pick one model; do not run both
 | `identity_store/orphan_pane_scan.py` | — | `*/15` (flags raw tmux spawns, chip only) |
 | `identity_store/identity_reconciler.py --cron` | — | `*/15` |
 | `agent-recovery.sh --boot` | — | `@reboot sleep 45` (re-attaches seats after a reboot) |
-| `lineage_daemon/telemetryd.py` | — | systemd unit (see issue 3 in [`HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/947cb31855feecb70f24d8591a62f205ffe3a5a8/docs/HACKATHON_ISSUES.md): the unit needs templating) |
+| `lineage_daemon/telemetryd.py` | — | systemd unit (see issue 3 in [`HACKATHON_ISSUES.md`](https://github.com/Tulum-DAO/orchestraos/blob/907c45e15b679ddaad65dd277bb087f214d6a0f8/docs/HACKATHON_ISSUES.md): the unit needs templating) |
 
 A minimal reference crontab (user crontab on the VPS; `cd` into the checkout so
 `orchestra-env.sh` finds `orchestra.toml`):

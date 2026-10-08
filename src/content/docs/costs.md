@@ -3,7 +3,7 @@ title: "What it costs"
 source: "docs/COSTS.md"
 order: 4
 ---
-What it actually costs to run the minimum path ([`docs/INSTALL.md`](/docs/install/)), plus the
+What it actually costs to run the minimum path ([docs/INSTALL.md](/docs/install/)), plus the
 zero-key path (no paid API keys, no paid CLI plan). Prices below are what the
 providers listed as of this week (2026-09-17) — they change; verify against the
 source link before budgeting.
@@ -14,7 +14,7 @@ source link before budgeting.
 plus the cron beats) and one tmux seat per agent. Nothing here is GPU-heavy — the
 model runs on the vendor's servers, not yours. What takes memory is the agent CLIs:
 roughly 400 MB per Claude Code seat (median of 27 seats on the reference install).
-Take at least **2 vCPU and 4 GB RAM** (the minimum in [`docs/INSTALL.md`](/docs/install/), "Get a VPS");
+Take at least **2 vCPU and 4 GB RAM** (the minimum in [docs/INSTALL.md](/docs/install/), "Get a VPS");
 8 GB for more than five seats. `orchestra init` and `orchestra up` have been seen to work on 2 GB, but plan on 4 GB
 for seats; the 1 GB plan below is listed for price comparison only.
 
@@ -64,7 +64,7 @@ the free tier specifically for the assistant brain: the runtime brain picks
 the *first authed CLI* in `orchestra.toml`'s `[runtimes] enabled` order
 (default `claude, gemini, codex`) — put `gemini` first in that list, or set
 the brain explicitly, if you want the free tier to actually be what answers
-(see [`docs/ARTURO.md`](https://github.com/Tulum-DAO/orchestraos/blob/947cb31855feecb70f24d8591a62f205ffe3a5a8/docs/ARTURO.md)).
+(see [docs/ARTURO.md](https://github.com/Tulum-DAO/orchestraos/blob/907c45e15b679ddaad65dd277bb087f214d6a0f8/docs/ARTURO.md)).
 
 **Subscription-limit risk: a 5-hour window AND a weekly cap, not just daily.**
 Claude Code's paid plans meter usage two ways at once: a rolling 5-hour session
@@ -106,12 +106,12 @@ your own laptop for the weekend.
 
 ## How long the gate actually takes
 
-The seven-step gate ([`docs/GATE.md`](https://github.com/Tulum-DAO/orchestraos/blob/947cb31855feecb70f24d8591a62f205ffe3a5a8/docs/GATE.md)) end to end, for someone following it
+The seven-step gate ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/907c45e15b679ddaad65dd277bb087f214d6a0f8/docs/GATE.md)) end to end, for someone following it
 literally with no prior exposure to this repo: **45-60 minutes**, install
 through step 7 (one fact recalled after a rotation). Budget more your first
 time if you hit an unauthed CLI or a Docker/VPS setup snag — those are the
 two places people actually get stuck, not the harness steps themselves.
-[`docs/KICKOFF.md`](https://github.com/Tulum-DAO/orchestraos/blob/947cb31855feecb70f24d8591a62f205ffe3a5a8/docs/KICKOFF.md)'s target of "everyone has an agent running by 13:30" assumes
+[docs/KICKOFF.md](https://github.com/Tulum-DAO/orchestraos/blob/907c45e15b679ddaad65dd277bb087f214d6a0f8/docs/KICKOFF.md)'s target of "everyone has an agent running by 13:30" assumes
 a start around 12:30-12:45 plus this range.
 
 ## The zero-key path
@@ -119,7 +119,7 @@ a start around 12:30-12:45 plus this range.
 Minimum path + Gemini CLI's free tier + a free-tier VPS trial (both Hetzner and
 DigitalOcean offer new-account credit) gets you to a running harness — one
 seat, one answered card, one rotation — for $0 committed spend. `orchestra
-doctor` and the [zero-key Arturo brain track](https://github.com/Tulum-DAO/orchestraos/blob/947cb31855feecb70f24d8591a62f205ffe3a5a8/docs/tracks/02-zero-key-arturo-brain.md)
+doctor` and the [zero-key Arturo brain track](https://github.com/Tulum-DAO/orchestraos/blob/907c45e15b679ddaad65dd277bb087f214d6a0f8/docs/tracks/02-zero-key-arturo-brain.md)
 are what make this possible: no `GEMINI_API_KEY`, no ElevenLabs/Cartesia key,
 just an authed CLI. Past the free trial, budget the VPS line above; the CLI
 stays free at Gemini's tier unless you outgrow 1,000 requests/day.
@@ -129,4 +129,4 @@ stays free at Gemini's tier unless you outgrow 1,000 requests/day.
 Voice (ElevenLabs/Cartesia/Gemini Live API keys), push notifications beyond
 `ntfy` (self-hosted, free), and multi-machine reference installs (a Mac plus a
 VPS over Tailscale) are reference-install extras, not part of the minimum
-path's cost. See [`docs/REFERENCE_INSTALL.md`](/docs/reference-install/).
+path's cost. See [docs/REFERENCE_INSTALL.md](/docs/reference-install/).
