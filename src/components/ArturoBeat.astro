@@ -1,0 +1,486 @@
+---
+// The Arturo beat: the "Ask Arturo" pill on a dashboard page, its chat focused on the page you are
+// looking at, and the focus following you to the next page. An example screen, drawn in HTML so the
+// text is crisp and readable. Without JS or with reduced motion it shows one finished frame: the
+// question asked and answered. Facts: Tulum-DAO/orchestraos dashboard/src/components/arturo/
+// ArturoPill.tsx (pill, panel that never dims the page, the page-context card in the composer with
+// its x) and services/arturo/arturo-proxy.py (read_screen_context). Names and numbers are examples.
+---
+
+<figure class="arturo-demo" data-s="answer" role="img"
+  aria-label="Example: on a dashboard page for the agent pm-ops, the Ask Arturo chat is open beside the page. The composer shows that Arturo is focused on Agent · pm-ops. Asked what the agent is stuck on, Arturo answers from what is on screen: pm-ops is waiting on your card Deploy to staging?. Switching to Approvals, the focus follows to that page.">
+  <div class="screen" aria-hidden="true">
+    <div class="bar">
+      <span class="brand">OrchestraOS</span>
+      <span class="nav">
+        <span>Overview</span><span class="n-agents">Agents</span><span class="n-approvals">Approvals</span><span>Inbox</span>
+      </span>
+    </div>
+
+    <div class="pages">
+      <!-- the agent page -->
+      <div class="page p-agent">
+        <div class="crumb">Agents</div>
+        <div class="title"><b>pm-ops</b><span class="state">waiting on you</span></div>
+        <dl>
+          <dt>Task</dt><dd>Ship the staging deploy</dd>
+          <dt>Last run</dt><dd>Tests passed, 42 of 42</dd>
+          <dt>Waiting on</dt><dd>Card: Deploy to staging?</dd>
+        </dl>
+        <div class="tail"><span></span><span></span><span></span></div>
+      </div>
+      <!-- the approvals page -->
+      <div class="page p-approvals">
+        <div class="crumb">Approvals</div>
+        <div class="card">
+          <div class="from">pm-ops</div>
+          <div class="q">Deploy to staging?</div>
+          <div class="btns"><span class="yes">Approve</span><span>Deny</span></div>
+        </div>
+        <div class="card dim">
+          <div class="from">dev-ui</div>
+          <div class="q">Pick a header layout</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- the pill, bottom-right on every page -->
+    <div class="pill"><svg viewBox="0 0 24 24" width="14" height="14"><path fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" d="M12 3a3 3 0 0 0-3 3v6a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3zM5 11a7 7 0 0 0 14 0M12 18v3"/></svg>Ask Arturo</div>
+
+    <!-- the chat, anchored bottom-right; no backdrop: the page stays bright and usable -->
+    <div class="chat">
+      <div class="head"><b>Arturo</b><span class="sp"></span><span>Threads</span><span>New</span><span>×</span></div>
+      <div class="thread">
+        <p class="hint">Ask about what you are looking at, or anything else.</p>
+        <div class="row user"><span class="bubble">What is this agent stuck on?</span></div>
+        <div class="row arturo think"><span class="bubble">Thinking…</span></div>
+        <div class="row arturo answer">
+          <span class="bubble">It isn't stuck on code. pm-ops is waiting on you: its card “Deploy to staging?” is open in Approvals. Its last run passed all 42 tests.</span>
+          <span class="meta">ran read_screen_context</span>
+        </div>
+      </div>
+      <div class="composer">
+        <div class="ph">Ask Arturo</div>
+        <div class="ctrl">
+          <span class="circle">+</span>
+          <span class="chip"
+            ><svg viewBox="0 0 24 24" width="11" height="11"><path fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" d="M3 8V5a2 2 0 0 1 2-2h3M16 3h3a2 2 0 0 1 2 2v3M21 16v3a2 2 0 0 1-2 2h-3M8 21H5a2 2 0 0 1-2-2v-3"/><circle cx="12" cy="12" r="3" fill="currentColor"/></svg
+            ><span class="labels"><b class="l-agent">Agent · pm-ops</b><b class="l-approvals">Approvals</b></span><span class="x">×</span></span
+          >
+          <span class="sp"></span>
+          <span class="circle send">↑</span>
+        </div>
+      </div>
+    </div>
+  </div>
+  <figcaption>Example screen and data. The page-context card sits in the composer; its × stops Arturo focusing on the page.</figcaption>
+</figure>
+
+<script>
+  // Plays the beat while it is on screen: open, ask, answer, switch page, and back to the start.
+  // Reduced motion (and no JS) keep the finished frame the markup ships with.
+  const fig = document.querySelector<HTMLElement>('.arturo-demo');
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)');
+  if (fig && !reduce.matches && 'IntersectionObserver' in window) {
+    // [state, seconds it holds]
+    const STEPS: [string, number][] = [
+      ['page', 1.6],
+      ['open', 1.6],
+      ['ask', 1.2],
+      ['think', 1.4],
+      ['answer', 4.2],
+      ['switch', 4.0],
+    ];
+    let i = 0;
+    let timer = 0;
+    let on = false;
+    const next = () => {
+      fig.dataset.s = STEPS[i][0];
+      timer = window.setTimeout(() => {
+        i = (i + 1) % STEPS.length;
+        next();
+      }, STEPS[i][1] * 1000);
+    };
+    new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting && !on) {
+          on = true;
+          i = 0;
+          next();
+        } else if (!e.isIntersecting && on) {
+          on = false;
+          clearTimeout(timer);
+          fig.dataset.s = 'answer'; // out of view it rests on the finished frame
+        }
+      },
+      { threshold: 0.45 },
+    ).observe(fig);
+    reduce.addEventListener('change', () => {
+      if (!reduce.matches) return;
+      clearTimeout(timer);
+      fig.dataset.s = 'answer';
+    });
+  }
+</script>
+
+<style>
+  .arturo-demo {
+    margin: 0;
+    width: 100%;
+    max-width: 620px;
+  }
+  .screen {
+    position: relative;
+    height: 430px;
+    border-radius: 18px;
+    overflow: hidden;
+    background: #0e2526;
+    border: 1px solid #23494a;
+    box-shadow: 0 30px 60px -30px rgba(0, 0, 0, 0.6);
+    font: 14px/1.4 var(--font);
+    color: var(--foam);
+  }
+  .bar {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    height: 44px;
+    padding: 0 16px;
+    border-bottom: 1px solid #1e4243;
+    font-size: 13px;
+  }
+  .brand {
+    font-weight: 700;
+  }
+  .nav {
+    display: flex;
+    gap: 14px;
+    color: var(--foam-2);
+  }
+  .nav span {
+    padding-bottom: 2px;
+    border-bottom: 2px solid transparent;
+    transition: color 0.5s ease, border-color 0.5s ease;
+  }
+  .arturo-demo:not([data-s='switch']) .n-agents,
+  .arturo-demo[data-s='switch'] .n-approvals {
+    color: var(--foam);
+    border-color: var(--ochre-hi);
+  }
+  .pages {
+    position: relative;
+    height: calc(100% - 44px);
+  }
+  .page {
+    position: absolute;
+    inset: 0;
+    padding: 18px 20px;
+    transition: opacity 0.6s ease;
+  }
+  .p-approvals,
+  .arturo-demo[data-s='switch'] .p-agent {
+    opacity: 0;
+  }
+  .arturo-demo[data-s='switch'] .p-approvals {
+    opacity: 1;
+  }
+  .crumb {
+    font-size: 12px;
+    color: var(--foam-2);
+    margin-bottom: 4px;
+  }
+  .title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 20px;
+    margin-bottom: 14px;
+  }
+  .state {
+    font-size: 12px;
+    padding: 2px 9px;
+    border-radius: 999px;
+    color: #12201f;
+    background: var(--ochre-hi);
+    font-weight: 650;
+  }
+  dl {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 6px 16px;
+    margin: 0;
+    font-size: 13.5px;
+  }
+  dt {
+    color: var(--foam-2);
+  }
+  dd {
+    margin: 0;
+  }
+  .tail {
+    display: grid;
+    gap: 8px;
+    margin-top: 22px;
+    max-width: 52%;
+  }
+  .tail span {
+    height: 7px;
+    border-radius: 4px;
+    background: #1d4344;
+  }
+  .tail span:nth-child(2) {
+    width: 80%;
+  }
+  .tail span:nth-child(3) {
+    width: 60%;
+  }
+  .card {
+    max-width: 52%;
+    padding: 12px 14px;
+    border-radius: 14px;
+    background: #143536;
+    border: 1px solid #2a5a5a;
+    margin-bottom: 10px;
+  }
+  .card.dim {
+    opacity: 0.7;
+  }
+  .from {
+    font-size: 12px;
+    color: var(--foam-2);
+  }
+  .q {
+    font-weight: 650;
+    margin: 2px 0 8px;
+  }
+  .card.dim .q {
+    margin-bottom: 0;
+  }
+  .btns {
+    display: flex;
+    gap: 8px;
+    font-size: 12.5px;
+  }
+  .btns span {
+    padding: 3px 11px;
+    border-radius: 999px;
+    border: 1px solid #3c6c6b;
+  }
+  .btns .yes {
+    background: var(--ochre-hi);
+    border-color: var(--ochre-hi);
+    color: #12201f;
+    font-weight: 650;
+  }
+  /* the pill and the chat, bottom-right */
+  .pill,
+  .chat {
+    position: absolute;
+    right: 14px;
+    bottom: 14px;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 8px 14px;
+    border-radius: 999px;
+    background: var(--foam);
+    color: #12201f;
+    font-weight: 650;
+    font-size: 13px;
+    box-shadow: 0 6px 18px rgba(0, 0, 0, 0.35);
+  }
+  .chat {
+    width: 44%;
+    height: 330px;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px;
+    background: #f3efe4;
+    color: #12201f;
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+    transform-origin: bottom right;
+    overflow: hidden;
+  }
+  .arturo-demo[data-s='page'] .chat {
+    opacity: 0;
+    transform: translateY(10px) scale(0.96);
+  }
+  .arturo-demo:not([data-s='page']) .pill {
+    opacity: 0;
+    transform: scale(0.9);
+  }
+  .head {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    padding: 10px 12px;
+    font-size: 12.5px;
+    color: #3a4a47;
+    border-bottom: 1px solid #dcd5c2;
+  }
+  .head b {
+    color: #12201f;
+    font-size: 13.5px;
+  }
+  .sp {
+    flex: 1;
+  }
+  .thread {
+    position: relative;
+    flex: 1;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    font-size: 13px;
+  }
+  .hint {
+    position: absolute;
+    margin: 0;
+    color: #4a5a57;
+    font-size: 12.5px;
+    transition: opacity 0.4s ease;
+  }
+  .row {
+    display: flex;
+    flex-direction: column;
+    transition: opacity 0.45s ease, transform 0.45s ease;
+  }
+  .row.user {
+    align-items: flex-end;
+  }
+  .bubble {
+    max-width: 92%;
+    padding: 7px 10px;
+    border-radius: 12px;
+    line-height: 1.35;
+  }
+  .user .bubble {
+    background: #0b4f52;
+    color: var(--foam);
+  }
+  .arturo .bubble {
+    background: #fff;
+    border: 1px solid #dcd5c2;
+  }
+  .meta {
+    margin-top: 3px;
+    font: 11px var(--mono);
+    color: #4a5a57;
+  }
+  /* rows keep their place in the layout and only fade, so nothing jumps */
+  .think {
+    position: absolute;
+    top: 52px;
+    left: 12px;
+  }
+  .arturo-demo[data-s='page'] .row,
+  .arturo-demo[data-s='open'] .row,
+  .arturo-demo[data-s='ask'] .arturo,
+  .arturo-demo[data-s='think'] .answer,
+  .arturo-demo:not([data-s='think']) .think {
+    opacity: 0;
+    transform: translateY(4px);
+  }
+  .arturo-demo:not([data-s='page']):not([data-s='open']) .hint {
+    opacity: 0;
+  }
+  .composer {
+    padding: 8px 10px 10px;
+    border-top: 1px solid #dcd5c2;
+  }
+  .ph {
+    color: #5b6a67;
+    font-size: 13px;
+    margin: 2px 2px 8px;
+  }
+  .ctrl {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .circle {
+    display: inline-grid;
+    place-items: center;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1px solid #cfc6af;
+    font-size: 14px;
+    flex: none;
+  }
+  .send {
+    background: #12201f;
+    color: var(--foam);
+    border-color: #12201f;
+  }
+  .chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    min-width: 0;
+    padding: 3px 8px;
+    border-radius: 999px;
+    background: #e2eeec;
+    border: 1px solid #9ec4c1;
+    font-size: 11.5px;
+    color: #0b4f52;
+  }
+  /* one label at a time, so the card is as wide as what it says (no gap held for the longer one);
+     the new label fades in */
+  .labels b {
+    white-space: nowrap;
+    animation: chip-in 0.5s ease;
+  }
+  .l-approvals,
+  .arturo-demo[data-s='switch'] .l-agent {
+    display: none;
+  }
+  .arturo-demo[data-s='switch'] .l-approvals {
+    display: inline;
+  }
+  @keyframes chip-in {
+    from {
+      opacity: 0;
+    }
+  }
+  .x {
+    color: #3a6a68;
+  }
+  figcaption {
+    margin-top: 10px;
+    font-size: 0.86rem;
+    color: var(--foam-2);
+  }
+  @media (max-width: 600px) {
+    .screen {
+      height: 470px;
+    }
+    .nav span:first-child,
+    .nav span:last-child {
+      display: none;
+    }
+    .tail,
+    .card {
+      max-width: none;
+    }
+    .page {
+      padding: 14px 16px;
+    }
+    /* on a phone the chat takes the lower part of the screen; the page stays visible above it */
+    .chat {
+      left: 10px;
+      right: 10px;
+      bottom: 10px;
+      width: auto;
+      height: 270px;
+    }
+    .pill {
+      right: 12px;
+      bottom: 12px;
+    }
+  }
+</style>

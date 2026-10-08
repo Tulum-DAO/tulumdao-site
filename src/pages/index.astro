@@ -1,6 +1,7 @@
 ---
 import Base from '../layouts/Base.astro';
 import Install from '../components/Install.astro';
+import ArturoBeat from '../components/ArturoBeat.astro';
 
 const REPO = 'https://github.com/Tulum-DAO/orchestraos';
 ---
@@ -113,6 +114,27 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
       </div>
     </section>
   </div>
+
+  <section class="arturo" data-bg="#12201f" data-depth="1">
+    <div class="arturo-copy">
+      <h2>An assistant that sees what you see</h2>
+      <p class="short">
+        Ask Arturo from any dashboard page. It focuses on the page you are on and reads its live data when you
+        ask.
+      </p>
+      <p class="long">
+        The Ask Arturo pill sits bottom-right on every dashboard page. Its chat opens beside your work without
+        dimming or blocking it, and it focuses on the page you are looking at: a card in the composer says which
+        page, and its × turns that off. Ask “what am I looking at?” and Arturo reads that screen's live data.
+      </p>
+      <p class="long">
+        Talk or type. Conversations are kept, so you can switch back to one and pick up where you left off.
+        Arturo sits on top of your agents: it can see the team, answer cards and message seats, within the
+        scopes you give it, and when you ask.
+      </p>
+    </div>
+    <ArturoBeat />
+  </section>
 
   <section class="paths" data-bg="#12201f" data-depth="1">
     <h2>Two ways to run it</h2>
@@ -303,7 +325,7 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   }
   /* With the scene, the water shows through; the floor sections stay solid (light text needs a
      known background, and the scene is near-black down there anyway). */
-  :global(.cenote-live) section:not(.paths, .build) {
+  :global(.cenote-live) section:not(.paths, .build, .arturo) {
     background: transparent;
   }
 
@@ -485,9 +507,48 @@ const REPO = 'https://github.com/Tulum-DAO/orchestraos';
   }
 
   .paths,
-  .build {
+  .build,
+  .arturo {
     --bg: var(--abyss);
     color: var(--foam);
+  }
+  /* Arturo: the copy beside its example screen; stacked on a phone */
+  .arturo {
+    display: grid;
+    grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+    gap: clamp(28px, 5vw, 72px);
+    align-items: center;
+    padding-top: 16vh;
+    padding-bottom: 4vh;
+  }
+  .arturo h2 {
+    font-size: clamp(2rem, 4.4vw, 3.4rem);
+    letter-spacing: -0.03em;
+    line-height: 1;
+    font-weight: 740;
+    margin: 0 0 20px;
+  }
+  .arturo-copy p {
+    margin: 0 0 14px;
+    max-width: 46ch;
+    color: var(--foam-2);
+  }
+  .arturo .short {
+    display: none;
+  }
+  @media (max-width: 900px) {
+    .arturo {
+      grid-template-columns: minmax(0, 1fr);
+      padding-top: 12vh;
+    }
+  }
+  @media (max-width: 600px) {
+    .arturo .long {
+      display: none;
+    }
+    .arturo .short {
+      display: block;
+    }
   }
   .paths {
     padding-top: 18vh;

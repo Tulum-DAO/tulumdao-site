@@ -637,7 +637,8 @@ export function mount(canvas: HTMLCanvasElement) {
       const r = msg.getBoundingClientRect();
       gatherTarget = smooth(0.8, 0.3, Math.abs(r.top + r.height / 2 - mid) / innerHeight);
     }
-    const floor = sections.find((s) => s.classList.contains('paths'));
+    // the floor: the first solid section after the descent (Arturo's, then the paths)
+    const floor = sections.find((s) => s.matches('.arturo, .paths'));
     if (floor) floorT = smooth(0.95, 0.5, floor.getBoundingClientRect().top / innerHeight);
   };
   addEventListener('scroll', readScroll, { passive: true });
