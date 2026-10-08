@@ -12,8 +12,22 @@ Just want the web dashboard in your browser? That needs no pairing:
 This page is about the gateway (8890), which the phone app talks to.
 
 In the dashboard, Arturo may ask which devices you have (iPhone, iPad, Apple Watch, Mac, Android
-phone, or just this computer). Answering is optional and only tells it what you use; Arturo never
-pairs a device. Pairing is this page.
+phone, or just this computer). Answering is optional. Arturo can also pair an iPhone, iPad or Mac
+for you, but only when all of these hold:
+
+- you have that device's app (test builds only; there is no public download yet);
+- you picked the device on Arturo's devices card during its first-run questions, in the last
+  10 minutes (after that, use `orchestra pair`);
+- the server knows its https gateway address: `ORCHESTRA_PUBLIC_URL` was set in the environment
+  that ran `orchestra up` (step 2 below explains the address; a default install does not set it).
+
+Then Arturo shows the code in a card on the dashboard page, never in the chat text, with where
+to paste it and how to revoke the device. The code always allows read, approve and message; for
+fewer powers, use `orchestra pair --scopes`. When you tell Arturo you're done, it checks that the
+device connected. It pairs only from the dashboard's own chat (in any browser, a phone's
+included), never from a voice call or from a paired app. Apple Watch and Android get an answer
+but no code. Everywhere else, this page is the way: `orchestra pair` gives the same kind of
+code.
 
 > **What works today, step by step** (updated 2026-10-08):
 >
@@ -270,6 +284,14 @@ through.
 you a test build, you can't connect an iPhone yet: stop here. **[PERSON ONLY]** Installing and
 opening it is yours.
 
+**Arturo's card instead of `orchestra pair`:** only during Arturo's first-run questions, within
+10 minutes of picking iPhone or iPad on its devices card, and only if `ORCHESTRA_PUBLIC_URL` is
+set (see the top of this page). You still need Tailscale on the iPhone, the gateway on an https
+address (step 2, "Before you run it", and this step's `tailscale serve`), and the pairing screen
+below. The card has a copy button but no QR, so the easiest way is to open the dashboard on the
+iPhone itself (Safari, over Tailscale), copy the code there and paste it into the app. Otherwise,
+use `orchestra pair` as below.
+
 **Finding the pairing screen.** The app does not open on it by itself: it opens on the
 **Arturo** tab, which shows no pairing prompt. **[PERSON ONLY]** Tap the gear at the top right of the Arturo tab
 (to the right of the brain icon), then, under **GATEWAY**, tap **Connect your gateway**. On an
@@ -287,7 +309,7 @@ and paste on the iPhone (Universal Clipboard). Never message or email the code t
 The **Connect your gateway** screen says *On the machine running your OrchestraOS gateway, run
 `orchestra pair`, then paste the code it prints here — or scan its QR.*
 
-1. **[PERSON ONLY]** Paste exactly what `orchestra pair` printed into the **PAIRING CODE** box
+1. **[PERSON ONLY]** Paste exactly what `orchestra pair` printed (or the code from Arturo's card) into the **PAIRING CODE** box
    (placeholder *paste the code from orchestra pair*), or tap **Scan** and point the camera at
    its QR.
 2. **[PERSON ONLY]** Tap **Pair**. There is no address to type: the code carries it.
@@ -377,6 +399,12 @@ Before you start:
 
 **Getting the app:** it has no public download yet. If nobody gave you a test build, you can't
 connect a Mac yet: stop here. **[PERSON ONLY]** Installing and opening it is yours.
+
+**Arturo's card instead of `orchestra pair`:** only during Arturo's first-run questions, within
+10 minutes of picking Mac on its devices card, and only if `ORCHESTRA_PUBLIC_URL` is set (see the
+top of this page). Everything under "Before you start" still applies. Open the dashboard on the
+Mac, copy the code from the card, and paste it into **Connect this Mac**. Otherwise, use
+`orchestra pair` as below.
 
 On the Mac, open the app. It has one window, titled **OrchestraOS**, which first shows **Connect
 this Mac**, with the line *Run `orchestra pair` on the gateway machine and paste the code it
@@ -487,7 +515,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/b586115973edb8c22f4141b46c3a0358d39ae93b/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/bf73045dd393228ed48db149e380358468f813e2/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -501,7 +529,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/b586115973edb8c22f4141b46c3a0358d39ae93b/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/bf73045dd393228ed48db149e380358468f813e2/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.

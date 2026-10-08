@@ -525,12 +525,13 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/b586115973edb8c22f4141b46c3a0358d39ae93b/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/bf73045dd393228ed48db149e380358468f813e2/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
-If you don't want the voice brain, set `[arturo] enabled = false` — the flask/openai
-rows in doctor become INFO and `orchestra up` skips it.
+If you don't want Arturo at all, set `[arturo] enabled = false`. That turns off Arturo
+entirely, typed chat included, not only voice: `orchestra up` skips its service, and the
+flask/openai rows in doctor become INFO.
 
 ## 2. Up
 
@@ -708,8 +709,11 @@ greets you and may start asking you first-run questions; you don't need to answe
 continue. If you do answer, Arturo may offer to set up your team: that runs the same
 `orchestra starter` as §3, so either way is fine (§3 says what to do if Arturo already did it). Arturo
 may also ask which devices you have (iPhone, iPad, Apple Watch, Mac, Android phone, or just this
-computer). Answering is optional; it only notes what you use and says what works today. Arturo
-never pairs a device: pairing a phone or Mac is [docs/ONBOARDING.md](/docs/onboarding/). To see your agents, tap the gear button at the top left, then **Agents** (or add `/agents` to the
+computer). Answering is optional. The iPhone, iPad and Mac apps are not released yet (test
+builds only). If you have one and pick that device, Arturo can show its pairing code in a card on
+this page, but only when the server knows its https gateway address (`ORCHESTRA_PUBLIC_URL`, which
+this guide does not set). Otherwise it tells you it can't, and you pair with `orchestra pair`
+([docs/ONBOARDING.md](/docs/onboarding/)) instead. To see your agents, tap the gear button at the top left, then **Agents** (or add `/agents` to the
 address). That page's heading is **Agents**, and it stays empty until step 3. Step 4 walks you
 through this again once your team is running. The first
 visit can take a few seconds while the certificate is issued. Optional: put the
