@@ -525,7 +525,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/6fa51781d44e6c98fb25ab43b03c693d6b8beee6/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/7294828f9d95298c4e5da098b47d91d09e8c24e1/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -711,14 +711,15 @@ continue. If you do answer, Arturo may offer to set up your team: that runs the 
 may also ask which devices you have (iPhone, iPad, Apple Watch, Mac, Android phone, or just this
 computer). Answering is optional. The iPhone, iPad and Mac apps are not released yet (test
 builds only). If you have one and pick that device, Arturo can show its pairing code in a card on
-this page, but only when the server knows its https gateway address (`ORCHESTRA_PUBLIC_URL`, which
-this guide does not set). Otherwise it tells you it can't, and you pair with `orchestra pair`
-([docs/ONBOARDING.md](/docs/onboarding/)) instead. To see your agents, tap the gear button at the top left, then **Agents** (or add `/agents` to the
+this page once the gateway is served over https ([docs/ONBOARDING.md](/docs/onboarding/) step 4);
+until then it tells you what to run. You can also ask it later ("pair my iPhone"), or
+run `orchestra pair` on the server (see [docs/ONBOARDING.md](/docs/onboarding/)). To see your agents, tap the gear button at the top left, then **Agents** (or add `/agents` to the
 address). That page's heading is **Agents**, and it stays empty until step 3. Step 4 walks you
 through this again once your team is running. The first
 visit can take a few seconds while the certificate is issued. Optional: put the
 address in `orchestra.toml` as `[public] host` so links in the UI and notifications
-point at it.
+point at it. That is not the address pairing uses: pairing finds the gateway's own https address
+(ONBOARDING step 4), or reads `public_url` under `[gateway]`.
 
 `tailscale serve` keeps this setting across reboots. `tailscale serve --https=<the port you
 used> off` removes only your dashboard's entry. Never turn off a port you didn't add: it may
