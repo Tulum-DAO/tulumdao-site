@@ -528,7 +528,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/ff0801f5f55dd7ab7cffb99b9f6e839a1c538bde/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/afb5e7633bad782cabb7fb1a2b3ffb314447272f/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -542,7 +542,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/ff0801f5f55dd7ab7cffb99b9f6e839a1c538bde/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/afb5e7633bad782cabb7fb1a2b3ffb314447272f/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.
