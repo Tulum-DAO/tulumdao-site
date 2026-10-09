@@ -204,16 +204,16 @@ Confirm the `gateway` row has a live pid again.
   |---|---|
   | `read` | see approvals, agents and transcripts |
   | `approve` | answer approvals and questionnaires: it acts as you |
-  | `message` | send a message to an agent, upload a file |
+  | `message` | send a message to an agent, upload a file, and type to Arturo. Arturo's lookups can read your agents' conversations, so `message` without `read` is not read-free; its messages to agents are marked unverified, and each typed turn spends provider credit |
   | `inject` | press keys in a live agent's terminal |
-  | `voice` | talk to Arturo from this device, typed or spoken (every turn spends provider credit) |
+  | `voice` | Live voice mode and dictation through the server, audio only (every call spends provider credit). Typing to Arturo is `message` |
   | `ptt` | push-to-talk to Arturo from a headset or Watch: lookups, and messages to agents marked unverified |
   | `admin` | file red-alert reports, post telemetry |
   | `usage` | nothing yet: reserved for reading usage later, so a device paired now needs no re-pair |
   | `owner` | this device is yours: its push-to-talk calls (with `ptt`) get Arturo's full tools, like the dashboard, instead of lookups only. Typed turns are unchanged |
 
   A phone or Mac that answers cards needs `read,approve`. Add `message` only if you want to
-  message agents from it. Give it more only if you mean to.
+  message agents or chat with Arturo from it. Give it more only if you mean to.
 
 ```bash
 orchestra pair --scopes read,approve --label my-phone
@@ -528,7 +528,7 @@ Connected to your-gateway.example.net · gateway v1 · no cards yet — they app
 
 That whole line is the success state on a fresh pairing with zero agents and
 zero cards — it is not a placeholder or an error, even though nothing else on
-the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/fae4d0f3e77c2ab75f5cccb98fb820fb41828a4f/docs/GATE.md) step 5) to
+the screen has happened yet. Fire one approval card ([docs/GATE.md](https://github.com/Tulum-DAO/orchestraos/blob/131c68492de5680c9ce0031d00525e85974ba6fb/docs/GATE.md) step 5) to
 see the surface actually render something.
 
 ## Notes for anyone building against this
@@ -542,7 +542,7 @@ see the surface actually render something.
   `/gateway/capabilities` is additive-only — treat any key your client
   doesn't recognize as "ignore it," never as an error, and treat an absent
   block (e.g. no `providers`) as "unknown," never as "none available."
-- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/fae4d0f3e77c2ab75f5cccb98fb820fb41828a4f/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
+- See [docs/tracks/01-device-pairing.md](https://github.com/Tulum-DAO/orchestraos/blob/131c68492de5680c9ce0031d00525e85974ba6fb/docs/tracks/01-device-pairing.md) for the fuller device-pairing design
   this onboarding flow is built on; if the two documents disagree on a route
   name or a response shape, this page (written against the frozen contract)
   is the one to trust, and the track doc needs an update.
