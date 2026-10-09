@@ -1,0 +1,21 @@
+---
+import Base from '../../layouts/Base.astro';
+
+export function getStaticPaths() {
+  return [
+    { params: { result: 'check-email' }, props: { h: 'Check your inbox', p: "We've sent you a confirmation link. Click it to hold your spot. If it isn't there in a few minutes, check spam or promotions." } },
+    { params: { result: 'confirmed' }, props: { h: "You're on the list", p: "Thanks for confirming. We'll be in touch when there's news from Tulum DAO." } },
+    { params: { result: 'unsubscribed' }, props: { h: "You're unsubscribed", p: "You won't get any more emails from us. Changed your mind? Join again from the home page." } },
+    { params: { result: 'error' }, props: { h: 'That didn’t work', p: 'The link may be broken or expired, or the address was not valid. Try joining again from the home page.' } },
+  ];
+}
+const { h, p } = Astro.props;
+---
+
+<Base title={`${h} · Tulum DAO`} description={p}>
+  <div class="waitlist-result">
+    <h1>{h}</h1>
+    <p>{p}</p>
+    <p><a href="/">Back to tulumdao.com</a></p>
+  </div>
+</Base>
