@@ -525,7 +525,7 @@ Claude session on the machine reads. init prints exactly the rows it will add an
 SKIPS the hooks and says so (unattended installs: `orchestra init --yes`;
 `ORCHESTRA_SKIP_HOOKS=1` for a container that runs no Claude seats).
 
-Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/7294828f9d95298c4e5da098b47d91d09e8c24e1/docs/plugins/telegram/README.md) — a BotFather token in
+Want gm on your phone? [`plugins/telegram/README.md`](https://github.com/Tulum-DAO/orchestraos/blob/ff0801f5f55dd7ab7cffb99b9f6e839a1c538bde/docs/plugins/telegram/README.md) — a BotFather token in
 `TELEGRAM_BOT_TOKEN`, `[plugins.telegram] enabled = true`, and `orchestra up` runs the
 channel: texts land in gm's inbox, decision cards arrive with buttons.
 
@@ -706,7 +706,8 @@ in this section is not yours.
 Open that address in a browser on your laptop or phone (it must be signed in to
 Tailscale). The dashboard opens on its chat page, with **Arturo** at the top. Arturo
 greets you and may start asking you first-run questions; you don't need to answer them to
-continue. If you do answer, Arturo may offer to set up your team: that runs the same
+continue. If you leave partway and come back, in this browser or the dashboard in any other browser
+(another computer, or your phone's browser), Arturo picks up where you left off, with the conversation so far, and does not greet you again. If you do answer, Arturo may offer to set up your team: that runs the same
 `orchestra starter` as §3, so either way is fine (§3 says what to do if Arturo already did it). Arturo
 may also ask which devices you have (iPhone, iPad, Apple Watch, Mac, Android phone, or just this
 computer). Answering is optional. The iPhone, iPad and Mac apps are not released yet (test

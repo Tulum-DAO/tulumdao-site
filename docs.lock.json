@@ -1,22 +1,22 @@
 {
   "repo": "Tulum-DAO/orchestraos",
-  "sha": "7294828f9d95298c4e5da098b47d91d09e8c24e1",
-  "committedAt": "2026-10-08T21:57:55-04:00",
+  "sha": "ff0801f5f55dd7ab7cffb99b9f6e839a1c538bde",
+  "committedAt": "2026-10-08T23:28:19-04:00",
   "install": [
     "git clone https://github.com/Tulum-DAO/orchestraos.git orchestraos && cd orchestraos",
     "make install"
   ],
-  "syncedAt": "2026-10-09T02:00:28.548Z",
+  "syncedAt": "2026-10-09T03:32:20.883Z",
   "files": {
     "from-scratch": "a18772e68c37383d8b56f5e35094f71f302172d0abcfceb4792be6e272d2a554",
-    "beginners-guide": "8fbc0d2bd6560a5cce1e425c3b3e02eb59375bc2c8637ff9155bd236d8f226be",
-    "install": "90adb90c6f38b04c6876101fa18ba0536f1bb6e8ce3adf77f460d8c38e0111b2",
-    "overview": "7432e3251fc68fedd7f26f1cef2e894e0655ac973f5ca12e8c17d336bed2f970",
-    "costs": "454a83c828170ba716a16e8864db39ef7729425999e509bf235bd95c00c834a1",
-    "onboarding": "cf8637dc83f6d8d50d708381e3eaece335343884960554bbf77fabcc17cb8afa",
-    "upgrade": "73e67403e8968119c12dbdf7ef1bcc9d5ed1a5839a202c4f20a3de607e408328",
-    "reference-install": "c656c7db02a6b9f34e7bc746bce20d9b0409453b6f2a8e3341370e74d459c685",
-    "architecture": "1aab6c27005b6f2da69aa2c78595c3d56d0adaafe7ac9a0b82d7b9af178eb40f",
+    "beginners-guide": "3dde94c1241690e85dc9f39986d5b0021f8e63dfb7419e327442575d559325e6",
+    "install": "8bce784b098a2ce4f2189ccc9aaa110ae0bd8714c374c7a07aa4811707b2ef29",
+    "overview": "10df5b4b20e7dc53af922c165d6b76178c8972b857a0bafa00a65674f8567ba3",
+    "costs": "22a8d20581ab215952bb714f1f7009d77920db891c2ab47c87e01ab86aea05a8",
+    "onboarding": "6a48d752afe007b020fc2c7ff6e7a0cd9a072edd02c36f0ebce02eddca7df3a4",
+    "upgrade": "762b59010238c507e511abea243f801078b8d8b3494227c14cc5863a3e0291bc",
+    "reference-install": "9da93ea0bbf47d1cebce42036fe9da346f2d3baf7a1b031c9a233df1b9ba11bb",
+    "architecture": "e78d60ef2f17f37f6e9724cd30aed41a5ecfa6fc81d0265c2fb7372557d4957e",
     "rotation": "d1ffc6e55b022da5f98defbf81fff955b56206c83eaa9509c39e6d99b29e26c6"
   }
 }
