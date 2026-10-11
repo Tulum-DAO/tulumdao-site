@@ -1,0 +1,41 @@
+---
+import Base from '../layouts/Base.astro';
+---
+
+<Base title="Privacy · Tulum DAO" description="What Tulum DAO collects when you join the waitlist, and how to leave.">
+  <div class="prose">
+    <h1>Privacy</h1>
+    <p>Last updated 7 October 2026.</p>
+
+    <h2>What we collect</h2>
+    <p>
+      When you join the waitlist we store your email address, which page you joined from, when you
+      joined, and whether you confirmed or unsubscribed. To limit abuse we also keep a keyed hash of your IP address. It's used only
+      for rate limiting and can't be turned back into your IP without a secret key that never
+      leaves our server. It isn't stored with your email address.
+    </p>
+
+    <h2>What we use it for</h2>
+    <p>
+      We use it to email you about Tulum DAO: launch news and updates. We don't sell or
+      rent it, and we don't share it with anyone except the services that run the list.
+    </p>
+
+    <h2>Who processes it</h2>
+    <ul>
+      <li>Netlify hosts this site and stores the waitlist.</li>
+      <li>Resend delivers our emails.</li>
+      <li>Cloudflare handles DNS and forwards mail sent to tulumdao.com addresses.</li>
+    </ul>
+
+    <h2>Your choices</h2>
+    <p>
+      Every email has an unsubscribe link, and unsubscribing takes effect immediately. To have your
+      record deleted entirely, or to see what we hold about you, email
+      <a href="mailto:hello@tulumdao.com">hello@tulumdao.com</a>.
+    </p>
+
+    <h2>Cookies</h2>
+    <p>The waitlist sets no cookies and uses no tracking.</p>
+  </div>
+</Base>

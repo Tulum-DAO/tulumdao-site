@@ -1,0 +1,64 @@
+---
+// Waitlist form. Works with no JS (POST -> 303 to /waitlist/check-email/); with JS it posts
+// via fetch and shows the result inline. Styling and placement belong to tulumdao-site.
+interface Props { source?: string; id?: string }
+const { source = 'home', id = 'waitlist' } = Astro.props;
+---
+
+<form class="waitlist" id={id} method="post" action="/api/waitlist/signup" data-waitlist>
+  <label class="waitlist-label" for={`${id}-email`}>Join the waitlist</label>
+  <div class="waitlist-row">
+    <input
+      class="waitlist-input"
+      id={`${id}-email`}
+      name="email"
+      type="email"
+      autocomplete="email"
+      inputmode="email"
+      required
+      maxlength="254"
+      placeholder="you@example.com"
+    />
+    <button class="waitlist-button" type="submit">Join</button>
+  </div>
+  <input type="hidden" name="source" value={source} />
+  <!-- Honeypot: hidden from people and screen readers; bots fill it. -->
+  <div aria-hidden="true" style="position:absolute;left:-10000px;width:1px;height:1px;overflow:hidden">
+    <label>Website <input type="text" name="website" tabindex="-1" autocomplete="off" /></label>
+  </div>
+  <p class="waitlist-note">We'll email you once to confirm. No spam; unsubscribe anytime. <a href="/privacy/">Privacy</a></p>
+  <p class="waitlist-status" role="status" aria-live="polite"></p>
+</form>
+
+<script>
+  const msgs: Record<string, string> = {
+    ok: 'Check your inbox for a confirmation link.',
+    invalid_email: "That email address doesn't look right.",
+    rate_limited: 'Too many tries from here. Please try again in an hour.',
+  };
+  for (const form of document.querySelectorAll<HTMLFormElement>('form[data-waitlist]')) {
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const status = form.querySelector<HTMLElement>('.waitlist-status')!;
+      const button = form.querySelector<HTMLButtonElement>('button')!;
+      button.disabled = true;
+      status.textContent = 'Sending…';
+      try {
+        const r = await fetch(form.action, {
+          method: 'POST',
+          headers: { Accept: 'application/json' },
+          body: new FormData(form),
+        });
+        const b = await r.json().catch(() => ({}));
+        status.textContent = b.ok ? msgs.ok : msgs[b.error] || 'Something went wrong. Please try again.';
+        form.dataset.state = b.ok ? 'done' : 'error';
+        if (b.ok) form.reset();
+      } catch {
+        status.textContent = 'Network error. Please try again.';
+        form.dataset.state = 'error';
+      } finally {
+        button.disabled = false;
+      }
+    });
+  }
+</script>
