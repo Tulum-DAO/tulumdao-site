@@ -26,3 +26,13 @@
   for = "/whitepaper/*"
   [headers.values]
     X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/lethal-trifecta/*"
+  [headers.values]
+    X-Robots-Tag = "noindex, nofollow"
+
+[[headers]]
+  for = "/whitepaper/lethal-trifecta/*"
+  [headers.values]
+    X-Robots-Tag = "all"
